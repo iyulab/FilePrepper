@@ -1,0 +1,70 @@
+name: NuGet Publish
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/Directory.Build.props'
+  workflow_dispatch:
+    inputs:
+      skip_publish:
+        description: 'Skip NuGet publish (build and test only)'
+        required: false
+        type: boolean
+        default: false
+      force_publish:
+        description: 'Force publish even if version exists'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  SOLUTION_PATH: 'src/FilePrepper.sln'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+    - name: Build
+      run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test ${{ env.SOLUTION_PATH }} --no-build --verbosity normal --configuration Release
+
+    - name: Pack FilePrepper Library
+      run: dotnet pack src/FilePrepper/FilePrepper.csproj --configuration Release --no-build --output nupkg
+
+    - name: Pack FilePrepper.CLI Tool
+      run: dotnet pack src/FilePrepper.CLI/FilePrepper.CLI.csproj --configuration Release --no-build --output nupkg
+
+    - name: List packages
+      run: ls -lh nupkg/
+
+    - name: Push to NuGet
+      if: ${{ !inputs.skip_publish }}
+      run: |
+        if [ "${{ inputs.force_publish }}" = "true" ]; then
+          echo "Force publishing packages..."
+          dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+        else
+          echo "Publishing packages with skip-duplicate..."
+          dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+        fi
+
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: nupkg/*.nupkg
+        retention-days: 7

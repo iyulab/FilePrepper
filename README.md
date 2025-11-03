@@ -126,7 +126,3 @@ var result = await task.ExecuteAsync(new TaskContext(options));
 
 - .NET 9.0 or later
 - Cross-platform (Windows, Linux, macOS)
-
-## License
-
-MIT License - see LICENSE file for details
