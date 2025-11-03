@@ -5,17 +5,29 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<Title>File Prepper</Title>
-	<Description>A dotnet tool to reformat files or preprocess files for ML.</Description>
-	<PackAsTool>true</PackAsTool>
-	<PackageId>fileprepper-cli</PackageId>
-	<ToolCommandName>fileprepper</ToolCommandName>
-	<PackageOutputPath>./nupkg</PackageOutputPath>
+	  <Title>FilePrepper CLI</Title>
+	  <Description>A powerful .NET CLI tool for CSV/tabular data processing. Process data files without coding - normalize, transform, analyze, and convert formats.</Description>
+	  <PackAsTool>true</PackAsTool>
+	  <PackageId>FilePrepper.CLI</PackageId>
+	  <ToolCommandName>fileprepper</ToolCommandName>
+	  <PackageOutputPath>./nupkg</PackageOutputPath>
+	  <Version>0.3.0</Version>
+	  <Authors>FilePrepper Contributors</Authors>
+	  <PackageProjectUrl>https://github.com/yourusername/FilePrepper</PackageProjectUrl>
+	  <RepositoryUrl>https://github.com/yourusername/FilePrepper</RepositoryUrl>
+	  <PackageTags>csv;data-processing;etl;cli;preprocessing;ml;dotnet-tool</PackageTags>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 	
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
   </ItemGroup>
 
   <ItemGroup>

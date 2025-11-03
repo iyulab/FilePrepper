@@ -257,7 +257,7 @@ public class ColumnInteractionTests : TaskBaseTest<ColumnInteractionTask>
         {
             InputPath = _testInputPath,
             OutputPath = _testOutputPath,
-            SourceColumns = null,
+            SourceColumns = null!,
             Operation = OperationType.Add,
             OutputColumn = "Result"
         };

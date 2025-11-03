@@ -20,8 +20,8 @@ public class Program
 {
     private const string _toolCommandName = "fileprepper";
 
-    private static ILoggerFactory _loggerFactory;
-    private static ILogger<Program> _logger;
+    private static ILoggerFactory _loggerFactory = null!;
+    private static ILogger<Program> _logger = null!;
 
     private static readonly Dictionary<string, string> _commandDescriptions = new()
     {
@@ -29,6 +29,7 @@ public class Program
         { "aggregate", "Aggregate data based on grouping columns" },
         { "stats", "Calculate basic statistics on numeric columns" },
         { "column-interaction", "Perform operations between columns" },
+        { "create-lag-features", "Create lag features from time series data" },
         { "data-sampling", "Sample data using various methods" },
         { "convert-type", "Convert data types of columns" },
         { "extract-date", "Extract components from date columns" },

@@ -5,17 +5,17 @@
     <Nullable>enable</Nullable>
     <Authors>iyulab</Authors>
     <Company>Iyulab Corporation</Company>
-    <Owners>iyulab-rnd</Owners>
+    <Owners>iyulab</Owners>
     <Copyright>Copyright (c) Iyulab Corporation 2024.</Copyright>
-    <PackageProjectUrl>https://github.com/iyulab-rnd/FilePrepper</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/iyulab-rnd/FilePrepper.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/iyulab/FilePrepper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/iyulab/FilePrepper.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageIconUrl>https://raw.githubusercontent.com/iyulab-rnd/public/main/images/iyulab_128.png</PackageIconUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/iyulab/public/main/images/iyulab_128.png</PackageIconUrl>
     <PackageTags>file-preprocess,file format convert</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>logo.png</PackageIcon>
-    <Version>0.2.2</Version>
+    <Version>0.2.3</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="\" />

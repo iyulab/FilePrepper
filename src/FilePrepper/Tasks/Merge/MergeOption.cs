@@ -230,9 +230,9 @@ public class MergeOption : MultipleInputOption
                 {
                     foreach (var key in JoinKeyColumns.Where(k => k.Name != null))
                     {
-                        if (!primaryHeaders.Contains(key.Name))
+                        if (!primaryHeaders.Contains(key.Name!))
                             errors.Add($"Join key column '{key.Name}' not found in primary file");
-                        if (!currentHeaders.Contains(key.Name))
+                        if (!currentHeaders.Contains(key.Name!))
                             errors.Add($"Join key column '{key.Name}' not found in file {Path.GetFileName(file)}");
                     }
                 }

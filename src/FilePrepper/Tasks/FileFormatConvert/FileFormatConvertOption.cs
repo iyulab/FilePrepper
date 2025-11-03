@@ -14,7 +14,7 @@ public class FileFormatConvertOption : SingleInputOption
     public FileFormat TargetFormat { get; set; }
     public Encoding? Encoding { get; set; }
     public string? Delimiter { get; set; }
-    public bool HasHeader { get; set; } = true;
+    public new bool HasHeader { get; set; } = true;
     public string? DateTimeFormat { get; set; }
     public bool PrettyPrint { get; set; } = false;
     public string RootElementName { get; set; } = "root";

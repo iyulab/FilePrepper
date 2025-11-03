@@ -86,7 +86,7 @@ public class DataTypeConvertTests : TaskBaseTest<DataTypeConvertTask>
         Assert.Equal("789.0", values[2]);
     }
 
-    public void Execute_WithCustomCulture_ShouldSucceed()
+    private void Execute_WithCustomCulture_ShouldSucceed()
     {
         // Arrange
         var germanCulture = CultureInfo.GetCultureInfo("de-DE");

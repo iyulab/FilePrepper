@@ -119,6 +119,6 @@ public class ReorderColumnsTests : TaskBaseTest<ReorderColumnsTask>
         // Expect reordered header "C,A,B" (C,A then remaining B)
         Assert.Contains("C,A,B", lines[0]);
         // No data rows after header.
-        Assert.Equal(1, lines.Length);
+        Assert.Single(lines);
     }
 }

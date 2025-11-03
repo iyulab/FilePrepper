@@ -24,7 +24,7 @@ public class ScaleDataTask : BaseTask<ScaleDataOption>
         var numericValues = records
             .Select(r => r.GetValueOrDefault(colOption.ColumnName))
             .Where(v => double.TryParse(v, out _))
-            .Select(v => double.Parse(v))
+            .Select(v => double.Parse(v!))
             .ToList();
 
         if (numericValues.Count == 0)

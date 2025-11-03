@@ -15,6 +15,7 @@ public class ReorderColumnsOption : SingleInputOption
         if (Order == null || Order.Count == 0)
         {
             errors.Add("At least one column must be specified for reordering.");
+            return [.. errors];
         }
         foreach (var col in Order)
         {

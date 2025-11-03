@@ -258,7 +258,7 @@ public class FileFormatConvertTests : TaskBaseTest<FileFormatConvertTask>
         Assert.True(result);
         string jsonContent = File.ReadAllText(_testOutputPath);
         var jsonData = JsonSerializer.Deserialize<List<Dictionary<string, string>>>(jsonContent);
-        Assert.Empty(jsonData);
+        Assert.Empty(jsonData!);
 
         // Cleanup
         File.Delete(emptyInputPath);

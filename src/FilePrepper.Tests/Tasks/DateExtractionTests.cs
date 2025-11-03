@@ -283,8 +283,8 @@ public class DateExtractionTests : TaskBaseTest<DateExtractionTask>
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((o, t) => o.ToString()!.Contains("Failed to parse date value")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
 
         // 출력 파일 확인

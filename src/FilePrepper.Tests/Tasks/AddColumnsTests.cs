@@ -65,7 +65,7 @@ public class AddColumnsTests : TaskBaseTest<AddColumnsTask>
         {
             InputPath = _testInputPath,
             OutputPath = _testOutputPath,
-            NewColumns = null
+            NewColumns = null!
         };
 
         // Act
@@ -87,7 +87,7 @@ public class AddColumnsTests : TaskBaseTest<AddColumnsTask>
         {
             NewColumns = columnName is not null
                 ? new Dictionary<string, string> { { columnName, "value" } }
-                : null
+                : null!
         };
 
         // Act

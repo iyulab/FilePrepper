@@ -9,7 +9,7 @@ public abstract class BaseTask<TOption> : ITask
 {
     protected readonly ILogger _logger;
     protected List<string> _originalHeaders = [];
-    private TaskContext _context;
+    private TaskContext _context = null!;
 
     protected TOption Options
     {
@@ -114,7 +114,12 @@ public abstract class BaseTask<TOption> : ITask
     private async Task<List<Dictionary<string, string>>> ReadAndPreProcessAsync(TaskContext context)
     {
         _logger.LogInformation("Reading input file: {InputPath}", context.InputPath);
-        var (records, headers) = await ReadCsvFileAsync(context.InputPath);
+
+        // Check if file is Excel format
+        var (records, headers) = ExcelUtils.IsExcelFile(context.InputPath)
+            ? await ReadExcelFileAsync(context.InputPath)
+            : await ReadCsvFileAsync(context.InputPath);
+
         _originalHeaders = headers;
         return await PreProcessRecordsAsync(records);
     }
@@ -137,6 +142,14 @@ public abstract class BaseTask<TOption> : ITask
     protected virtual IEnumerable<string> GetRequiredColumns() =>
         Options is BaseColumnOption columnOption ? columnOption.TargetColumns : Array.Empty<string>();
 
+    protected virtual async Task<(List<Dictionary<string, string>> records, List<string> headers)> ReadExcelFileAsync(string path)
+    {
+        _logger.LogInformation("Reading Excel file: {Path}", path);
+        var (records, headers) = await ExcelUtils.ReadExcelFileAsync(path, Options.HasHeader);
+        _logger.LogInformation("Finished reading Excel file {Path}. Read {Count} records", path, records.Count);
+        return (records, headers);
+    }
+
     protected virtual async Task<(List<Dictionary<string, string>> records, List<string> headers)> ReadCsvFileAsync(string path)
     {
         _logger.LogInformation("Reading input file: {Path}", path);
@@ -150,13 +163,13 @@ public abstract class BaseTask<TOption> : ITask
         // Read first row
         if (await parser.ReadAsync())
         {
-            var firstRow = parser.Record;
+            var firstRow = parser.Record!;
             var fieldCount = firstRow.Length;
 
             if (Options.HasHeader)
             {
                 // Use actual headers from the file
-                headers.AddRange(firstRow);
+                headers.AddRange(firstRow!);
             }
             else
             {
@@ -179,9 +192,9 @@ public abstract class BaseTask<TOption> : ITask
         while (await parser.ReadAsync())
         {
             var record = new Dictionary<string, string>();
-            for (int i = 0; i < parser.Record.Length && i < headers.Count; i++)
+            for (int i = 0; i < parser.Record!.Length && i < headers.Count; i++)
             {
-                record[headers[i]] = parser.Record[i];
+                record[headers[i]] = parser.Record[i]!;
             }
             records.Add(record);
             _logger.LogDebug("Added row: {Row}", string.Join(", ", record.Values));
