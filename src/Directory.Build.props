@@ -4,7 +4,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Authors>iyulab</Authors>
-    <Company>Iyulab Corporation</Company>
+    <Company>iyulab</Company>
     <Owners>iyulab</Owners>
     <Copyright>Copyright (c) Iyulab Corporation 2024.</Copyright>
     <PackageProjectUrl>https://github.com/iyulab/FilePrepper</PackageProjectUrl>
@@ -15,7 +15,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>logo.png</PackageIcon>
-    <Version>0.2.3</Version>
+    <Version>0.3.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="\" />

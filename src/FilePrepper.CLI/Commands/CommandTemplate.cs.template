@@ -1,0 +1,150 @@
+using System.CommandLine;
+using FilePrepper.Tasks;
+using FilePrepper.Tasks.{TaskNamespace};
+using Microsoft.Extensions.Logging;
+using Spectre.Console;
+
+namespace FilePrepper.CLI.Commands;
+
+/// <summary>
+/// Command to {command description}
+/// Template for migrating legacy CommandLineParser commands to System.CommandLine
+/// </summary>
+public class {CommandName}Command : BaseCommand
+{
+    // Define options as private fields
+    private readonly Option<string> _inputOption;
+    private readonly Option<string> _outputOption;
+    // Add more options as needed
+
+    public {CommandName}Command(ILoggerFactory loggerFactory)
+        : base("{command-name}", "{Command description}", loggerFactory)
+    {
+        // Define required options
+        _inputOption = new Option<string>(
+            aliases: new[] { "--input", "-i" },
+            description: "Input CSV file path")
+        { IsRequired = true };
+
+        _outputOption = new Option<string>(
+            aliases: new[] { "--output", "-o" },
+            description: "Output file path")
+        { IsRequired = true };
+
+        // Define optional options with defaults
+        // _someOption = new Option<bool>(
+        //     aliases: new[] { "--some-option", "-s" },
+        //     getDefaultValue: () => true,
+        //     description: "Some option description");
+
+        // Add all options to the command
+        AddOption(_inputOption);
+        AddOption(_outputOption);
+        // AddOption(_someOption);
+
+        // Set the handler - bind options to method parameters
+        this.SetHandler(ExecuteAsync,
+            _inputOption, _outputOption,
+            CommonOptions.HasHeader, CommonOptions.IgnoreErrors, CommonOptions.Verbose);
+    }
+
+    private async Task<int> ExecuteAsync(
+        string inputPath, string outputPath,
+        bool hasHeader, bool ignoreErrors, bool verbose)
+    {
+        try
+        {
+            // 1. Validation with optional rich display
+            var inputValid = ValidateInputFile(inputPath, out var inputError);
+            
+            if (verbose)
+            {
+                var table = new Table()
+                    .Border(TableBorder.Rounded)
+                    .AddColumn("Parameter")
+                    .AddColumn("Status");
+
+                table.AddRow("Input file",
+                    inputValid ? $"[green]✓ {GetFormatName(inputPath)}[/]" : $"[red]✗ {inputError}[/]");
+                table.AddRow("Output directory",
+                    ValidateOutputPath(outputPath) ? "[green]✓ Valid[/]" : "[red]✗ Invalid[/]");
+
+                AnsiConsole.Write(table);
+            }
+
+            if (!inputValid)
+            {
+                DisplayError(inputError ?? "Invalid input file");
+                return ExitCodes.FileError;
+            }
+
+            if (!ValidateOutputPath(outputPath))
+            {
+                DisplayError("Output directory not found");
+                return ExitCodes.FileError;
+            }
+
+            // 2. Create task options
+            var options = new {TaskName}Option
+            {
+                InputPath = inputPath,
+                OutputPath = outputPath,
+                // Map other properties
+                HasHeader = hasHeader,
+                IgnoreErrors = ignoreErrors
+            };
+
+            // 3. Execute with progress display
+            return await AnsiConsole.Status()
+                .Spinner(Spinner.Known.Dots)
+                .StartAsync("Processing data...", async ctx =>
+                {
+                    ctx.Status($"Reading {Path.GetFileName(inputPath)}...");
+                    
+                    var taskLogger = LoggerFactory.CreateLogger<{TaskName}Task>();
+                    var task = new {TaskName}Task(taskLogger);
+                    var taskContext = new TaskContext(options);
+
+                    ctx.Status("Processing...");
+                    var success = await task.ExecuteAsync(taskContext);
+
+                    if (success)
+                    {
+                        DisplaySuccess($"Processing completed: {outputPath}");
+                        
+                        if (verbose)
+                        {
+                            // Show summary panel
+                            var panel = new Panel(
+                                new Markup($"""
+                                    [bold]Summary:[/]
+                                    • Input: {Markup.Escape(inputPath)}
+                                    • Output: {Markup.Escape(outputPath)}
+                                    • Status: [green]Success[/]
+                                    """))
+                            {
+                                Header = new PanelHeader("Processing Complete", Justify.Center),
+                                BorderStyle = new Style(Color.Green)
+                            };
+                            AnsiConsole.Write(panel);
+                        }
+                        
+                        return ExitCodes.Success;
+                    }
+
+                    DisplayError("Processing failed");
+                    return ExitCodes.Error;
+                });
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    private bool ValidateOutputPath(string outputPath)
+    {
+        var outputDir = Path.GetDirectoryName(outputPath);
+        return string.IsNullOrEmpty(outputDir) || Directory.Exists(outputDir);
+    }
+}

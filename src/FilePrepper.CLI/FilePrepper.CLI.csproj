@@ -5,17 +5,15 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	  <Version>0.4.0</Version>
 	  <Title>FilePrepper CLI</Title>
 	  <Description>A powerful .NET CLI tool for CSV/tabular data processing. Process data files without coding - normalize, transform, analyze, and convert formats.</Description>
 	  <PackAsTool>true</PackAsTool>
-	  <PackageId>FilePrepper.CLI</PackageId>
+	  <PackageId>fileprepper-cli</PackageId>
 	  <ToolCommandName>fileprepper</ToolCommandName>
 	  <PackageOutputPath>./nupkg</PackageOutputPath>
-	  <Version>0.3.0</Version>
-	  <Authors>FilePrepper Contributors</Authors>
-	  <PackageProjectUrl>https://github.com/yourusername/FilePrepper</PackageProjectUrl>
-	  <RepositoryUrl>https://github.com/yourusername/FilePrepper</RepositoryUrl>
-	  <PackageTags>csv;data-processing;etl;cli;preprocessing;ml;dotnet-tool</PackageTags>
+	  <Authors>iyulab</Authors>
+	  <PackageTags>csv;data-processing;etl;cli;preprocessing;ml;dotnet-tool;file-preprocessing</PackageTags>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
@@ -26,12 +24,21 @@
   </ItemGroup>
 	
   <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.9.1" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="Spectre.Console" Version="0.50.0" />
+    <PackageReference Include="Spectre.Console.Cli" Version="0.50.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FilePrepper\FilePrepper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Exclude old CommandLineParser-based code during migration -->
+    <Compile Remove="Tools\**\*.cs" />
+    <Compile Remove="ICommandHandler.cs" />
+    <Compile Remove="ICommandParameters.cs" />
   </ItemGroup>
 
 </Project>
