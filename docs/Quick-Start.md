@@ -1,35 +1,42 @@
 # Quick Start Guide
 
-Get started with FilePrepper in 5 minutes.
+Get started with FilePrepper in 5 minutes - either as a CLI tool or SDK.
 
 ## Installation
 
-### Option 1: Global Tool (Recommended)
+### Option 1: CLI Tool (No Coding Required)
 
 ```bash
 # Install globally
-dotnet tool install -g FilePrepper.CLI
+dotnet tool install -g fileprepper-cli
 
 # Verify installation
+fileprepper --version
+# Expected: 0.4.1
+
 fileprepper --help
 ```
 
-### Option 2: Build from Source
+### Option 2: SDK Library (Programmatic Use)
 
 ```bash
-git clone <repository-url>
-cd FilePrepper
-dotnet build src/FilePrepper.CLI
+# Add to your project
+dotnet add package FilePrepper
 
-# Run from source
-cd src/FilePrepper.CLI
-dotnet run -- --help
+# Or in .csproj
+<PackageReference Include="FilePrepper" Version="0.4.1" />
 ```
 
-### Option 3: Use as Library
+### Option 3: Build from Source
 
 ```bash
-dotnet add package FilePrepper
+git clone https://github.com/iyulab/FilePrepper.git
+cd FilePrepper
+dotnet build src/FilePrepper.sln
+
+# Run CLI from source
+cd src/FilePrepper.CLI
+dotnet run -- --help
 ```
 
 ## Your First Command
@@ -145,6 +152,8 @@ fileprepper fill-missing -i data.csv -o output.csv \
 
 ## Building a Pipeline
 
+### CLI Approach (Multiple File I/O)
+
 Combine commands for complex workflows:
 
 ```bash
@@ -160,6 +169,64 @@ fileprepper normalize -i step2.csv -o step3.csv -c "Age,Salary" -m MinMax
 
 # Step 4: Convert to JSON
 fileprepper convert-format -i step3.csv -o final.json -f JSON
+# Total: 8 file I/O operations (4 reads + 4 writes)
+```
+
+### SDK Approach (Efficient - 67-90% Less I/O)
+
+Use the Pipeline API for in-memory processing:
+
+```csharp
+using FilePrepper.Pipeline;
+
+// Same workflow with only 2 file I/O operations!
+await DataPipeline
+    .FromCsvAsync("raw.csv")
+    .FillMissing(columns: new[] { "Age", "Salary" }, method: FillMethod.Mean)
+    .FilterRows(row => int.Parse(row["Age"]) < 100)
+    .Normalize(columns: new[] { "Age", "Salary" }, method: NormalizationMethod.MinMax)
+    .ToCsvAsync("final.csv");  // Or .ToJson() for JSON output
+
+// 75% reduction in file I/O!
+```
+
+### SDK Quick Examples
+
+**ML Feature Engineering**:
+```csharp
+using FilePrepper.Pipeline;
+
+var result = await DataPipeline
+    .FromCsvAsync("data.csv")
+    .AddColumn("AgeGroup", row =>
+        int.Parse(row["Age"]) < 30 ? "Young" : "Senior")
+    .Normalize(columns: new[] { "Age", "Salary" },
+               method: NormalizationMethod.MinMax)
+    .ToDataFrame();
+
+Console.WriteLine($"Processed {result.RowCount} rows");
+```
+
+**In-Memory Processing (Zero File I/O)**:
+```csharp
+var data = new List<Dictionary<string, string>>
+{
+    new() { ["Name"] = "Alice", ["Age"] = "25", ["Salary"] = "50000" },
+    new() { ["Name"] = "Bob", ["Age"] = "30", ["Salary"] = "60000" }
+};
+
+var processed = DataPipeline
+    .FromData(data)
+    .Normalize(columns: new[] { "Age", "Salary" },
+               method: NormalizationMethod.MinMax)
+    .FilterRows(row => double.Parse(row["Age"]) > 0.5)
+    .ToDataFrame();
+
+// Access results directly - no files needed!
+foreach (var row in processed.Rows)
+{
+    Console.WriteLine($"{row["Name"]}: Age={row["Age"]}, Salary={row["Salary"]}");
+}
 ```
 
 ## Error Handling

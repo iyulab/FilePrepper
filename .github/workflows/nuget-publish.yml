@@ -41,14 +41,32 @@ jobs:
     - name: Test
       run: dotnet test ${{ env.SOLUTION_PATH }} --no-build --verbosity normal --configuration Release
 
-    - name: Pack FilePrepper Library
+    - name: Pack FilePrepper SDK Library
       run: dotnet pack src/FilePrepper/FilePrepper.csproj --configuration Release --no-build --output nupkg
 
-    - name: Pack FilePrepper.CLI Tool
+    - name: Verify FilePrepper SDK Package
+      run: |
+        echo "Checking FilePrepper SDK package metadata..."
+        unzip -l nupkg/FilePrepper.*.nupkg | grep -E "(README.md|logo.png|\.nuspec)"
+
+    - name: Pack FilePrepper.CLI dotnet tool
       run: dotnet pack src/FilePrepper.CLI/FilePrepper.CLI.csproj --configuration Release --no-build --output nupkg
 
-    - name: List packages
-      run: ls -lh nupkg/
+    - name: Verify FilePrepper.CLI Tool Package
+      run: |
+        echo "Checking FilePrepper.CLI tool metadata..."
+        unzip -l nupkg/fileprepper-cli.*.nupkg | grep -E "(DotnetToolSettings.xml|\.nuspec)"
+
+    - name: List all packages
+      run: |
+        echo "Generated NuGet packages:"
+        ls -lh nupkg/
+        echo ""
+        echo "Package details:"
+        for pkg in nupkg/*.nupkg; do
+          echo "=== $pkg ==="
+          unzip -p "$pkg" "*.nuspec" | grep -E "<(id|version|packageTypes)>" || true
+        done
 
     - name: Push to NuGet
       if: ${{ !inputs.skip_publish }}

@@ -4,10 +4,25 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<Version>0.4.0</Version>
-	<NoWarn>IDE0290</NoWarn>
+    <Version>0.4.0</Version>
+    <NoWarn>IDE0290</NoWarn>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>FilePrepper</PackageId>
+    <Title>FilePrepper SDK</Title>
+    <Description>A powerful .NET library for data preprocessing. Provides Pipeline API for efficient in-memory data transformations with 67-90% reduction in file I/O. Perfect for ML, ETL, and data analysis workflows.</Description>
+    <Authors>iyulab</Authors>
+    <Company>iyulab</Company>
+    <PackageTags>data-preprocessing;pipeline;etl;ml;sdk;csv;excel;data-transformation</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/iyulab/FilePrepper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/iyulab/FilePrepper.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>logo.png</PackageIcon>
   </PropertyGroup>
 
+  <!-- README.md and logo.png are already included from Directory.Build.props -->
   <ItemGroup>
     <None Include="..\..\README.md" Link="README.md" />
   </ItemGroup>

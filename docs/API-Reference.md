@@ -1,5 +1,7 @@
 # API Reference
 
+**Version**: 0.4.1
+
 Programmatic usage guide for integrating FilePrepper into .NET applications.
 
 ## Installation
@@ -8,7 +10,105 @@ Programmatic usage guide for integrating FilePrepper into .NET applications.
 dotnet add package FilePrepper
 ```
 
-## Basic Usage Pattern
+## Recommended: Pipeline API (v0.4.0+)
+
+The Pipeline API provides a fluent interface for efficient data preprocessing with **67-90% reduction in file I/O**.
+
+### Quick Example
+
+```csharp
+using FilePrepper.Pipeline;
+
+await DataPipeline
+    .FromCsvAsync("data.csv")
+    .Normalize(columns: new[] { "Age", "Salary" }, method: NormalizationMethod.MinMax)
+    .FillMissing(columns: new[] { "Score" }, method: FillMethod.Mean)
+    .FilterRows(row => int.Parse(row["Age"]) >= 18)
+    .ToCsvAsync("output.csv");
+```
+
+### DataPipeline Class
+
+**Factory Methods**:
+```csharp
+// From CSV file
+Task<DataPipeline> FromCsvAsync(string path, bool hasHeader = true)
+
+// From in-memory data
+DataPipeline FromData(IEnumerable<Dictionary<string, string>> data)
+```
+
+**Transformation Methods** (all return `this` for chaining):
+```csharp
+DataPipeline AddColumn(string columnName, Func<Dictionary<string, string>, string> valueSelector)
+DataPipeline RemoveColumns(string[] columnNames)
+DataPipeline RenameColumn(string oldName, string newName)
+DataPipeline FilterRows(Func<Dictionary<string, string>, bool> predicate)
+DataPipeline Normalize(string[] columns, NormalizationMethod method, double minValue = 0, double maxValue = 1)
+DataPipeline FillMissing(string[] columns, FillMethod method, string? constantValue = null)
+```
+
+**Output Methods**:
+```csharp
+DataFrame ToDataFrame()  // Get immutable snapshot
+Task ToCsvAsync(string path, bool hasHeader = true)
+IEnumerable<string> GetColumn(string columnName)
+```
+
+**Enums**:
+```csharp
+public enum NormalizationMethod { MinMax, ZScore }
+public enum FillMethod { Mean, Median, Mode, Forward, Backward, Constant }
+```
+
+### DataFrame Class
+
+Immutable data container for inspection:
+
+```csharp
+public class DataFrame
+{
+    IReadOnlyList<Dictionary<string, string>> Rows { get; }
+    IReadOnlyList<string> ColumnNames { get; }
+    int RowCount { get; }
+    int ColumnCount { get; }
+
+    IEnumerable<string> GetColumn(string columnName)
+    DataFrame Select(params string[] columnNames)
+    DataFrame Where(Func<Dictionary<string, string>, bool> predicate)
+    string ToCsv()
+    string ToJson()
+}
+```
+
+### Pipeline Examples
+
+**ML Feature Engineering**:
+```csharp
+var result = await DataPipeline
+    .FromCsvAsync("orders.csv")
+    .AddColumn("Year", row => DateTime.Parse(row["OrderDate"]).Year.ToString())
+    .AddColumn("Month", row => DateTime.Parse(row["OrderDate"]).Month.ToString())
+    .Normalize(columns: new[] { "Revenue", "Quantity" }, method: NormalizationMethod.MinMax)
+    .FilterRows(row => int.Parse(row["Year"]) >= 2023)
+    .ToDataFrame();
+```
+
+**In-Memory Processing**:
+```csharp
+var data = new List<Dictionary<string, string>>
+{
+    new() { ["Name"] = "Alice", ["Age"] = "25" },
+    new() { ["Name"] = "Bob", ["Age"] = "30" }
+};
+
+var processed = DataPipeline
+    .FromData(data)
+    .Normalize(columns: new[] { "Age" }, method: NormalizationMethod.MinMax)
+    .ToDataFrame();
+```
+
+## Traditional: Task API (Backward Compatible)
 
 All tasks follow a consistent pattern:
 
