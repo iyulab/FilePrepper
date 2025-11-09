@@ -69,7 +69,7 @@ Process data in multiple formats:
 - **XML** (Extensible Markup Language)
 - **Excel** (XLSX/XLS files)
 
-## 🛠️ Available Commands (20+)
+## 🛠️ Available Commands (26+)
 
 ### Data Transformation
 - `normalize-data` - Normalize columns (MinMax, ZScore)
@@ -77,6 +77,9 @@ Process data in multiple formats:
 - `one-hot-encoding` - Convert categorical to binary columns
 - `data-type-convert` - Convert column data types
 - `date-extraction` - Extract date features (Year, Month, Day, DayOfWeek)
+- `datetime` - Parse datetime and extract features ⭐ Phase 2
+- `string` - String transformations (upper, lower, trim, substring) ⭐ Phase 2
+- `conditional` - Conditional column creation with if-then-else logic ⭐ Phase 2
 
 ### Data Cleaning
 - `fill-missing-values` - Fill missing data (Mean, Median, Mode, Forward, Backward, Constant)
@@ -94,14 +97,20 @@ Process data in multiple formats:
 - `basic-statistics` - Calculate statistics (Mean, Median, StdDev, ZScore)
 - `aggregate` - Group and aggregate data
 - `filter-rows` - Filter rows by conditions
+- `merge-asof` - Time-series merge with tolerance ⭐ Phase 2
 
 ### Data Organization
 - `merge` - Combine multiple files (Horizontal/Vertical merge)
+- `merge-asof` - Time-series merge with tolerance ⭐ Phase 2
 - `data-sampling` - Sample rows (Random, Stratified, Systematic)
 - `file-format-convert` - Convert between formats
+- `unpivot` - Reshape data from wide to long format ⭐ Phase 2
 
 ### Feature Engineering
 - `create-lag-features` - Create time-series lag features
+- `window` - Window operations (resample, rolling aggregations) ⭐ Phase 2
+- `file-format-convert` - Convert between formats
+
 
 ## 💡 Common Use Cases
 
@@ -123,6 +132,16 @@ fileprepper fill-missing-values --input step2.csv --output step3.csv \
 # 4. Normalize numeric columns
 fileprepper normalize-data --input step3.csv --output clean.csv \
   --columns "Age,Salary,Score" --method MinMax
+```
+
+### Time-Series Processing (Phase 2) ⭐
+
+```bash
+# 5-minute window aggregation for sensor data
+fileprepper window --input sensor_current.csv --output aggregated.csv \n  --type resample --method mean \n  --columns "RMS[A]" --time-column "Time_s[s]" \n  --window 5T --header
+
+# Rolling window for smoothing
+fileprepper window --input noisy_data.csv --output smoothed.csv \n  --type rolling --method mean \n  --columns temperature,humidity --window-size 3 \n  --suffix "_smooth" --header
 ```
 
 ### ML Feature Engineering (SDK - Efficient!)
@@ -286,6 +305,10 @@ See [SDK Usage Guide](docs/SDK-Usage-Guide.md) for comprehensive examples and be
 - **[API Reference](docs/API-Reference.md)** - Pipeline API and Task API reference
 - **[Quick Start Guide](docs/Quick-Start.md)** - Get started with SDK in 5 minutes
 
+### Advanced Features
+- **[Phase 2 Complete Guide](docs/FILEPREPPER_PHASE2_COMPLETE.md)** - Window operations, datetime, string, conditional features ⭐
+- **[Common Scenarios](docs/Common-Scenarios.md)** - Real-world use cases
+
 ### Use Cases
 - **[Common Scenarios](docs/Common-Scenarios.md)** - Real-world use cases
 
@@ -294,6 +317,7 @@ For more documentation, see the [docs/](docs/) directory.
 ## 🎯 Use Cases
 
 - **Machine Learning** - Prepare datasets for training (normalization, encoding, feature engineering)
+- **Time-Series Analysis** - Window aggregations, resampling, lag features ⭐ Phase 2 - Prepare datasets for training (normalization, encoding, feature engineering)
 - **Data Analysis** - Clean and transform data for analysis
 - **ETL Pipelines** - Extract, transform, and load data workflows with minimal I/O overhead
 - **Data Migration** - Convert between formats and clean legacy data
@@ -325,4 +349,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by iyulab** | Efficient Data Preprocessing - CLI & SDK
+**Made with ❤️ by iyulab | Efficient Data Preprocessing - CLI & SDK | **Phase 2 Complete** ⭐

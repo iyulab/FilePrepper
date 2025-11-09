@@ -11,6 +11,7 @@ Complete documentation for FilePrepper - ML Data Preprocessing Tool.
 
 ### Advanced Usage
 - **[API Reference](API-Reference.md)** - Programmatic usage for .NET developers
+- **[Phase 2 Complete Guide](FILEPREPPER_PHASE2_COMPLETE.md)** - Window operations, datetime, string, conditional features ⭐
 - **[Publishing Guide](Publishing.md)** - NuGet publishing instructions
 
 ### Project Management
@@ -104,4 +105,4 @@ Documentation improvements are welcome! Please:
 
 ---
 
-**Version**: 0.4.0 | **Last Updated**: 2025-01-04
+**Version**: 0.4.0 | **Last Updated**: 2025-01-09 | **Phase 2 Complete** ⭐
