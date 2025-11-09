@@ -1,7 +1,10 @@
 using CsvHelper;
 using CsvHelper.Configuration;
 using FilePrepper.Tasks.NormalizeData;
+using FilePrepper.Utils;
 using System.Globalization;
+using System.Text.Json;
+using System.Xml.Linq;
 
 namespace FilePrepper.Pipeline;
 
@@ -65,6 +68,71 @@ public class DataPipeline
 
         var columns = dataList.First().Keys.ToList();
         return new DataPipeline(dataList, columns);
+    }
+
+    /// <summary>
+    /// Create pipeline from Excel file (.xls, .xlsx)
+    /// </summary>
+    public static async Task<DataPipeline> FromExcelAsync(string path, bool hasHeader = true, string? sheetName = null, int sheetIndex = 0)
+    {
+        var (rows, headers) = await ExcelUtils.ReadExcelFileAsync(path, hasHeader, sheetName, sheetIndex);
+        return new DataPipeline(rows, headers);
+    }
+
+    /// <summary>
+    /// Create pipeline from JSON file (array of objects)
+    /// </summary>
+    public static async Task<DataPipeline> FromJsonAsync(string path)
+    {
+        var jsonContent = await File.ReadAllTextAsync(path);
+        var jsonArray = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(jsonContent);
+
+        if (jsonArray == null || !jsonArray.Any())
+        {
+            return new DataPipeline(Enumerable.Empty<Dictionary<string, string>>(), Enumerable.Empty<string>());
+        }
+
+        var headers = jsonArray.First().Keys.ToList();
+        var rows = jsonArray.Select(obj =>
+            obj.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ValueKind == JsonValueKind.Null ? string.Empty : kvp.Value.ToString()
+            )
+        ).ToList();
+
+        return new DataPipeline(rows, headers);
+    }
+
+    /// <summary>
+    /// Create pipeline from XML file (simple flat structure: root/row/column)
+    /// </summary>
+    public static async Task<DataPipeline> FromXmlAsync(string path, string rowElement = "row")
+    {
+        var xmlContent = await File.ReadAllTextAsync(path);
+        var doc = XDocument.Parse(xmlContent);
+        var rowElements = doc.Descendants(rowElement).ToList();
+
+        if (!rowElements.Any())
+        {
+            return new DataPipeline(Enumerable.Empty<Dictionary<string, string>>(), Enumerable.Empty<string>());
+        }
+
+        var headers = rowElements.First()
+            .Elements()
+            .Select(e => e.Name.LocalName)
+            .ToList();
+
+        var rows = rowElements.Select(rowElem =>
+        {
+            var row = new Dictionary<string, string>();
+            foreach (var elem in rowElem.Elements())
+            {
+                row[elem.Name.LocalName] = elem.Value;
+            }
+            return row;
+        }).ToList();
+
+        return new DataPipeline(rows, headers);
     }
 
     #endregion
@@ -273,6 +341,61 @@ public class DataPipeline
             }
             await csv.NextRecordAsync();
         }
+    }
+
+    /// <summary>
+    /// Write to Excel file (.xlsx)
+    /// </summary>
+    public async Task ToExcelAsync(string path, bool hasHeader = true, string sheetName = "Sheet1")
+    {
+        await ExcelUtils.WriteExcelFileAsync(path, _rows, _columnNames, hasHeader, sheetName);
+    }
+
+    /// <summary>
+    /// Write to JSON file (array of objects)
+    /// </summary>
+    public async Task ToJsonAsync(string path, bool indented = true)
+    {
+        var jsonData = _rows.Select(row =>
+        {
+            var dict = new Dictionary<string, object?>();
+            foreach (var col in _columnNames)
+            {
+                dict[col] = row.TryGetValue(col, out var value) ? value : null;
+            }
+            return dict;
+        }).ToList();
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = indented
+        };
+
+        var jsonString = JsonSerializer.Serialize(jsonData, options);
+        await File.WriteAllTextAsync(path, jsonString);
+    }
+
+    /// <summary>
+    /// Write to XML file (simple flat structure: root/row/column)
+    /// </summary>
+    public async Task ToXmlAsync(string path, string rootElement = "data", string rowElement = "row")
+    {
+        var root = new XElement(rootElement);
+
+        foreach (var row in _rows)
+        {
+            var rowElem = new XElement(rowElement);
+            foreach (var col in _columnNames)
+            {
+                var value = row.TryGetValue(col, out var v) ? v : string.Empty;
+                rowElem.Add(new XElement(col, value));
+            }
+            root.Add(rowElem);
+        }
+
+        var doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), root);
+        await using var writer = new StreamWriter(path);
+        await writer.WriteAsync(doc.ToString());
     }
 
     #endregion

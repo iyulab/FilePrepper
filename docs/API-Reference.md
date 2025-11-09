@@ -34,6 +34,15 @@ await DataPipeline
 // From CSV file
 Task<DataPipeline> FromCsvAsync(string path, bool hasHeader = true)
 
+// From Excel file (.xls, .xlsx)
+Task<DataPipeline> FromExcelAsync(string path, bool hasHeader = true, string? sheetName = null, int sheetIndex = 0)
+
+// From JSON file (array of objects)
+Task<DataPipeline> FromJsonAsync(string path)
+
+// From XML file (simple flat structure: root/row/column)
+Task<DataPipeline> FromXmlAsync(string path, string rowElement = "row")
+
 // From in-memory data
 DataPipeline FromData(IEnumerable<Dictionary<string, string>> data)
 ```
@@ -52,6 +61,9 @@ DataPipeline FillMissing(string[] columns, FillMethod method, string? constantVa
 ```csharp
 DataFrame ToDataFrame()  // Get immutable snapshot
 Task ToCsvAsync(string path, bool hasHeader = true)
+Task ToExcelAsync(string path, bool hasHeader = true, string sheetName = "Sheet1")
+Task ToJsonAsync(string path, bool indented = true)
+Task ToXmlAsync(string path, string rootElement = "data", string rowElement = "row")
 IEnumerable<string> GetColumn(string columnName)
 ```
 
@@ -106,6 +118,41 @@ var processed = DataPipeline
     .FromData(data)
     .Normalize(columns: new[] { "Age" }, method: NormalizationMethod.MinMax)
     .ToDataFrame();
+```
+
+**Multi-Format Processing - Excel to JSON**:
+```csharp
+await DataPipeline
+    .FromExcelAsync("sales.xlsx", sheetName: "Q4_Data")
+    .AddColumn("Total", row =>
+        (double.Parse(row["Price"]) * double.Parse(row["Quantity"])).ToString())
+    .FilterRows(row => double.Parse(row["Total"]) >= 1000)
+    .ToJsonAsync("high_value_sales.json");
+```
+
+**Multi-Format Processing - JSON to Excel**:
+```csharp
+await DataPipeline
+    .FromJsonAsync("api_response.json")
+    .Normalize(columns: new[] { "Score", "Rating" }, method: NormalizationMethod.MinMax)
+    .ToExcelAsync("normalized_data.xlsx", sheetName: "Results");
+```
+
+**Multi-Format Processing - XML to CSV**:
+```csharp
+await DataPipeline
+    .FromXmlAsync("legacy_data.xml", rowElement: "record")
+    .RenameColumn("OldName", "NewName")
+    .RemoveColumns(new[] { "ObsoleteField" })
+    .ToCsvAsync("modernized_data.csv");
+```
+
+**Convert to All Formats**:
+```csharp
+var pipeline = await DataPipeline.FromCsvAsync("source.csv");
+await pipeline.ToExcelAsync("output.xlsx");
+await pipeline.ToJsonAsync("output.json");
+await pipeline.ToXmlAsync("output.xml");
 ```
 
 ## Traditional: Task API (Backward Compatible)

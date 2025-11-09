@@ -26,7 +26,7 @@ dotnet tool install -g fileprepper-cli
 ```csharp
 using FilePrepper.Pipeline;
 
-// Efficient: Only 2 file I/O operations (read + write)
+// CSV Processing: Only 2 file I/O operations (read + write)
 await DataPipeline
     .FromCsvAsync("data.csv")
     .Normalize(columns: new[] { "Age", "Salary", "Score" },
@@ -34,6 +34,14 @@ await DataPipeline
     .FillMissing(columns: new[] { "Score" }, method: FillMethod.Mean)
     .FilterRows(row => int.Parse(row["Age"]) >= 30)
     .ToCsvAsync("output.csv");
+
+// Multi-Format Support: Excel → Transform → JSON
+await DataPipeline
+    .FromExcelAsync("sales.xlsx")
+    .AddColumn("Total", row =>
+        (double.Parse(row["Price"]) * double.Parse(row["Quantity"])).ToString())
+    .FilterRows(row => double.Parse(row["Total"]) >= 1000)
+    .ToJsonAsync("high_value_sales.json");
 ```
 
 ### CLI Usage

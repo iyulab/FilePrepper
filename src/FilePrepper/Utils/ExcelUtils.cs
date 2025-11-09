@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text;
 using ExcelDataReader;
+using OfficeOpenXml;
 
 namespace FilePrepper.Utils;
 
@@ -10,6 +11,9 @@ public static class ExcelUtils
     {
         // Required for ExcelDataReader to work with encodings
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        // Set EPPlus license for version 8+ (NonCommercial usage)
+        ExcelPackage.License.SetNonCommercialPersonal("FilePrepper");
     }
 
     /// <summary>
@@ -133,5 +137,55 @@ public static class ExcelUtils
     {
         var extension = Path.GetExtension(filePath).ToLowerInvariant();
         return extension == ".xls" || extension == ".xlsx";
+    }
+
+    /// <summary>
+    /// Write data to Excel file (.xlsx) using EPPlus
+    /// </summary>
+    public static async Task WriteExcelFileAsync(
+        string filePath,
+        List<Dictionary<string, string>> records,
+        List<string> headers,
+        bool hasHeader = true,
+        string sheetName = "Sheet1")
+    {
+
+        var fileInfo = new FileInfo(filePath);
+        if (fileInfo.Exists)
+        {
+            fileInfo.Delete();
+        }
+
+        using var package = new ExcelPackage(fileInfo);
+        var worksheet = package.Workbook.Worksheets.Add(sheetName);
+
+        int currentRow = 1;
+
+        // Write header
+        if (hasHeader)
+        {
+            for (int col = 0; col < headers.Count; col++)
+            {
+                worksheet.Cells[currentRow, col + 1].Value = headers[col];
+            }
+            worksheet.Cells[currentRow, 1, currentRow, headers.Count].Style.Font.Bold = true;
+            currentRow++;
+        }
+
+        // Write data rows
+        foreach (var record in records)
+        {
+            for (int col = 0; col < headers.Count; col++)
+            {
+                var value = record.TryGetValue(headers[col], out var v) ? v : string.Empty;
+                worksheet.Cells[currentRow, col + 1].Value = value;
+            }
+            currentRow++;
+        }
+
+        // Auto-fit columns
+        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        await package.SaveAsync();
     }
 }
