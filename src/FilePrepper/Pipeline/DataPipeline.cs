@@ -291,6 +291,111 @@ public class DataPipeline
         return this;
     }
 
+    /// <summary>
+    /// Parse DateTime column from string format
+    /// </summary>
+    /// <param name="columnName">Column to parse</param>
+    /// <param name="format">DateTime format (e.g., "yyyy-MM-dd HH:mm", "yyyy-MM-dd")</param>
+    /// <param name="outputFormat">Output format (default: ISO 8601 "yyyy-MM-dd HH:mm:ss")</param>
+    /// <returns>DataPipeline for chaining</returns>
+    public DataPipeline ParseDateTime(string columnName, string format, string outputFormat = "yyyy-MM-dd HH:mm:ss")
+    {
+        foreach (var row in _rows)
+        {
+            if (row.TryGetValue(columnName, out var valueStr) && !string.IsNullOrWhiteSpace(valueStr))
+            {
+                if (DateTime.TryParseExact(valueStr, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+                {
+                    row[columnName] = dt.ToString(outputFormat);
+                }
+            }
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Parse Excel numeric date to DateTime
+    /// </summary>
+    /// <param name="columnName">Column containing Excel numeric dates</param>
+    /// <param name="outputFormat">Output format (default: ISO 8601 "yyyy-MM-dd HH:mm:ss")</param>
+    /// <returns>DataPipeline for chaining</returns>
+    public DataPipeline ParseExcelDate(string columnName, string outputFormat = "yyyy-MM-dd")
+    {
+        var excelEpoch = new DateTime(1899, 12, 30); // Excel date origin
+
+        foreach (var row in _rows)
+        {
+            if (row.TryGetValue(columnName, out var valueStr) && double.TryParse(valueStr, out var excelDate))
+            {
+                var dt = excelEpoch.AddDays(excelDate);
+                row[columnName] = dt.ToString(outputFormat);
+            }
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Extract date/time features from DateTime column
+    /// </summary>
+    /// <param name="columnName">DateTime column to extract from</param>
+    /// <param name="features">Features to extract (flags)</param>
+    /// <param name="removeOriginal">Remove original DateTime column (default: false)</param>
+    /// <returns>DataPipeline for chaining</returns>
+    public DataPipeline ExtractDateFeatures(string columnName, DateFeatures features, bool removeOriginal = false)
+    {
+        var newColumns = new List<string>();
+
+        if (features.HasFlag(DateFeatures.Year)) newColumns.Add($"{columnName}_Year");
+        if (features.HasFlag(DateFeatures.Month)) newColumns.Add($"{columnName}_Month");
+        if (features.HasFlag(DateFeatures.Day)) newColumns.Add($"{columnName}_Day");
+        if (features.HasFlag(DateFeatures.Hour)) newColumns.Add($"{columnName}_Hour");
+        if (features.HasFlag(DateFeatures.Minute)) newColumns.Add($"{columnName}_Minute");
+        if (features.HasFlag(DateFeatures.DayOfWeek)) newColumns.Add($"{columnName}_DayOfWeek");
+        if (features.HasFlag(DateFeatures.DayOfYear)) newColumns.Add($"{columnName}_DayOfYear");
+        if (features.HasFlag(DateFeatures.WeekOfYear)) newColumns.Add($"{columnName}_WeekOfYear");
+        if (features.HasFlag(DateFeatures.Quarter)) newColumns.Add($"{columnName}_Quarter");
+
+        // Add new columns to column names
+        foreach (var col in newColumns)
+        {
+            if (!_columnNames.Contains(col))
+            {
+                _columnNames.Add(col);
+            }
+        }
+
+        foreach (var row in _rows)
+        {
+            if (row.TryGetValue(columnName, out var valueStr) && DateTime.TryParse(valueStr, out var dt))
+            {
+                if (features.HasFlag(DateFeatures.Year)) row[$"{columnName}_Year"] = dt.Year.ToString();
+                if (features.HasFlag(DateFeatures.Month)) row[$"{columnName}_Month"] = dt.Month.ToString();
+                if (features.HasFlag(DateFeatures.Day)) row[$"{columnName}_Day"] = dt.Day.ToString();
+                if (features.HasFlag(DateFeatures.Hour)) row[$"{columnName}_Hour"] = dt.Hour.ToString();
+                if (features.HasFlag(DateFeatures.Minute)) row[$"{columnName}_Minute"] = dt.Minute.ToString();
+                if (features.HasFlag(DateFeatures.DayOfWeek)) row[$"{columnName}_DayOfWeek"] = ((int)dt.DayOfWeek).ToString();
+                if (features.HasFlag(DateFeatures.DayOfYear)) row[$"{columnName}_DayOfYear"] = dt.DayOfYear.ToString();
+                if (features.HasFlag(DateFeatures.Quarter)) row[$"{columnName}_Quarter"] = ((dt.Month - 1) / 3 + 1).ToString();
+
+                if (features.HasFlag(DateFeatures.WeekOfYear))
+                {
+                    var calendar = CultureInfo.CurrentCulture.Calendar;
+                    var weekOfYear = calendar.GetWeekOfYear(dt, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+                    row[$"{columnName}_WeekOfYear"] = weekOfYear.ToString();
+                }
+            }
+        }
+
+        if (removeOriginal)
+        {
+            RemoveColumns(columnName);
+        }
+
+        return this;
+    }
+
     #endregion
 
     #region Output Methods
@@ -452,4 +557,20 @@ public enum FillMethod
     Forward,
     Backward,
     Constant
+}
+
+[Flags]
+public enum DateFeatures
+{
+    None = 0,
+    Year = 1 << 0,           // 1
+    Month = 1 << 1,          // 2
+    Day = 1 << 2,            // 4
+    Hour = 1 << 3,           // 8
+    Minute = 1 << 4,         // 16
+    DayOfWeek = 1 << 5,      // 32
+    DayOfYear = 1 << 6,      // 64
+    WeekOfYear = 1 << 7,     // 128
+    Quarter = 1 << 8,        // 256
+    All = Year | Month | Day | Hour | Minute | DayOfWeek | DayOfYear | WeekOfYear | Quarter
 }
