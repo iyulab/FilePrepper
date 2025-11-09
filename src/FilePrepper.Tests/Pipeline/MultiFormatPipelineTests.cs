@@ -7,7 +7,7 @@ namespace FilePrepper.Tests.Pipeline;
 
 public class MultiFormatPipelineTests : IDisposable
 {
-    private readonly string _testDataDir = "TestData";
+    private readonly string _testDataDir = Path.Combine("TestData", $"MultiFormat_{Guid.NewGuid():N}");
 
     public MultiFormatPipelineTests()
     {

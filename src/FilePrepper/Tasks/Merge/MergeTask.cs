@@ -96,7 +96,18 @@ public class MergeTask : BaseTask<MergeOption>
         var mergedRecords = records;
         _allHeaders = new HashSet<string>(headers);
 
-        // Join Key가 있는 경우는 JoinType에 따라 Join 수행
+        // JoinMappings가 있는 경우 (new approach with heterogeneous column names)
+        if (Options.JoinMappings?.Count > 0)
+        {
+            for (int i = 1; i < _allFilesData.Count; i++)
+            {
+                var (rightRecords, rightHeaders) = _allFilesData[i];
+                mergedRecords = JoinTwoSetsWithMapping(mergedRecords, rightRecords, rightHeaders);
+            }
+            return Task.FromResult(mergedRecords);
+        }
+
+        // Join Key가 있는 경우는 JoinType에 따라 Join 수행 (legacy approach)
         if (Options.JoinKeyColumns?.Count > 0)
         {
             ValidateJoinKeyColumns(headers);
@@ -292,6 +303,189 @@ public class MergeTask : BaseTask<MergeOption>
             newHeader = $"{baseHeader}_{suffix}";
         }
         return newHeader;
+    }
+
+    private List<Dictionary<string, string>> JoinTwoSetsWithMapping(
+        List<Dictionary<string, string>> leftRecords,
+        List<Dictionary<string, string>> rightRecords,
+        List<string> rightHeaders)
+    {
+        var result = new List<Dictionary<string, string>>();
+
+        // Build join key for left and right records using JoinMappings
+        string GetLeftKeyValue(Dictionary<string, string> record)
+        {
+            return string.Join("|", Options.JoinMappings.Select(mapping =>
+            {
+                if (mapping.LeftColumn.Name != null)
+                {
+                    return record.GetValueOrDefault(mapping.LeftColumn.Name, string.Empty);
+                }
+                else if (mapping.LeftColumn.Index.HasValue)
+                {
+                    var header = _allHeaders.ElementAt(mapping.LeftColumn.Index.Value);
+                    return record.GetValueOrDefault(header, string.Empty);
+                }
+                return string.Empty;
+            }));
+        }
+
+        string GetRightKeyValue(Dictionary<string, string> record)
+        {
+            return string.Join("|", Options.JoinMappings.Select(mapping =>
+            {
+                if (mapping.RightColumn.Name != null)
+                {
+                    return record.GetValueOrDefault(mapping.RightColumn.Name, string.Empty);
+                }
+                else if (mapping.RightColumn.Index.HasValue)
+                {
+                    var header = rightHeaders.ElementAt(mapping.RightColumn.Index.Value);
+                    return record.GetValueOrDefault(header, string.Empty);
+                }
+                return string.Empty;
+            }));
+        }
+
+        // Index right records by key
+        var rightDict = rightRecords.GroupBy(GetRightKeyValue)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Get right join column names for exclusion
+        var rightJoinColumnNames = Options.JoinMappings
+            .Select(m => m.RightColumn.Name ?? (m.RightColumn.Index.HasValue ? rightHeaders.ElementAt(m.RightColumn.Index.Value) : null))
+            .Where(name => name != null)
+            .ToHashSet();
+
+        // Join left records with right records
+        foreach (var leftRecord in leftRecords)
+        {
+            var leftKey = GetLeftKeyValue(leftRecord);
+
+            if (rightDict.TryGetValue(leftKey, out var matchingRightRecords))
+            {
+                // Matching records found
+                foreach (var rightRecord in matchingRightRecords)
+                {
+                    var joinedRecord = new Dictionary<string, string>(leftRecord);
+
+                    // Add output column name if specified, otherwise keep left column name
+                    foreach (var mapping in Options.JoinMappings)
+                    {
+                        if (!string.IsNullOrEmpty(mapping.OutputColumnName))
+                        {
+                            // Use specified output column name
+                            var leftColumnName = mapping.LeftColumn.Name ?? _allHeaders.ElementAt(mapping.LeftColumn.Index!.Value);
+                            var leftValue = leftRecord.GetValueOrDefault(leftColumnName, string.Empty);
+
+                            // Remove original left column and add with new name
+                            joinedRecord.Remove(leftColumnName);
+                            joinedRecord[mapping.OutputColumnName] = leftValue;
+                        }
+                    }
+
+                    // Add non-join-key columns from right record
+                    foreach (var kvp in rightRecord)
+                    {
+                        if (!rightJoinColumnNames.Contains(kvp.Key))
+                        {
+                            // Handle column name conflicts
+                            var finalColumnName = joinedRecord.ContainsKey(kvp.Key) ? GetUniqueHeader(kvp.Key) : kvp.Key;
+                            joinedRecord[finalColumnName] = kvp.Value;
+                            _allHeaders.Add(finalColumnName);
+                        }
+                    }
+
+                    result.Add(joinedRecord);
+                }
+            }
+            else if (Options.JoinType == JoinType.Left || Options.JoinType == JoinType.Full)
+            {
+                // LEFT/FULL OUTER JOIN: no matching records
+                var joinedRecord = new Dictionary<string, string>(leftRecord);
+
+                // Apply output column name mapping if specified
+                foreach (var mapping in Options.JoinMappings)
+                {
+                    if (!string.IsNullOrEmpty(mapping.OutputColumnName))
+                    {
+                        var leftColumnName = mapping.LeftColumn.Name ?? _allHeaders.ElementAt(mapping.LeftColumn.Index!.Value);
+                        var leftValue = leftRecord.GetValueOrDefault(leftColumnName, string.Empty);
+                        joinedRecord.Remove(leftColumnName);
+                        joinedRecord[mapping.OutputColumnName] = leftValue;
+                    }
+                }
+
+                // Add empty values for right columns
+                foreach (var header in rightHeaders)
+                {
+                    if (!rightJoinColumnNames.Contains(header))
+                    {
+                        var finalColumnName = joinedRecord.ContainsKey(header) ? GetUniqueHeader(header) : header;
+                        joinedRecord[finalColumnName] = string.Empty;
+                        _allHeaders.Add(finalColumnName);
+                    }
+                }
+
+                result.Add(joinedRecord);
+            }
+        }
+
+        // RIGHT/FULL OUTER JOIN: add unmatched right records
+        if (Options.JoinType == JoinType.Right || Options.JoinType == JoinType.Full)
+        {
+            var processedKeys = new HashSet<string>();
+            foreach (var leftRecord in leftRecords)
+            {
+                var leftKey = GetLeftKeyValue(leftRecord);
+                if (rightDict.TryGetValue(leftKey, out _))
+                {
+                    processedKeys.Add(leftKey);
+                }
+            }
+
+            foreach (var rightRecord in rightRecords)
+            {
+                var rightKey = GetRightKeyValue(rightRecord);
+                if (!processedKeys.Contains(rightKey))
+                {
+                    var joinedRecord = new Dictionary<string, string>();
+
+                    // Add empty values for left columns
+                    foreach (var header in _allHeaders)
+                    {
+                        joinedRecord[header] = string.Empty;
+                    }
+
+                    // Add right record values
+                    foreach (var kvp in rightRecord)
+                    {
+                        if (!rightJoinColumnNames.Contains(kvp.Key))
+                        {
+                            var finalColumnName = joinedRecord.ContainsKey(kvp.Key) ? GetUniqueHeader(kvp.Key) : kvp.Key;
+                            joinedRecord[finalColumnName] = kvp.Value;
+                            _allHeaders.Add(finalColumnName);
+                        }
+                        else
+                        {
+                            // For join columns, use output column name if specified
+                            var mapping = Options.JoinMappings.FirstOrDefault(m =>
+                                m.RightColumn.Name == kvp.Key ||
+                                (m.RightColumn.Index.HasValue && rightHeaders.ElementAt(m.RightColumn.Index.Value) == kvp.Key));
+
+                            if (mapping != null && !string.IsNullOrEmpty(mapping.OutputColumnName))
+                            {
+                                joinedRecord[mapping.OutputColumnName] = kvp.Value;
+                            }
+                        }
+                    }
+
+                    result.Add(joinedRecord);
+                }
+            }
+        }
+
+        return result;
     }
 
     protected override string[] ValidateTaskSpecific(TaskContext context)

@@ -16,6 +16,7 @@ public class MergeCommand : BaseCommand
     private readonly Option<string> _mergeTypeOption;
     private readonly Option<string> _joinTypeOption;
     private readonly Option<string[]> _keyColumnsOption;
+    private readonly Option<string[]> _joinMappingsOption;
 
     public MergeCommand(ILoggerFactory loggerFactory)
         : base("merge", "Merge multiple files vertically (concatenate) or horizontally (join)", loggerFactory)
@@ -51,12 +52,18 @@ public class MergeCommand : BaseCommand
                 return result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries);
             });
 
+        _joinMappingsOption = new Option<string[]>(
+            aliases: new[] { "--join-mappings", "-m" },
+            description: "Join column mappings for heterogeneous column names (format: 'left:right' or 'left:right:output', space-separated)")
+        { AllowMultipleArgumentsPerToken = true };
+
         // Add all options
         AddOption(_inputFilesOption);
         AddOption(_outputOption);
         AddOption(_mergeTypeOption);
         AddOption(_joinTypeOption);
         AddOption(_keyColumnsOption);
+        AddOption(_joinMappingsOption);
 
         // Set the handler
         this.SetHandler(async (context) =>
@@ -66,18 +73,20 @@ public class MergeCommand : BaseCommand
             var mergeType = context.ParseResult.GetValueForOption(_mergeTypeOption)!;
             var joinType = context.ParseResult.GetValueForOption(_joinTypeOption)!;
             var keyColumns = context.ParseResult.GetValueForOption(_keyColumnsOption) ?? Array.Empty<string>();
+            var joinMappings = context.ParseResult.GetValueForOption(_joinMappingsOption) ?? Array.Empty<string>();
             var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
             var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
             var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
 
             context.ExitCode = await ExecuteAsync(
-                inputFiles, outputPath, mergeType, joinType, keyColumns,
+                inputFiles, outputPath, mergeType, joinType, keyColumns, joinMappings,
                 hasHeader, ignoreErrors, verbose);
         });
     }
 
     private async Task<int> ExecuteAsync(
-        string[] inputFiles, string outputPath, string mergeTypeStr, string joinTypeStr, string[] keyColumns,
+        string[] inputFiles, string outputPath, string mergeTypeStr, string joinTypeStr,
+        string[] keyColumns, string[] joinMappings,
         bool hasHeader, bool ignoreErrors, bool verbose)
     {
         try
@@ -118,13 +127,19 @@ public class MergeCommand : BaseCommand
             {
                 validationResults.Add(("Join type", true, $"{joinType} join"));
 
+                bool hasJoinConfig = keyColumns.Length > 0 || joinMappings.Length > 0;
+
                 if (keyColumns.Length > 0)
                 {
                     validationResults.Add(("Key columns", true, $"{keyColumns.Length} column(s)"));
                 }
+                else if (joinMappings.Length > 0)
+                {
+                    validationResults.Add(("Join mappings", true, $"{joinMappings.Length} mapping(s)"));
+                }
                 else
                 {
-                    validationResults.Add(("Key columns", false, "At least 1 key column required for horizontal merge"));
+                    validationResults.Add(("Join configuration", false, "Either key columns or join mappings required for horizontal merge"));
                 }
             }
 
@@ -168,6 +183,7 @@ public class MergeCommand : BaseCommand
                     }
                     return ColumnIdentifier.ByName(column);
                 }).ToList(),
+                JoinMappings = joinMappings.Select(JoinMapping.Parse).ToList(),
                 HasHeader = hasHeader,
                 IgnoreErrors = ignoreErrors
             };
@@ -190,7 +206,16 @@ public class MergeCommand : BaseCommand
                     if (verbose && mergeType == MergeType.Horizontal)
                     {
                         Logger.LogInformation("  Join type: {JoinType}", joinType);
-                        Logger.LogInformation("  Key columns: {Keys}", string.Join(", ", keyColumns));
+
+                        if (keyColumns.Length > 0)
+                        {
+                            Logger.LogInformation("  Key columns: {Keys}", string.Join(", ", keyColumns));
+                        }
+
+                        if (joinMappings.Length > 0)
+                        {
+                            Logger.LogInformation("  Join mappings: {Mappings}", string.Join(", ", joinMappings));
+                        }
                     }
 
                     ctx.Status($"Applying {mergeType} merge...");

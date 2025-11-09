@@ -14,8 +14,9 @@ public class DataPipelineTests
     public async Task FromCsv_ShouldLoadDataIntoMemory()
     {
         // Arrange
-        var csvPath = Path.Combine("TestData", "simple.csv");
-        Directory.CreateDirectory("TestData");
+        var testDir = Path.Combine("TestData", $"FromCsv_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDir);
+        var csvPath = Path.Combine(testDir, "simple.csv");
         await File.WriteAllTextAsync(csvPath, "Name,Age,Score\nAlice,25,85\nBob,30,90");
 
         // Act
@@ -28,7 +29,7 @@ public class DataPipelineTests
     }
 
     [Fact]
-    public async Task FromData_ShouldCreatePipelineFromInMemoryData()
+    public Task FromData_ShouldCreatePipelineFromInMemoryData()
     {
         // Arrange
         var data = new[]
@@ -43,10 +44,12 @@ public class DataPipelineTests
         // Assert
         pipeline.RowCount.Should().Be(2);
         pipeline.ColumnNames.Should().BeEquivalentTo(new[] { "Name", "Age" });
+
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task ChainedOperations_ShouldNotPerformFileIO()
+    public Task ChainedOperations_ShouldNotPerformFileIO()
     {
         // Arrange
         var data = new[]
@@ -66,14 +69,17 @@ public class DataPipelineTests
         result.Rows.Should().HaveCount(1);
         result.Rows[0]["Name"].Should().Be("Alice");
         result.Rows[0]["HighScore"].Should().Be("No");
+
+        return Task.CompletedTask;
     }
 
     [Fact]
     public async Task ToCsv_ShouldOnlyWriteOnce_AfterAllTransformations()
     {
         // Arrange
-        Directory.CreateDirectory("TestData");
-        var outputPath = Path.Combine("TestData", "output.csv");
+        var testDir = Path.Combine("TestData", $"ToCsv_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDir);
+        var outputPath = Path.Combine(testDir, "output.csv");
         var data = new[]
         {
             new Dictionary<string, string> { ["Value"] = "10" },

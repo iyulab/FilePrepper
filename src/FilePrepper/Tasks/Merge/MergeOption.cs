@@ -42,7 +42,18 @@ public class MergeOption : MultipleInputOption
 {
     public MergeType MergeType { get; set; } = MergeType.Vertical;
     public JoinType JoinType { get; set; } = JoinType.Inner;
+
+    /// <summary>
+    /// Legacy: Join key columns (same name in all files)
+    /// </summary>
     public List<ColumnIdentifier> JoinKeyColumns { get; set; } = new();
+
+    /// <summary>
+    /// New: Join mappings allowing different column names between files
+    /// If specified, takes precedence over JoinKeyColumns
+    /// </summary>
+    public List<JoinMapping> JoinMappings { get; set; } = new();
+
     public bool StrictColumnCount { get; set; }
 
     // 컬럼 매핑 정보를 저장하기 위한 속성 추가
@@ -96,7 +107,8 @@ public class MergeOption : MultipleInputOption
                 foreach (var file in InputPaths.Skip(1))
                 {
                     var (_, rowCount) = GetFileStats(file);
-                    bool isSimpleMerge = !JoinKeyColumns.Any();
+                    // Simple horizontal merge without join keys or mappings: row counts must match
+                    bool isSimpleMerge = !JoinKeyColumns.Any() && !JoinMappings.Any();
 
                     // Simple horizontal merge (키 없음): 행 수가 같아야 함
                     if (isSimpleMerge && rowCount != primaryRowCount)
@@ -137,6 +149,45 @@ public class MergeOption : MultipleInputOption
 
     private void ValidateJoinKeys(List<string> errors)
     {
+        // Check if both JoinKeyColumns and JoinMappings are specified
+        if (JoinKeyColumns?.Count > 0 && JoinMappings?.Count > 0)
+        {
+            errors.Add("Cannot specify both JoinKeyColumns and JoinMappings. Use JoinMappings for heterogeneous column names.");
+            return;
+        }
+
+        // Validate JoinMappings (new approach)
+        if (JoinMappings?.Count > 0)
+        {
+            if (MergeType != MergeType.Horizontal)
+            {
+                errors.Add("Join mappings can only be specified for horizontal merge.");
+            }
+            else
+            {
+                foreach (var (mapping, index) in JoinMappings.Select((m, i) => (m, i)))
+                {
+                    if (!mapping.IsValid)
+                    {
+                        errors.Add($"Join mapping at index {index} is invalid. Both left and right columns must be specified.");
+                    }
+
+                    // Validate left column
+                    if (mapping.LeftColumn.Index.HasValue && mapping.LeftColumn.Index.Value < 0)
+                    {
+                        errors.Add($"Left column index at mapping {index} cannot be negative.");
+                    }
+
+                    // Validate right column
+                    if (mapping.RightColumn.Index.HasValue && mapping.RightColumn.Index.Value < 0)
+                    {
+                        errors.Add($"Right column index at mapping {index} cannot be negative.");
+                    }
+                }
+            }
+        }
+
+        // Validate JoinKeyColumns (legacy approach)
         if (JoinKeyColumns?.Count > 0)
         {
             if (MergeType != MergeType.Horizontal)
@@ -164,7 +215,8 @@ public class MergeOption : MultipleInputOption
     {
         // 컬럼명으로 join하는 경우에만 헤더 필수
         bool requiresHeader = MergeType == MergeType.Horizontal &&
-                            JoinKeyColumns.Any(k => k.Name != null);
+                            (JoinKeyColumns.Any(k => k.Name != null) ||
+                             JoinMappings.Any(m => m.LeftColumn.Name != null || m.RightColumn.Name != null));
 
         if (requiresHeader && !HasHeader)
         {
@@ -228,6 +280,26 @@ public class MergeOption : MultipleInputOption
                 // Horizontal merge의 경우 join key 검증
                 else if (MergeType == MergeType.Horizontal)
                 {
+                    // Validate JoinMappings
+                    if (JoinMappings?.Count > 0)
+                    {
+                        foreach (var mapping in JoinMappings)
+                        {
+                            // Validate left column (primary file)
+                            if (mapping.LeftColumn.Name != null && !primaryHeaders.Contains(mapping.LeftColumn.Name))
+                            {
+                                errors.Add($"Left join column '{mapping.LeftColumn.Name}' not found in primary file");
+                            }
+
+                            // Validate right column (current file)
+                            if (mapping.RightColumn.Name != null && !currentHeaders.Contains(mapping.RightColumn.Name))
+                            {
+                                errors.Add($"Right join column '{mapping.RightColumn.Name}' not found in file {Path.GetFileName(file)}");
+                            }
+                        }
+                    }
+
+                    // Validate JoinKeyColumns (legacy)
                     foreach (var key in JoinKeyColumns.Where(k => k.Name != null))
                     {
                         if (!primaryHeaders.Contains(key.Name!))

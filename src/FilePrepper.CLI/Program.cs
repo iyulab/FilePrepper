@@ -142,27 +142,35 @@ public class Program
             Name = "fileprepper"
         };
 
-        // Add commands (all 20 commands now migrated to System.CommandLine)
+        // Add commands (all 26 commands now migrated to System.CommandLine)
         rootCommand.AddCommand(new AddColumnsCommand(_loggerFactory));
         rootCommand.AddCommand(new AggregateCommand(_loggerFactory));
         rootCommand.AddCommand(new BasicStatisticsCommand(_loggerFactory));
         rootCommand.AddCommand(new ColumnInteractionCommand(_loggerFactory));
+        rootCommand.AddCommand(new ConditionalCommand(_loggerFactory));
         rootCommand.AddCommand(new CreateLagFeaturesCommand(_loggerFactory));
+        rootCommand.AddCommand(new CSVCleanerCommand(_loggerFactory));
         rootCommand.AddCommand(new DataSamplingCommand(_loggerFactory));
         rootCommand.AddCommand(new DataTypeConvertCommand(_loggerFactory));
         rootCommand.AddCommand(new DateExtractionCommand(_loggerFactory));
+        rootCommand.AddCommand(new DateTimeCommand(_loggerFactory));
         rootCommand.AddCommand(new DropDuplicatesCommand(_loggerFactory));
+        rootCommand.AddCommand(new ExpressionCommand(_loggerFactory));
         rootCommand.AddCommand(new FileFormatConvertCommand(_loggerFactory));
         rootCommand.AddCommand(new FillMissingValuesCommand(_loggerFactory));
         rootCommand.AddCommand(new FilterRowsCommand(_loggerFactory));
         rootCommand.AddCommand(new MergeCommand(_loggerFactory));
+        rootCommand.AddCommand(new MergeAsOfCommand(_loggerFactory));
         rootCommand.AddCommand(new NormalizeDataCommand(_loggerFactory));
         rootCommand.AddCommand(new OneHotEncodingCommand(_loggerFactory));
         rootCommand.AddCommand(new RemoveColumnsCommand(_loggerFactory));
         rootCommand.AddCommand(new RenameColumnsCommand(_loggerFactory));
         rootCommand.AddCommand(new ReorderColumnsCommand(_loggerFactory));
         rootCommand.AddCommand(new ScaleDataCommand(_loggerFactory));
+        rootCommand.AddCommand(new StringCommand(_loggerFactory));
+        rootCommand.AddCommand(new UnpivotCommand(_loggerFactory));
         rootCommand.AddCommand(new ValueReplaceCommand(_loggerFactory));
+        rootCommand.AddCommand(new WindowCommand(_loggerFactory));
 
         // Add global options
         var quietOption = new Option<bool>(

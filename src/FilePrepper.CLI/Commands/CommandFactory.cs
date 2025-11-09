@@ -19,6 +19,9 @@ public static class CommandFactory
             // Time Series & Features
             new CreateLagFeaturesCommand(loggerFactory),
 
+            // Data Transformation
+            new UnpivotCommand(loggerFactory),
+
             // TODO: Add remaining commands as they are migrated
             // Data Transformation
             // new AddColumnsCommand(loggerFactory),
@@ -65,6 +68,7 @@ public static class CommandFactory
         return new[]
         {
             ("create-lag-features", "Create lag features from time series data", "Time Series"),
+            ("unpivot", "Transform wide format data to long format", "Data Transformation"),
             ("add-columns", "Add new columns with specified values", "Data Transformation"),
             ("aggregate", "Aggregate data based on grouping columns", "Data Processing"),
             ("stats", "Calculate basic statistics on numeric columns", "Data Analysis"),

@@ -12,7 +12,7 @@ namespace FilePrepper.Tests.Pipeline;
 public class SdkUsageScenariosTests
 {
     [Fact]
-    public async Task Scenario_DataCleaning_WithoutMultipleFileIO()
+    public Task Scenario_DataCleaning_WithoutMultipleFileIO()
     {
         // Given: 결측치와 이상치가 있는 데이터
         var data = new[]
@@ -31,10 +31,12 @@ public class SdkUsageScenariosTests
         result.Rows.Should().HaveCount(3);
         result.Rows[0]["Score"].Should().NotBeEmpty();
         result.Rows[1]["Age"].Should().NotBeEmpty();
+
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task Scenario_MachineLearning_FeatureEngineering()
+    public Task Scenario_MachineLearning_FeatureEngineering()
     {
         // Given: ML 학습을 위한 원시 데이터
         var trainingData = new[]
@@ -60,14 +62,17 @@ public class SdkUsageScenariosTests
         result.ColumnNames.Should().Contain("Revenue");
         result.ColumnNames.Should().NotContain("Discount");
         double.Parse(result.Rows[0]["Price"]).Should().BeInRange(0, 1); // 정규화 확인
+
+        return Task.CompletedTask;
     }
 
     [Fact]
     public async Task Scenario_ETL_Pipeline_CSVtoDatabaseReady()
     {
         // Given: CSV 파일 생성
-        var csvPath = Path.Combine("TestData", "etl_source.csv");
-        Directory.CreateDirectory("TestData");
+        var testDir = Path.Combine("TestData", $"ETL_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDir);
+        var csvPath = Path.Combine(testDir, "etl_source.csv");
         await File.WriteAllTextAsync(csvPath,
             "CustomerID,Name,Age,PurchaseAmount\n" +
             "1,Alice,25,100.50\n" +
@@ -100,7 +105,7 @@ public class SdkUsageScenariosTests
     }
 
     [Fact]
-    public async Task Scenario_DataAnalysis_FilterAndAggregate()
+    public Task Scenario_DataAnalysis_FilterAndAggregate()
     {
         // Given: 분석할 판매 데이터
         var salesData = new[]
@@ -127,10 +132,12 @@ public class SdkUsageScenariosTests
         // Then: 고수익 레코드만 추출됨 (Profit > 400: North 1000-600=400 제외, North 1200-700=500 포함)
         result.Rows.Should().HaveCount(1); // Only 1 region with profit > 400
         result.Rows.All(r => double.Parse(r["Profit"]) > 400).Should().BeTrue();
+
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task Scenario_NoFileIO_PureInMemoryProcessing()
+    public Task Scenario_NoFileIO_PureInMemoryProcessing()
     {
         // Given: 메모리 상의 데이터 (파일 없음)
         var inMemoryData = Enumerable.Range(1, 100).Select(i => new Dictionary<string, string>
@@ -150,10 +157,12 @@ public class SdkUsageScenariosTests
         // Then: 파일 생성 없이 결과 획득
         result.RowCount.Should().Be(50); // Even numbers only
         result.ColumnNames.Should().Contain("Processed");
+
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task Scenario_ChainedOperations_PreserveDataIntegrity()
+    public Task Scenario_ChainedOperations_PreserveDataIntegrity()
     {
         // Given: 복잡한 변환 체인
         var data = new[]
@@ -179,6 +188,8 @@ public class SdkUsageScenariosTests
         result.ColumnNames.Should().Contain("ValueA");
         result.ColumnNames.Should().NotContain("A");
         result.ColumnNames.Should().Contain("Flag");
+
+        return Task.CompletedTask;
     }
 
     [Fact]
@@ -191,8 +202,9 @@ public class SdkUsageScenariosTests
             new Dictionary<string, string> { ["X"] = "3", ["Y"] = "4" }
         };
 
-        var outputPath = Path.Combine("TestData", "final_output.csv");
-        Directory.CreateDirectory("TestData");
+        var testDir = Path.Combine("TestData", $"SaveOnly_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDir);
+        var outputPath = Path.Combine(testDir, "final_output.csv");
 
         // When: 중간 파일 생성 없이 최종 결과만 저장
         await DataPipeline.FromData(data)

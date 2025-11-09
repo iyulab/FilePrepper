@@ -2,6 +2,7 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using FilePrepper.Tasks.NormalizeData;
 using FilePrepper.Utils;
+using FilePrepper.Tasks.WindowOps;
 using System.Globalization;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -398,6 +399,154 @@ public class DataPipeline
 
     #endregion
 
+    #region Window Operations
+
+    /// <summary>
+    /// Resample time-series data by grouping into time windows and aggregating
+    /// </summary>
+    /// <param name="timeColumn">Column containing DateTime values</param>
+    /// <param name="window">Window size (e.g., "5T" = 5 minutes, "1H" = 1 hour, "1D" = 1 day)</param>
+    /// <param name="method">Aggregation method (Mean, Min, Max, Sum, Count, Std)</param>
+    /// <param name="targetColumns">Columns to aggregate (numeric columns only)</param>
+    /// <returns>New DataPipeline with aggregated rows</returns>
+    public DataPipeline Resample(string timeColumn, string window, AggregationMethod method, string[] targetColumns)
+    {
+        // Parse window specification (e.g., "5T" = 5 minutes)
+        var match = System.Text.RegularExpressions.Regex.Match(window, @"^(\d+)([THD])$");
+        if (!match.Success)
+        {
+            throw new ArgumentException($"Invalid window format: {window}. Use format like '5T' (5 minutes), '1H' (1 hour), or '1D' (1 day).");
+        }
+
+        var windowValue = int.Parse(match.Groups[1].Value);
+        var windowUnit = match.Groups[2].Value;
+
+        // Convert to TimeSpan
+        TimeSpan windowSpan = windowUnit switch
+        {
+            "T" => TimeSpan.FromMinutes(windowValue), // T = minutes
+            "H" => TimeSpan.FromHours(windowValue),   // H = hours
+            "D" => TimeSpan.FromDays(windowValue),    // D = days
+            _ => throw new ArgumentException($"Unknown window unit: {windowUnit}")
+        };
+
+        // Group rows by time windows
+        var timeGroups = new Dictionary<DateTime, List<Dictionary<string, string>>>();
+
+        foreach (var row in _rows)
+        {
+            if (!row.TryGetValue(timeColumn, out var timeStr) || !DateTime.TryParse(timeStr, out var dt))
+            {
+                continue; // Skip rows with invalid DateTime
+            }
+
+            // Round down to window boundary
+            var ticks = dt.Ticks / windowSpan.Ticks;
+            var windowStart = new DateTime(ticks * windowSpan.Ticks);
+
+            if (!timeGroups.ContainsKey(windowStart))
+            {
+                timeGroups[windowStart] = new List<Dictionary<string, string>>();
+            }
+
+            timeGroups[windowStart].Add(row);
+        }
+
+        // Aggregate each group
+        var aggregatedRows = new List<Dictionary<string, string>>();
+
+        foreach (var (windowStart, groupRows) in timeGroups.OrderBy(kvp => kvp.Key))
+        {
+            var aggregatedRow = new Dictionary<string, string>
+            {
+                [timeColumn] = windowStart.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+
+            foreach (var col in targetColumns)
+            {
+                var values = groupRows
+                    .Select(row => row.TryGetValue(col, out var v) ? v : string.Empty)
+                    .Where(v => !string.IsNullOrWhiteSpace(v) && double.TryParse(v, out _))
+                    .Select(double.Parse)
+                    .ToList();
+
+                if (values.Any())
+                {
+                    aggregatedRow[col] = CalculateAggregation(values, method).ToString("G");
+                }
+            }
+
+            aggregatedRows.Add(aggregatedRow);
+        }
+
+        // Create new column names (time column + target columns)
+        var newColumnNames = new List<string> { timeColumn };
+        newColumnNames.AddRange(targetColumns);
+
+        return new DataPipeline(aggregatedRows, newColumnNames);
+    }
+
+    /// <summary>
+    /// Apply rolling window aggregation over rows
+    /// </summary>
+    /// <param name="windowSize">Number of rows in the rolling window</param>
+    /// <param name="method">Aggregation method (Mean, Min, Max, Sum, Count, Std)</param>
+    /// <param name="targetColumns">Columns to aggregate (numeric columns only)</param>
+    /// <param name="outputSuffix">Suffix to add to output column names (default: "_rolling")</param>
+    /// <returns>DataPipeline with new rolling aggregation columns added</returns>
+    public DataPipeline Rolling(int windowSize, AggregationMethod method, string[] targetColumns, string? outputSuffix = "_rolling")
+    {
+        if (windowSize < 1)
+        {
+            throw new ArgumentException("Window size must be at least 1.", nameof(windowSize));
+        }
+
+        outputSuffix ??= "_rolling";
+
+        // Add new column names
+        var newColumns = targetColumns.Select(col => $"{col}{outputSuffix}").ToList();
+        foreach (var col in newColumns)
+        {
+            if (!_columnNames.Contains(col))
+            {
+                _columnNames.Add(col);
+            }
+        }
+
+        // Process each row with rolling window
+        for (int i = 0; i < _rows.Count; i++)
+        {
+            var row = _rows[i];
+
+            foreach (var col in targetColumns)
+            {
+                var windowStart = Math.Max(0, i - windowSize + 1);
+                var windowEnd = i + 1;
+
+                var values = _rows
+                    .Skip(windowStart)
+                    .Take(windowEnd - windowStart)
+                    .Select(r => r.TryGetValue(col, out var v) ? v : string.Empty)
+                    .Where(v => !string.IsNullOrWhiteSpace(v) && double.TryParse(v, out _))
+                    .Select(double.Parse)
+                    .ToList();
+
+                if (values.Any())
+                {
+                    row[$"{col}{outputSuffix}"] = CalculateAggregation(values, method).ToString("G");
+                }
+                else
+                {
+                    row[$"{col}{outputSuffix}"] = string.Empty;
+                }
+            }
+        }
+
+        return this;
+    }
+
+    #endregion
+
     #region Output Methods
 
     /// <summary>
@@ -544,6 +693,21 @@ public class DataPipeline
         return sorted.Count % 2 == 0
             ? (sorted[mid - 1] + sorted[mid]) / 2
             : sorted[mid];
+    }
+
+
+    private static double CalculateAggregation(List<double> values, AggregationMethod method)
+    {
+        return method switch
+        {
+            AggregationMethod.Mean => values.Average(),
+            AggregationMethod.Min => values.Min(),
+            AggregationMethod.Max => values.Max(),
+            AggregationMethod.Sum => values.Sum(),
+            AggregationMethod.Count => values.Count,
+            AggregationMethod.Std => Math.Sqrt(values.Average(v => Math.Pow(v - values.Average(), 2))),
+            _ => throw new ArgumentException($"Unknown aggregation method: {method}")
+        };
     }
 
     #endregion
