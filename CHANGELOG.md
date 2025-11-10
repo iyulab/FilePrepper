@@ -5,6 +5,150 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2025-11-11
+
+### Added
+
+- 📊 **GroupBy/Aggregate Operations (P0 - Critical)** - Time-series batch aggregation
+  - `GroupBy(string keyColumn)` returns `GroupedDataPipeline` for aggregation
+  - `Aggregate()` with 10 aggregation methods: Mean, Sum, Min, Max, Count, Std, Var, Median, First, Last
+  - Hash-based grouping with Dictionary for O(1) lookup performance
+  - Sample standard deviation (n-1 denominator) for statistical accuracy
+  - Multiple aggregations per column with automatic suffix naming
+  - Custom suffix format support for output column names
+  - Handles edge cases: empty groups, null keys, non-numeric values
+  - ✅ 19 comprehensive tests (100% passing)
+
+- 🔗 **Join Operations (P1 - High)** - Combine multiple data sources
+  - 4 join types: `Inner`, `Left`, `Right`, `Outer` (JoinType enum)
+  - `Join()` method with hash join algorithm (O(1) lookup using Dictionary)
+  - Duplicate key handling (creates Cartesian product for 1:N joins)
+  - Column selection with `selectColumns` parameter
+  - Column collision resolution with automatic `_right` suffix
+  - Prefix support (`leftPrefix`, `rightPrefix`) for namespace control
+  - Smart key preservation: Right/Outer joins preserve right key value when left row is null
+  - ✅ 18 comprehensive tests (100% passing)
+
+- 📈 **Statistical Functions (P2 - Enhancement)** - Data exploration and analysis
+  - `GetStatistics(string column)` returns comprehensive `ColumnStatistics` record
+    - Mean, Std (sample standard deviation), Min, Max
+    - Median, Q1, Q3 (quartiles with linear interpolation)
+    - IQR (Interquartile Range), Variance (sample variance)
+    - Count (valid numeric values), NullCount (null/non-numeric)
+  - `Normalize(string column, NormalizationMethod method, string? outputColumn)` with 3 methods
+    - **ZScore**: (x - mean) / std → Mean=0, Std=1
+    - **MinMax**: (x - min) / (max - min) → [0, 1] range
+    - **Robust**: (x - median) / IQR → Robust to outliers
+  - Extended `NormalizationMethod` enum with Robust method
+  - Validation for edge cases (constant values, zero IQR)
+  - ✅ 22 comprehensive tests (100% passing)
+
+### Usage Examples
+
+**GroupBy/Aggregate - Batch Sensor Data:**
+```csharp
+var aggregated = await DataPipeline
+    .FromCsvAsync("sensor_data.csv")
+    .GroupBy("batch_id")
+    .Aggregate(new[]
+    {
+        ("temperature", AggregationMethod.Mean),
+        ("temperature", AggregationMethod.Std),
+        ("pressure", AggregationMethod.Min),
+        ("pressure", AggregationMethod.Max)
+    });
+// Output: batch_id, temperature_mean, temperature_std, pressure_min, pressure_max
+```
+
+**Join Operations - Sensor + Quality Labels:**
+```csharp
+var joined = aggregatedSensorData.Join(
+    qualityLabels,
+    leftKey: "batch_id",
+    rightKey: "batch_id",
+    joinType: JoinType.Inner,
+    selectColumns: new[] { "defect_rate", "quality_score" }
+);
+```
+
+**Statistical Analysis:**
+```csharp
+var stats = data.GetStatistics("temperature");
+Console.WriteLine($"Mean: {stats.Mean}, Std: {stats.Std}, IQR: {stats.IQR}");
+
+var normalized = data
+    .Normalize("temperature", NormalizationMethod.ZScore)
+    .Normalize("pressure", NormalizationMethod.MinMax);
+```
+
+**Complete ML Pipeline:**
+```csharp
+var result = await DataPipeline
+    .FromCsvAsync("raw_sensor_data.csv")
+    .GroupBy("batch_id")
+    .Aggregate(new[] {
+        ("temp_zone1", AggregationMethod.Mean),
+        ("temp_zone1", AggregationMethod.Std)
+    })
+    .Join(await DataPipeline.FromCsvAsync("quality.csv"),
+          "batch_id", "batch_id", JoinType.Inner)
+    .Normalize("temp_zone1_mean", NormalizationMethod.ZScore)
+    .ToCsvAsync("ml_ready.csv");
+```
+
+### Technical Details
+
+**GroupBy/Aggregate Architecture:**
+- New `GroupedDataPipeline` class for fluent aggregation API
+- Single-pass grouping algorithm with Dictionary<string, List<row>>
+- Extended `AggregationMethod` enum (Var, Median, First, Last added)
+- Comprehensive error messages with available column suggestions
+
+**Join Operations Architecture:**
+- New `JoinType` enum (Inner, Left, Right, Outer)
+- Hash join implementation using Dictionary<key, List<rows>>
+- Duplicate key handling with Cartesian product generation
+- Column collision detection and automatic resolution
+- Optimized CreateJoinedRow() helper for row construction
+
+**Statistical Functions Architecture:**
+- New `ColumnStatistics` record with comprehensive metrics
+- Percentile calculation using linear interpolation
+- Robust error handling for constant values and edge cases
+- Extended `NormalizationMethod` enum (ZScore, MinMax, Robust)
+
+### Changed
+
+- 📚 **API Documentation Updated** - docs/API-Reference.md
+  - Version updated to v0.4.4
+  - Added GroupedDataPipeline class reference
+  - Added ColumnStatistics record reference
+  - Added comprehensive usage examples for new features
+  - Updated enum documentation (JoinType, AggregationMethod)
+
+### Test Coverage
+
+- ✅ **59 New Tests Added** (All Passing)
+  - GroupByAggregateTests: 19 tests
+  - JoinOperationsTests: 18 tests
+  - StatisticalFunctionsTests: 22 tests
+- ✅ **Total: 276 tests** (100% passing)
+- ✅ **Performance validated** with 10K row datasets
+
+### Impact
+
+- **Unblocks**: Dataset 012 preprocessing (sensor aggregation + quality label join)
+- **Reduces Code**: 80+ lines → 10 lines (87% reduction for Dataset 012 scenario)
+- **Enables**: Advanced analytics workflows with fluent API pattern
+- **Performance**: Hash-based algorithms ensure O(1) or O(n) efficiency
+
+### Bug Fixes
+
+- 🐛 **Join Key Preservation** - Fixed Right/Outer join key value handling
+  - Issue: Right-only rows had empty key column instead of right key value
+  - Fix: Smart key preservation logic in CreateJoinedRow() when leftRow is null
+  - Impact: Right and Outer joins now correctly preserve join key values
+
 ## [0.4.3] - 2025-11-10
 
 ### Added

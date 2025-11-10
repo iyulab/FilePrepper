@@ -6,14 +6,22 @@
 public enum NormalizationMethod
 {
     /// <summary>
-    /// Min-Max scaling
+    /// Min-Max scaling: (x - min) / (max - min)
+    /// Scales data to range [0, 1] or custom range
     /// </summary>
     MinMax,
 
     /// <summary>
-    /// Z-score standardization
+    /// Z-score standardization: (x - mean) / std
+    /// Centers data to mean=0, std=1
     /// </summary>
-    ZScore
+    ZScore,
+
+    /// <summary>
+    /// Robust normalization: (x - median) / IQR
+    /// Robust to outliers, centers to median=0
+    /// </summary>
+    Robust
 }
 
 /// <summary>

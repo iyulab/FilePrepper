@@ -1,6 +1,6 @@
 # API Reference
 
-**Version**: 0.4.1
+**Version**: 0.4.4
 
 Programmatic usage guide for integrating FilePrepper into .NET applications.
 
@@ -55,6 +55,13 @@ DataPipeline RenameColumn(string oldName, string newName)
 DataPipeline FilterRows(Func<Dictionary<string, string>, bool> predicate)
 DataPipeline Normalize(string[] columns, NormalizationMethod method, double minValue = 0, double maxValue = 1)
 DataPipeline FillMissing(string[] columns, FillMethod method, string? constantValue = null)
+
+// NEW in v0.4.4: Advanced Analytics
+GroupedDataPipeline GroupBy(string keyColumn)
+DataPipeline Join(DataPipeline right, string leftKey, string rightKey, JoinType joinType = JoinType.Inner,
+                  string[]? selectColumns = null, string? leftPrefix = null, string? rightPrefix = null)
+ColumnStatistics GetStatistics(string column)
+DataPipeline Normalize(string column, NormalizationMethod method, string? outputColumn = null)
 ```
 
 **Output Methods**:
@@ -69,8 +76,48 @@ IEnumerable<string> GetColumn(string columnName)
 
 **Enums**:
 ```csharp
-public enum NormalizationMethod { MinMax, ZScore }
+public enum NormalizationMethod { MinMax, ZScore, Robust }  // Robust added in v0.4.4
 public enum FillMethod { Mean, Median, Mode, Forward, Backward, Constant }
+public enum JoinType { Inner, Left, Right, Outer }  // NEW in v0.4.4
+public enum AggregationMethod {   // Extended in v0.4.4
+    Mean, Sum, Min, Max, Count, Std,
+    Var, Median, First, Last
+}
+```
+
+### GroupedDataPipeline Class (NEW in v0.4.4)
+
+Represents data grouped by a key column, ready for aggregation:
+
+```csharp
+public class GroupedDataPipeline
+{
+    DataPipeline Aggregate(
+        (string column, AggregationMethod method)[] aggregations,
+        bool keepKey = true,
+        string? suffixFormat = "_{method}")
+}
+```
+
+### ColumnStatistics Record (NEW in v0.4.4)
+
+Comprehensive statistical summary for numeric columns:
+
+```csharp
+public record ColumnStatistics
+{
+    double Mean { get; }
+    double Std { get; }           // Sample standard deviation
+    double Min { get; }
+    double Max { get; }
+    double Median { get; }
+    double Q1 { get; }            // 25th percentile
+    double Q3 { get; }            // 75th percentile
+    double IQR { get; }           // Interquartile range (Q3 - Q1)
+    int Count { get; }            // Valid numeric values
+    int NullCount { get; }        // Null/non-numeric values
+    double Variance { get; }      // Sample variance
+}
 ```
 
 ### DataFrame Class
@@ -153,6 +200,96 @@ var pipeline = await DataPipeline.FromCsvAsync("source.csv");
 await pipeline.ToExcelAsync("output.xlsx");
 await pipeline.ToJsonAsync("output.json");
 await pipeline.ToXmlAsync("output.xml");
+```
+
+**GroupBy/Aggregate (NEW in v0.4.4)** - Time-series batch aggregation:
+```csharp
+var aggregated = await DataPipeline
+    .FromCsvAsync("sensor_data.csv")
+    .GroupBy("batch_id")
+    .Aggregate(new[]
+    {
+        ("temperature", AggregationMethod.Mean),
+        ("temperature", AggregationMethod.Std),
+        ("pressure", AggregationMethod.Min),
+        ("pressure", AggregationMethod.Max),
+        ("duration", AggregationMethod.Sum)
+    });
+
+// Result columns: batch_id, temperature_mean, temperature_std,
+//                 pressure_min, pressure_max, duration_sum
+```
+
+**Join Operations (NEW in v0.4.4)** - Combine multiple data sources:
+```csharp
+var sensorData = await DataPipeline.FromCsvAsync("sensors.csv");
+var qualityLabels = await DataPipeline.FromCsvAsync("quality.csv");
+
+// Inner join
+var joined = sensorData.Join(
+    qualityLabels,
+    leftKey: "batch_id",
+    rightKey: "batch_id",
+    joinType: JoinType.Inner,
+    selectColumns: new[] { "defect_rate", "quality_score" }
+);
+
+// Left join with prefixes (avoid column collision)
+var leftJoined = sensorData.Join(
+    qualityLabels,
+    leftKey: "id",
+    rightKey: "sensor_id",
+    joinType: JoinType.Left,
+    leftPrefix: "sensor_",
+    rightPrefix: "quality_"
+);
+```
+
+**Statistical Analysis (NEW in v0.4.4)** - Data exploration:
+```csharp
+var data = await DataPipeline.FromCsvAsync("measurements.csv");
+
+// Get comprehensive statistics
+var stats = data.GetStatistics("temperature");
+Console.WriteLine($"Mean: {stats.Mean}, Std: {stats.Std}");
+Console.WriteLine($"Median: {stats.Median}, IQR: {stats.IQR}");
+Console.WriteLine($"Range: [{stats.Min}, {stats.Max}]");
+Console.WriteLine($"Valid: {stats.Count}, Missing: {stats.NullCount}");
+
+// Normalize data with different methods
+var normalized = data
+    .Normalize("temperature", NormalizationMethod.ZScore)      // Mean=0, Std=1
+    .Normalize("pressure", NormalizationMethod.MinMax)         // [0, 1]
+    .Normalize("humidity", NormalizationMethod.Robust);        // Robust to outliers
+```
+
+**Complete ML Pipeline (v0.4.4)** - Full preprocessing workflow:
+```csharp
+var result = await DataPipeline
+    .FromCsvAsync("raw_sensor_data.csv")
+    // 1. Aggregate by batch
+    .GroupBy("batch_id")
+    .Aggregate(new[]
+    {
+        ("temp_zone1", AggregationMethod.Mean),
+        ("temp_zone1", AggregationMethod.Std),
+        ("temp_zone2", AggregationMethod.Mean),
+        ("pressure", AggregationMethod.Max)
+    })
+    // 2. Join with quality labels
+    .Join(
+        await DataPipeline.FromCsvAsync("quality_labels.csv"),
+        leftKey: "batch_id",
+        rightKey: "batch_id",
+        joinType: JoinType.Inner,
+        selectColumns: new[] { "defect_rate", "quality_score" }
+    )
+    // 3. Normalize features
+    .Normalize("temp_zone1_mean", NormalizationMethod.ZScore)
+    .Normalize("temp_zone2_mean", NormalizationMethod.ZScore)
+    .Normalize("pressure_max", NormalizationMethod.MinMax)
+    // 4. Export for ML training
+    .ToCsvAsync("ml_ready_dataset.csv");
 ```
 
 ## Traditional: Task API (Backward Compatible)

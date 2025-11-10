@@ -33,7 +33,27 @@ public enum AggregationMethod
     /// <summary>
     /// Calculate standard deviation
     /// </summary>
-    Std
+    Std,
+
+    /// <summary>
+    /// Calculate variance
+    /// </summary>
+    Var,
+
+    /// <summary>
+    /// Calculate median value
+    /// </summary>
+    Median,
+
+    /// <summary>
+    /// Get first value in group
+    /// </summary>
+    First,
+
+    /// <summary>
+    /// Get last value in group
+    /// </summary>
+    Last
 }
 
 /// <summary>

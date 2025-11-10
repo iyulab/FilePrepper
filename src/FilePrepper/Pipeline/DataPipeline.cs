@@ -604,6 +604,416 @@ public class DataPipeline
 
     #endregion
 
+    #region GroupBy Operations
+
+    /// <summary>
+    /// Group rows by specified key column for aggregation operations
+    /// </summary>
+    /// <param name="keyColumn">Column to group by</param>
+    /// <returns>GroupedDataPipeline ready for aggregation</returns>
+    /// <exception cref="ArgumentException">Thrown when keyColumn is empty or doesn't exist</exception>
+    public GroupedDataPipeline GroupBy(string keyColumn)
+    {
+        if (string.IsNullOrWhiteSpace(keyColumn))
+        {
+            throw new ArgumentException("Key column cannot be empty", nameof(keyColumn));
+        }
+
+        if (!_columnNames.Contains(keyColumn))
+        {
+            throw new ArgumentException(
+                $"Column '{keyColumn}' not found. Available columns: {string.Join(", ", _columnNames)}",
+                nameof(keyColumn));
+        }
+
+        return new GroupedDataPipeline(_rows, _columnNames, keyColumn);
+    }
+
+    #endregion
+
+    #region Join Operations
+
+    /// <summary>
+    /// Join two DataPipelines on specified key columns
+    /// </summary>
+    /// <param name="right">DataPipeline to join with (right side)</param>
+    /// <param name="leftKey">Key column name in left dataset (this pipeline)</param>
+    /// <param name="rightKey">Key column name in right dataset</param>
+    /// <param name="joinType">Type of join operation (Inner, Left, Right, Outer)</param>
+    /// <param name="selectColumns">Columns to include from right dataset (null = all except key)</param>
+    /// <param name="leftPrefix">Prefix to add to left column names (null = no prefix)</param>
+    /// <param name="rightPrefix">Prefix to add to right column names (null = no prefix)</param>
+    /// <returns>New DataPipeline with joined results</returns>
+    /// <exception cref="ArgumentException">Thrown when key columns don't exist</exception>
+    public DataPipeline Join(
+        DataPipeline right,
+        string leftKey,
+        string rightKey,
+        JoinType joinType = JoinType.Inner,
+        string[]? selectColumns = null,
+        string? leftPrefix = null,
+        string? rightPrefix = null)
+    {
+        // Validation
+        if (!_columnNames.Contains(leftKey))
+        {
+            throw new ArgumentException(
+                $"Left key '{leftKey}' not found. Available columns: {string.Join(", ", _columnNames)}",
+                nameof(leftKey));
+        }
+
+        if (!right._columnNames.Contains(rightKey))
+        {
+            throw new ArgumentException(
+                $"Right key '{rightKey}' not found. Available columns: {string.Join(", ", right._columnNames)}",
+                nameof(rightKey));
+        }
+
+        // Build right side lookup (handle duplicate keys with list)
+        var rightLookup = new Dictionary<string, List<Dictionary<string, string>>>();
+        foreach (var row in right._rows)
+        {
+            if (row.TryGetValue(rightKey, out var key) && !string.IsNullOrWhiteSpace(key))
+            {
+                if (!rightLookup.ContainsKey(key))
+                {
+                    rightLookup[key] = new List<Dictionary<string, string>>();
+                }
+                rightLookup[key].Add(row);
+            }
+        }
+
+        var resultRows = new List<Dictionary<string, string>>();
+        var matchedRightKeys = new HashSet<string>();
+
+        // Process left side
+        foreach (var leftRow in _rows)
+        {
+            if (!leftRow.TryGetValue(leftKey, out var key) || string.IsNullOrWhiteSpace(key))
+            {
+                // Left row has no valid key
+                if (joinType == JoinType.Left || joinType == JoinType.Outer)
+                {
+                    resultRows.Add(CreateJoinedRow(leftRow, null, leftKey, rightKey,
+                        selectColumns, leftPrefix, rightPrefix, _columnNames, right._columnNames));
+                }
+                continue;
+            }
+
+            if (rightLookup.TryGetValue(key, out var rightRows))
+            {
+                // Match found - mark key as matched
+                matchedRightKeys.Add(key);
+
+                // Handle multiple matches (cartesian product for 1:N joins)
+                foreach (var rightRow in rightRows)
+                {
+                    var joinedRow = CreateJoinedRow(leftRow, rightRow, leftKey, rightKey,
+                        selectColumns, leftPrefix, rightPrefix, _columnNames, right._columnNames);
+                    resultRows.Add(joinedRow);
+                }
+            }
+            else
+            {
+                // No match on right side
+                if (joinType == JoinType.Left || joinType == JoinType.Outer)
+                {
+                    resultRows.Add(CreateJoinedRow(leftRow, null, leftKey, rightKey,
+                        selectColumns, leftPrefix, rightPrefix, _columnNames, right._columnNames));
+                }
+            }
+        }
+
+        // Process unmatched right rows (for Right and Outer joins)
+        if (joinType == JoinType.Right || joinType == JoinType.Outer)
+        {
+            foreach (var (key, rightRows) in rightLookup)
+            {
+                if (!matchedRightKeys.Contains(key))
+                {
+                    foreach (var rightRow in rightRows)
+                    {
+                        resultRows.Add(CreateJoinedRow(null, rightRow, leftKey, rightKey,
+                            selectColumns, leftPrefix, rightPrefix, _columnNames, right._columnNames));
+                    }
+                }
+            }
+        }
+
+        return DataPipeline.FromData(resultRows);
+    }
+
+    /// <summary>
+    /// Create a joined row from left and right source rows
+    /// </summary>
+    private static Dictionary<string, string> CreateJoinedRow(
+        Dictionary<string, string>? leftRow,
+        Dictionary<string, string>? rightRow,
+        string leftKey,
+        string rightKey,
+        string[]? selectColumns,
+        string? leftPrefix,
+        string? rightPrefix,
+        List<string> leftColumnNames,
+        List<string> rightColumnNames)
+    {
+        var result = new Dictionary<string, string>();
+
+        // Add left columns
+        if (leftRow != null)
+        {
+            foreach (var (col, val) in leftRow)
+            {
+                var outputCol = leftPrefix != null ? $"{leftPrefix}{col}" : col;
+                result[outputCol] = val;
+            }
+        }
+        else
+        {
+            // Left row is null (unmatched in right/outer join)
+            // Add empty values for all left columns, BUT use right key value if keys match
+            foreach (var col in leftColumnNames)
+            {
+                var outputCol = leftPrefix != null ? $"{leftPrefix}{col}" : col;
+
+                // Special case: if this is the join key and it matches the right key name,
+                // use the right key's value instead of empty
+                if (col == leftKey && leftKey == rightKey && rightRow != null)
+                {
+                    result[outputCol] = rightRow[rightKey];
+                }
+                else
+                {
+                    result[outputCol] = string.Empty;
+                }
+            }
+        }
+
+        // Add right columns
+        if (rightRow != null)
+        {
+            // Determine columns to add from right side
+            var columnsToAdd = selectColumns ?? rightColumnNames.Where(k => k != rightKey).ToArray();
+
+            foreach (var col in columnsToAdd)
+            {
+                if (rightRow.TryGetValue(col, out var val))
+                {
+                    var outputCol = rightPrefix != null ? $"{rightPrefix}{col}" : col;
+
+                    // Handle column name collision (only if no prefix specified)
+                    if (result.ContainsKey(outputCol) && rightPrefix == null)
+                    {
+                        outputCol = $"{outputCol}_right";
+                    }
+
+                    result[outputCol] = val;
+                }
+            }
+        }
+        else
+        {
+            // Right row is null (unmatched in left/outer join)
+            // Add empty values for expected right columns
+            var columnsToAdd = selectColumns ?? rightColumnNames.Where(k => k != rightKey).ToArray();
+
+            foreach (var col in columnsToAdd)
+            {
+                var outputCol = rightPrefix != null ? $"{rightPrefix}{col}" : col;
+
+                // Handle collision
+                if (result.ContainsKey(outputCol) && rightPrefix == null)
+                {
+                    outputCol = $"{outputCol}_right";
+                }
+
+                result[outputCol] = string.Empty; // Null value represented as empty string
+            }
+        }
+
+        return result;
+    }
+
+    #endregion
+
+    #region Statistical Functions
+
+    /// <summary>
+    /// Calculate comprehensive statistics for a numeric column
+    /// </summary>
+    /// <param name="column">Column name to analyze</param>
+    /// <returns>ColumnStatistics record with mean, std, min, max, quartiles, etc.</returns>
+    /// <exception cref="ArgumentException">Thrown when column doesn't exist or has no valid numeric values</exception>
+    public ColumnStatistics GetStatistics(string column)
+    {
+        if (!_columnNames.Contains(column))
+        {
+            throw new ArgumentException(
+                $"Column '{column}' not found. Available columns: {string.Join(", ", _columnNames)}",
+                nameof(column));
+        }
+
+        // Extract and parse numeric values
+        var allValues = GetColumnValues(column);
+        var values = allValues
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Where(v => double.TryParse(v, out _))
+            .Select(double.Parse)
+            .OrderBy(v => v) // Sort for percentile calculation
+            .ToList();
+
+        if (!values.Any())
+        {
+            throw new InvalidOperationException(
+                $"Column '{column}' has no valid numeric values. Total rows: {allValues.Count()}, " +
+                $"Null/Non-numeric: {allValues.Count()}");
+        }
+
+        // Calculate basic statistics
+        var mean = values.Average();
+        var variance = values.Count > 1
+            ? values.Sum(v => Math.Pow(v - mean, 2)) / (values.Count - 1)
+            : 0;
+        var std = Math.Sqrt(variance);
+
+        return new ColumnStatistics
+        {
+            Mean = mean,
+            Std = std,
+            Min = values.First(),  // Already sorted
+            Max = values.Last(),   // Already sorted
+            Median = CalculatePercentile(values, 0.5),
+            Q1 = CalculatePercentile(values, 0.25),
+            Q3 = CalculatePercentile(values, 0.75),
+            Count = values.Count,
+            NullCount = allValues.Count() - values.Count
+        };
+    }
+
+    /// <summary>
+    /// Normalize a numeric column using specified method
+    /// </summary>
+    /// <param name="column">Column name to normalize</param>
+    /// <param name="method">Normalization method (ZScore, MinMax, or Robust)</param>
+    /// <param name="outputColumn">Optional output column name (default: {column}_normalized)</param>
+    /// <returns>New DataPipeline with normalized column added</returns>
+    /// <exception cref="ArgumentException">Thrown when column doesn't exist</exception>
+    /// <exception cref="InvalidOperationException">Thrown when normalization cannot be performed (e.g., constant column)</exception>
+    public DataPipeline Normalize(
+        string column,
+        NormalizationMethod method,
+        string? outputColumn = null)
+    {
+        if (!_columnNames.Contains(column))
+        {
+            throw new ArgumentException(
+                $"Column '{column}' not found. Available columns: {string.Join(", ", _columnNames)}",
+                nameof(column));
+        }
+
+        var stats = GetStatistics(column);
+        var outCol = outputColumn ?? $"{column}_normalized";
+
+        // Validate normalization feasibility
+        if (method == NormalizationMethod.ZScore && stats.Std == 0)
+        {
+            throw new InvalidOperationException(
+                $"Cannot apply Z-Score normalization: column '{column}' has zero standard deviation (constant values)");
+        }
+
+        if (method == NormalizationMethod.MinMax && stats.Min == stats.Max)
+        {
+            throw new InvalidOperationException(
+                $"Cannot apply Min-Max normalization: column '{column}' has constant values (min = max = {stats.Min})");
+        }
+
+        if (method == NormalizationMethod.Robust && stats.IQR == 0)
+        {
+            throw new InvalidOperationException(
+                $"Cannot apply Robust normalization: column '{column}' has zero IQR (Q1 = Q3 = {stats.Q1})");
+        }
+
+        // Create normalized rows
+        var newRows = new List<Dictionary<string, string>>();
+
+        foreach (var row in _rows)
+        {
+            var newRow = new Dictionary<string, string>(row);
+
+            if (row.TryGetValue(column, out var valueStr) &&
+                !string.IsNullOrWhiteSpace(valueStr) &&
+                double.TryParse(valueStr, out var value))
+            {
+                var normalized = method switch
+                {
+                    NormalizationMethod.ZScore => (value - stats.Mean) / stats.Std,
+                    NormalizationMethod.MinMax => (value - stats.Min) / (stats.Max - stats.Min),
+                    NormalizationMethod.Robust => (value - stats.Median) / stats.IQR,
+                    _ => throw new NotImplementedException($"Normalization method {method} is not implemented")
+                };
+
+                newRow[outCol] = normalized.ToString("G");
+            }
+            else
+            {
+                // Preserve non-numeric/null values as empty
+                newRow[outCol] = string.Empty;
+            }
+
+            newRows.Add(newRow);
+        }
+
+        return FromData(newRows);
+    }
+
+    /// <summary>
+    /// Extract all values from a column (helper method)
+    /// </summary>
+    private IEnumerable<string> GetColumnValues(string column)
+    {
+        foreach (var row in _rows)
+        {
+            yield return row.TryGetValue(column, out var val) ? val : string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Calculate percentile from sorted values
+    /// Uses linear interpolation between nearest ranks
+    /// </summary>
+    private static double CalculatePercentile(List<double> sortedValues, double percentile)
+    {
+        if (sortedValues.Count == 0)
+        {
+            throw new ArgumentException("Cannot calculate percentile of empty list");
+        }
+
+        if (sortedValues.Count == 1)
+        {
+            return sortedValues[0];
+        }
+
+        // Calculate position (0-based index)
+        var position = percentile * (sortedValues.Count - 1);
+        var lowerIndex = (int)Math.Floor(position);
+        var upperIndex = (int)Math.Ceiling(position);
+
+        // If position is exactly on an index, return that value
+        if (lowerIndex == upperIndex)
+        {
+            return sortedValues[lowerIndex];
+        }
+
+        // Linear interpolation between lower and upper values
+        var lowerValue = sortedValues[lowerIndex];
+        var upperValue = sortedValues[upperIndex];
+        var fraction = position - lowerIndex;
+
+        return lowerValue + fraction * (upperValue - lowerValue);
+    }
+
+    #endregion
+
     #region Window Operations
 
     /// <summary>
