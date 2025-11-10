@@ -136,6 +136,109 @@ public class DataPipeline
         return new DataPipeline(rows, headers);
     }
 
+    /// <summary>
+    /// Concatenate multiple CSV files matching a pattern into a single DataPipeline
+    /// </summary>
+    /// <param name="pattern">File pattern (e.g., "*.csv", "kemp-*.csv")</param>
+    /// <param name="directory">Directory containing files (default: current directory)</param>
+    /// <param name="hasHeader">Whether files have header rows (default: true)</param>
+    /// <param name="addSourceColumn">Add column tracking source filename (default: false)</param>
+    /// <param name="sourceColumnName">Name for source tracking column (default: "SourceFile")</param>
+    /// <returns>DataPipeline with concatenated data from all matching files</returns>
+    public static async Task<DataPipeline> ConcatCsvAsync(
+        string pattern,
+        string? directory = null,
+        bool hasHeader = true,
+        bool addSourceColumn = false,
+        string sourceColumnName = "SourceFile")
+    {
+        // Get target directory
+        var targetDir = string.IsNullOrEmpty(directory) ? Directory.GetCurrentDirectory() : directory;
+
+        // Find all matching files and sort alphabetically for predictable order
+        var files = Directory.GetFiles(targetDir, pattern)
+            .OrderBy(f => f)
+            .ToList();
+
+        if (!files.Any())
+        {
+            // No files matched - return empty pipeline with warning
+            Console.WriteLine($"Warning: No files matched pattern '{pattern}' in directory '{targetDir}'");
+            return new DataPipeline(Enumerable.Empty<Dictionary<string, string>>(), Enumerable.Empty<string>());
+        }
+
+        var allRows = new List<Dictionary<string, string>>();
+        List<string>? headers = null;
+
+        foreach (var filePath in files)
+        {
+            var fileName = Path.GetFileName(filePath);
+
+            try
+            {
+                using var reader = new StreamReader(filePath);
+                using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = hasHeader
+                });
+
+                await csv.ReadAsync();
+                csv.ReadHeader();
+                var currentHeaders = csv.HeaderRecord?.ToList() ?? new List<string>();
+
+                // First file: establish schema
+                if (headers == null)
+                {
+                    headers = new List<string>(currentHeaders);  // Create copy, not reference
+
+                    // Add source column to headers if requested
+                    if (addSourceColumn && !headers.Contains(sourceColumnName))
+                    {
+                        headers.Add(sourceColumnName);
+                    }
+                }
+                else
+                {
+                    // Subsequent files: validate headers match
+                    if (!currentHeaders.SequenceEqual(headers.Where(h => h != sourceColumnName)))
+                    {
+                        throw new InvalidOperationException(
+                            $"Header mismatch in file '{fileName}'. " +
+                            $"Expected: [{string.Join(", ", headers.Where(h => h != sourceColumnName))}], " +
+                            $"Found: [{string.Join(", ", currentHeaders)}]");
+                    }
+                }
+
+                // Read and concatenate rows
+                while (await csv.ReadAsync())
+                {
+                    var row = new Dictionary<string, string>();
+
+                    // Read actual data columns from CSV
+                    foreach (var header in currentHeaders)
+                    {
+                        row[header] = csv.GetField(header) ?? string.Empty;
+                    }
+
+                    // Add source column if requested (not from CSV, generated)
+                    if (addSourceColumn)
+                    {
+                        row[sourceColumnName] = fileName;
+                    }
+
+                    allRows.Add(row);
+                }
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                throw new InvalidOperationException(
+                    $"Error reading file '{fileName}': {ex.Message}", ex);
+            }
+        }
+
+        return new DataPipeline(allRows, headers ?? new List<string>());
+    }
+
     #endregion
 
     #region Properties
@@ -313,6 +416,108 @@ public class DataPipeline
         }
 
         return this;
+    }
+
+    /// <summary>
+    /// Parse Korean time format (오전/오후 H:mm:ss) to DateTime
+    /// </summary>
+    /// <param name="columnName">Source column with Korean time string</param>
+    /// <param name="targetColumnName">Target column for parsed DateTime</param>
+    /// <param name="baseDate">Base date to use (default: 2000-01-01)</param>
+    /// <returns>DataPipeline for chaining</returns>
+    public DataPipeline ParseKoreanTime(
+        string columnName,
+        string targetColumnName,
+        DateTime? baseDate = null)
+    {
+        var baseDt = baseDate ?? new DateTime(2000, 1, 1);
+
+        // Add target column if not exists
+        if (!_columnNames.Contains(targetColumnName))
+        {
+            _columnNames.Add(targetColumnName);
+        }
+
+        foreach (var row in _rows)
+        {
+            if (row.TryGetValue(columnName, out var timeStr) && !string.IsNullOrWhiteSpace(timeStr))
+            {
+                try
+                {
+                    var dt = ParseKoreanTimeString(timeStr.Trim(), baseDt);
+                    row[targetColumnName] = dt.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                catch (FormatException)
+                {
+                    // Leave empty or keep original - depending on requirements
+                    row[targetColumnName] = string.Empty;
+                }
+            }
+            else
+            {
+                row[targetColumnName] = string.Empty;
+            }
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Parse Korean time string to DateTime
+    /// </summary>
+    private static DateTime ParseKoreanTimeString(string timeStr, DateTime baseDate)
+    {
+        int hour, minute, second;
+
+        if (timeStr.StartsWith("오전"))  // AM
+        {
+            var timePart = timeStr.Substring(2).Trim();  // "9:01:18"
+            var parts = timePart.Split(':');
+
+            if (parts.Length != 3)
+            {
+                throw new FormatException(
+                    $"Invalid Korean time format: '{timeStr}'. Expected format: '오전 H:mm:ss' or '오후 H:mm:ss'");
+            }
+
+            hour = int.Parse(parts[0]);
+            minute = int.Parse(parts[1]);
+            second = int.Parse(parts[2]);
+
+            // 12 AM = midnight (00:00)
+            if (hour == 12)
+            {
+                hour = 0;
+            }
+        }
+        else if (timeStr.StartsWith("오후"))  // PM
+        {
+            var timePart = timeStr.Substring(2).Trim();  // "2:15:30"
+            var parts = timePart.Split(':');
+
+            if (parts.Length != 3)
+            {
+                throw new FormatException(
+                    $"Invalid Korean time format: '{timeStr}'. Expected format: '오전 H:mm:ss' or '오후 H:mm:ss'");
+            }
+
+            hour = int.Parse(parts[0]);
+            minute = int.Parse(parts[1]);
+            second = int.Parse(parts[2]);
+
+            // 12 PM = noon (12:00), other PM hours add 12
+            if (hour != 12)
+            {
+                hour += 12;
+            }
+        }
+        else
+        {
+            throw new FormatException(
+                $"Invalid Korean time format: '{timeStr}'. Must start with '오전' (AM) or '오후' (PM)");
+        }
+
+        return new DateTime(baseDate.Year, baseDate.Month, baseDate.Day, hour, minute, second);
     }
 
     /// <summary>

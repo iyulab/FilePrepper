@@ -5,6 +5,86 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2025-11-10
+
+### Added
+- 🚀 **Multi-File CSV Concatenation** - `ConcatCsvAsync()` for Dataset Support
+  - Concatenate multiple CSV files matching a pattern (e.g., `kemp-*.csv`)
+  - Automatic header validation with clear error messages
+  - Alphabetical file ordering for predictable results
+  - Optional source tracking column to identify file origin
+  - Memory-efficient streaming processing for 100+ files
+  - Enables processing of split datasets (e.g., Dataset 010 with 33 files)
+
+- 🌏 **Korean Time Format Parsing** - `ParseKoreanTime()` for Localization
+  - Parse Korean AM/PM time format ("오전 9:01:18", "오후 2:15:30")
+  - Automatic 12/24-hour conversion with edge case handling
+  - Configurable base date for time-only data
+  - Seamless integration with `ExtractDateFeatures()`
+  - Supports Korean manufacturing dataset preprocessing
+
+### Usage Examples
+
+**Multi-File Concatenation:**
+```csharp
+// Concatenate 33 CSV files into single pipeline
+var data = await DataPipeline.ConcatCsvAsync(
+    pattern: "kemp-*.csv",
+    directory: "dataset/",
+    hasHeader: true,
+    addSourceColumn: true  // Track source file
+);
+
+Console.WriteLine($"Loaded {data.RowCount} rows from multiple files");
+```
+
+**Korean Time Parsing:**
+```csharp
+var pipeline = await DataPipeline.FromCsvAsync("data.csv")
+    .ParseKoreanTime("Time", "ParsedTime")
+    .ExtractDateFeatures("ParsedTime", DateFeatures.Hour | DateFeatures.Minute)
+    .ToDataFrame();
+
+// "오전 9:01:18" → Hour: 9, Minute: 1
+// "오후 2:15:30" → Hour: 14, Minute: 15
+```
+
+**Combined Workflow (Dataset 010 Scenario):**
+```csharp
+var result = await DataPipeline.ConcatCsvAsync("kemp-*.csv", datasetDir)
+    .ParseKoreanTime("Time", "ParsedTime")
+    .ExtractDateFeatures("ParsedTime", DateFeatures.Hour | DateFeatures.Minute)
+    .Select(new[] { "ParsedTime_Hour", "Temp", "Press", "Vib" })
+    .ToCsvAsync("processed_data.csv");
+```
+
+### Technical Details
+
+**ConcatCsvAsync Features:**
+- Streaming file processing (no full dataset in memory)
+- Header schema validation across all files
+- Graceful handling of empty file matches
+- Informative exceptions with filename context
+- Compatible with all Pipeline transformations
+
+**ParseKoreanTime Features:**
+- Edge case handling: 오전 12:00:00 (midnight), 오후 12:00:00 (noon)
+- Graceful error handling for invalid formats
+- Configurable base date for time-only columns
+- Returns ISO 8601 format ("yyyy-MM-dd HH:mm:ss")
+
+### Test Coverage
+- ✅ 14 new comprehensive tests (100% passing)
+  - 5 ConcatCsvAsync tests (basic, source tracking, validation, ordering, empty)
+  - 6 ParseKoreanTime tests (AM, PM, edge cases, invalid, integration)
+  - 1 Dataset010 end-to-end scenario test
+  - Total test count: 212 tests
+
+### Impact
+- **Unblocks**: Dataset 010 (33 files), Dataset 012 (6 files), Dataset 013 (5 files)
+- **Enables**: Korean manufacturing dataset support
+- **Use Cases**: Multi-file ML datasets, localized time data, split CSV processing
+
 ## [0.4.1] - 2025-01-09
 
 ### Added

@@ -42,6 +42,13 @@ await DataPipeline
         (double.Parse(row["Price"]) * double.Parse(row["Quantity"])).ToString())
     .FilterRows(row => double.Parse(row["Total"]) >= 1000)
     .ToJsonAsync("high_value_sales.json");
+
+// Multi-File CSV Concatenation: Merge 33 files ⭐ NEW
+await DataPipeline
+    .ConcatCsvAsync("kemp-*.csv", "dataset/")
+    .ParseKoreanTime("Time", "ParsedTime")  // Korean time format ⭐ NEW
+    .ExtractDateFeatures("ParsedTime", DateFeatures.Hour | DateFeatures.Minute)
+    .ToCsvAsync("processed.csv");
 ```
 
 ### CLI Usage
