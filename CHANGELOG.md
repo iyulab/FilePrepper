@@ -5,6 +5,28 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- 🔧 **System.CommandLine Migration** - Upgraded from 2.0.0-beta4.22272.1 to 2.0.0 stable
+  - **Breaking API Changes Implemented:**
+    - `SetHandler` → `SetAction` with `ParseResult` parameter
+    - Handler signature: `context.ExitCode = await ...` → `return await ...`
+    - `GetValueForOption()` → `GetValue()`
+    - `AddCommand()` → `Add()` for subcommands
+    - `AddGlobalOption()` → `Add()` + `Recursive = true`
+    - Option constructor: old 2-param format → object initializer syntax
+    - Option properties: `getDefaultValue` → `DefaultValueFactory`, `parseArgument` → `CustomParser`
+    - `Symbol.Name` is now read-only (removed from object initializer)
+    - Test methods: `command.InvokeAsync(args)` → `command.Parse(args).InvokeAsync()`
+  - **Migration Results:**
+    - All 28 command files successfully migrated
+    - All 32 source files updated
+    - Build: ✅ 0 errors
+    - Tests: ✅ 344/344 passed (281 core + 63 CLI tests)
+  - **Impact:** Internal CLI implementation only - no changes to user-facing commands or options
+
 ## [0.4.4] - 2025-11-11
 
 ### Added
