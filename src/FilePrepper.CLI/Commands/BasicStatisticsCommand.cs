@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.BasicStatistics;
 using Microsoft.Extensions.Logging;
@@ -18,39 +18,33 @@ public class BasicStatisticsCommand : BaseCommand
     public BasicStatisticsCommand(ILoggerFactory loggerFactory)
         : base("stats", "Calculate basic statistics on numeric columns", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _columnsOption = new Option<string[]>(
-            aliases: new[] { "--columns", "-c" },
-            description: "Target columns",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
-        _statsOption = new Option<string[]>(
-            aliases: new[] { "--stats", "-s" },
-            description: "Statistics to calculate (Mean/StandardDeviation/Min/Max/Median/Q1/Q3/ZScore/RobustZScore/PercentRank/MAD)",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
-        _suffixOption = new Option<string>("--suffix", () => "_stat", "Suffix for output column names");
-        _defaultValueOption = new Option<string?>("--default-value", "Default value for errors");
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Target columns", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _statsOption = new Option<string[]>("--stats", new[] { "-s" }) { Description = "Statistics to calculate (Mean/StandardDeviation/Min/Max/Median/Q1/Q3/ZScore/RobustZScore/PercentRank/MAD)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _suffixOption = new Option<string>("--suffix") { Description = "Suffix for output column names", DefaultValueFactory = _ => "_stat" };
+        _defaultValueOption = new Option<string?>("--default-value") { Description = "Default value for errors" };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_columnsOption);
-        AddOption(_statsOption);
-        AddOption(_suffixOption);
-        AddOption(_defaultValueOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_columnsOption);
+        Add(_statsOption);
+        Add(_suffixOption);
+        Add(_defaultValueOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var columns = context.ParseResult.GetValueForOption(_columnsOption)!;
-            var statsStrings = context.ParseResult.GetValueForOption(_statsOption)!;
-            var suffix = context.ParseResult.GetValueForOption(_suffixOption)!;
-            var defaultValue = context.ParseResult.GetValueForOption(_defaultValueOption);
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var columns = parseResult.GetValue(_columnsOption)!;
+            var statsStrings = parseResult.GetValue(_statsOption)!;
+            var suffix = parseResult.GetValue(_suffixOption)!;
+            var defaultValue = parseResult.GetValue(_defaultValueOption);
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(inputPath, outputPath, columns, statsStrings, suffix, defaultValue,
+            return await ExecuteAsync(inputPath, outputPath, columns, statsStrings, suffix, defaultValue,
                 hasHeader, ignoreErrors, verbose);
         });
     }

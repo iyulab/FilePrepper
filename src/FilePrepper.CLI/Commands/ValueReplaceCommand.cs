@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.ValueReplace;
 using Microsoft.Extensions.Logging;
@@ -15,26 +15,23 @@ public class ValueReplaceCommand : BaseCommand
     public ValueReplaceCommand(ILoggerFactory loggerFactory)
         : base("replace", "Replace values in specified columns", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _replacementsOption = new Option<string[]>(
-            aliases: new[] { "--replacements", "-r" },
-            description: "Replacement rules in format column:oldValue=newValue[;oldValue2=newValue2]",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _replacementsOption = new Option<string[]>("--replacements", new[] { "-r" }) { Description = "Replacement rules in format column:oldValue=newValue[;oldValue2=newValue2]", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_replacementsOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_replacementsOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_replacementsOption)!,
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_replacementsOption)!,
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

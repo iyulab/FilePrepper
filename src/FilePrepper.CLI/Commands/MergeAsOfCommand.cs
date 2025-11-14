@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.MergeAsOf;
 using Microsoft.Extensions.Logging;
@@ -23,65 +23,45 @@ public class MergeAsOfCommand : BaseCommand
         : base("merge-asof", "Merge two files based on nearest time matching (merge_asof)", loggerFactory)
     {
         // Required options
-        _inputFilesOption = new Option<string[]>(
-            aliases: new[] { "--input", "-i" },
-            description: "Exactly 2 input file paths (left and right files, space-separated)")
-        { IsRequired = true, AllowMultipleArgumentsPerToken = true };
+        _inputFilesOption = new Option<string[]>("--input", new[] { "-i" }) { Description = "Exactly 2 input file paths (left and right files, space-separated)", Required = true, AllowMultipleArgumentsPerToken = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _leftOnOption = new Option<string>(
-            aliases: new[] { "--left-on", "-l" },
-            description: "Column name in left file to use for matching (typically datetime)")
-        { IsRequired = true };
+        _leftOnOption = new Option<string>("--left-on", new[] { "-l" }) { Description = "Column name in left file to use for matching (typically datetime)", Required = true };
 
-        _rightOnOption = new Option<string>(
-            aliases: new[] { "--right-on", "-r" },
-            description: "Column name in right file to use for matching (typically datetime)")
-        { IsRequired = true };
+        _rightOnOption = new Option<string>("--right-on", new[] { "-r" }) { Description = "Column name in right file to use for matching (typically datetime)", Required = true };
 
         // Optional options
-        _directionOption = new Option<string>(
-            aliases: new[] { "--direction", "-d" },
-            getDefaultValue: () => "Backward",
-            description: "Matching direction: Backward (most recent <=), Forward (nearest >=), or Nearest (closest)");
+        _directionOption = new Option<string>("--direction", new[] { "-d" }) { Description = "Matching direction: Backward (most recent <=), Forward (nearest >=), or Nearest (closest)", DefaultValueFactory = _ => "Backward" };
 
-        _toleranceOption = new Option<double?>(
-            aliases: new[] { "--tolerance", "-t" },
-            description: "Maximum time difference allowed for matching (in seconds). If not specified, no tolerance limit is applied.");
+        _toleranceOption = new Option<double?>("--tolerance", new[] { "-t" }) { Description = "Maximum time difference allowed for matching (in seconds). If not specified, no tolerance limit is applied." };
 
-        _suffixOption = new Option<string>(
-            aliases: new[] { "--suffix", "-s" },
-            getDefaultValue: () => "_right",
-            description: "Suffix to add to right file columns to avoid name conflicts");
+        _suffixOption = new Option<string>("--suffix", new[] { "-s" }) { Description = "Suffix to add to right file columns to avoid name conflicts", DefaultValueFactory = _ => "_right" };
 
         // Add all options
-        AddOption(_inputFilesOption);
-        AddOption(_outputOption);
-        AddOption(_leftOnOption);
-        AddOption(_rightOnOption);
-        AddOption(_directionOption);
-        AddOption(_toleranceOption);
-        AddOption(_suffixOption);
+        Add(_inputFilesOption);
+        Add(_outputOption);
+        Add(_leftOnOption);
+        Add(_rightOnOption);
+        Add(_directionOption);
+        Add(_toleranceOption);
+        Add(_suffixOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputFiles = context.ParseResult.GetValueForOption(_inputFilesOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var leftOn = context.ParseResult.GetValueForOption(_leftOnOption)!;
-            var rightOn = context.ParseResult.GetValueForOption(_rightOnOption)!;
-            var directionStr = context.ParseResult.GetValueForOption(_directionOption)!;
-            var tolerance = context.ParseResult.GetValueForOption(_toleranceOption);
-            var suffix = context.ParseResult.GetValueForOption(_suffixOption)!;
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputFiles = parseResult.GetValue(_inputFilesOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var leftOn = parseResult.GetValue(_leftOnOption)!;
+            var rightOn = parseResult.GetValue(_rightOnOption)!;
+            var directionStr = parseResult.GetValue(_directionOption)!;
+            var tolerance = parseResult.GetValue(_toleranceOption);
+            var suffix = parseResult.GetValue(_suffixOption)!;
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputFiles, outputPath, leftOn, rightOn, directionStr, tolerance, suffix,
                 hasHeader, ignoreErrors, verbose);
         });

@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.Conditional;
 using Microsoft.Extensions.Logging;
@@ -21,52 +21,37 @@ public class ConditionalCommand : BaseCommand
         : base("conditional", "Create a new column based on conditional logic (if-then-else)", loggerFactory)
     {
         // Required options
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _outputColumnOption = new Option<string>(
-            aliases: new[] { "--output-column", "-oc" },
-            description: "Name of the new column to create")
-        { IsRequired = true };
+        _outputColumnOption = new Option<string>("--output-column", new[] { "-oc" }) { Description = "Name of the new column to create", Required = true };
 
-        _conditionsOption = new Option<string[]>(
-            aliases: new[] { "--conditions", "-c" },
-            description: "Condition-value pairs (format: 'Column operator Value : ResultValue'). Example: 'Price > 100 : High'. Multiple conditions evaluated in order (first match wins).")
-        { IsRequired = true, AllowMultipleArgumentsPerToken = true };
+        _conditionsOption = new Option<string[]>("--conditions", new[] { "-c" }) { Description = "Condition-value pairs (format: 'Column operator Value : ResultValue'). Example: 'Price > 100 : High'. Multiple conditions evaluated in order (first match wins).", Required = true, AllowMultipleArgumentsPerToken = true };
 
         // Optional options
-        _elseValueOption = new Option<string>(
-            aliases: new[] { "--else", "-e" },
-            getDefaultValue: () => string.Empty,
-            description: "Default value if no conditions match (else value)");
+        _elseValueOption = new Option<string>("--else", new[] { "-e" }) { Description = "Default value if no conditions match (else value)", DefaultValueFactory = _ => string.Empty };
 
         // Add all options
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_outputColumnOption);
-        AddOption(_conditionsOption);
-        AddOption(_elseValueOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_outputColumnOption);
+        Add(_conditionsOption);
+        Add(_elseValueOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var outputColumn = context.ParseResult.GetValueForOption(_outputColumnOption)!;
-            var conditions = context.ParseResult.GetValueForOption(_conditionsOption)!;
-            var elseValue = context.ParseResult.GetValueForOption(_elseValueOption)!;
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var outputColumn = parseResult.GetValue(_outputColumnOption)!;
+            var conditions = parseResult.GetValue(_conditionsOption)!;
+            var elseValue = parseResult.GetValue(_elseValueOption)!;
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, outputColumn, conditions, elseValue,
                 hasHeader, ignoreErrors, verbose);
         });

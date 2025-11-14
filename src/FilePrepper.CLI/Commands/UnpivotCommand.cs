@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.Unpivot;
 using Microsoft.Extensions.Logging;
@@ -23,67 +23,60 @@ public class UnpivotCommand : BaseCommand
         : base("unpivot", "Transform wide format data to long format (unpivot)", loggerFactory)
     {
         // Required options
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _columnGroupsOption = new Option<string[]>(
-            aliases: new[] { "--column-groups", "-g" },
-            description: "Column groups to unpivot (space-separated)")
-        { IsRequired = true, AllowMultipleArgumentsPerToken = true };
+        _columnGroupsOption = new Option<string[]>("--column-groups", new[] { "-g" })
+        {
+            Description = "Column groups to unpivot (space-separated)",
+            Required = true,
+            AllowMultipleArgumentsPerToken = true
+        };
 
-        _valueColumnsOption = new Option<string[]>(
-            aliases: new[] { "--value-columns", "-vc" },
-            description: "Names for value columns in output (space-separated)")
-        { IsRequired = true, AllowMultipleArgumentsPerToken = true };
+        _valueColumnsOption = new Option<string[]>("--value-columns", new[] { "-vc" })
+        {
+            Description = "Names for value columns in output (space-separated)",
+            Required = true,
+            AllowMultipleArgumentsPerToken = true
+        };
 
         // Optional options
-        _baseColumnsOption = new Option<string[]>(
-            aliases: new[] { "--base-columns", "-b" },
-            getDefaultValue: () => Array.Empty<string>(),
-            description: "Base columns to keep in every output row (space-separated)")
-        { AllowMultipleArgumentsPerToken = true };
+        _baseColumnsOption = new Option<string[]>("--base-columns", new[] { "-b" })
+        {
+            Description = "Base columns to keep in every output row (space-separated)",
+            DefaultValueFactory = _ => Array.Empty<string>(),
+            AllowMultipleArgumentsPerToken = true
+        };
 
-        _indexColumnOption = new Option<string>(
-            aliases: new[] { "--index-column", "-idx" },
-            getDefaultValue: () => "Index",
-            description: "Name for the index column in output");
+        _indexColumnOption = new Option<string>("--index-column", new[] { "-idx" }) { Description = "Name for the index column in output", DefaultValueFactory = _ => "Index" };
 
-        _skipEmptyOption = new Option<bool>(
-            aliases: new[] { "--skip-empty", "-se" },
-            getDefaultValue: () => true,
-            description: "Skip rows where all value columns are empty");
+        _skipEmptyOption = new Option<bool>("--skip-empty", new[] { "-se" }) { Description = "Skip rows where all value columns are empty", DefaultValueFactory = _ => true };
 
         // Add all options
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_baseColumnsOption);
-        AddOption(_columnGroupsOption);
-        AddOption(_indexColumnOption);
-        AddOption(_valueColumnsOption);
-        AddOption(_skipEmptyOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_baseColumnsOption);
+        Add(_columnGroupsOption);
+        Add(_indexColumnOption);
+        Add(_valueColumnsOption);
+        Add(_skipEmptyOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var baseColumns = context.ParseResult.GetValueForOption(_baseColumnsOption) ?? Array.Empty<string>();
-            var columnGroups = context.ParseResult.GetValueForOption(_columnGroupsOption)!;
-            var indexColumn = context.ParseResult.GetValueForOption(_indexColumnOption)!;
-            var valueColumns = context.ParseResult.GetValueForOption(_valueColumnsOption)!;
-            var skipEmpty = context.ParseResult.GetValueForOption(_skipEmptyOption);
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var baseColumns = parseResult.GetValue(_baseColumnsOption) ?? Array.Empty<string>();
+            var columnGroups = parseResult.GetValue(_columnGroupsOption)!;
+            var indexColumn = parseResult.GetValue(_indexColumnOption)!;
+            var valueColumns = parseResult.GetValue(_valueColumnsOption)!;
+            var skipEmpty = parseResult.GetValue(_skipEmptyOption);
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, baseColumns, columnGroups, indexColumn, valueColumns, skipEmpty,
                 hasHeader, ignoreErrors, verbose);
         });

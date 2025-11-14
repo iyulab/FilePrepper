@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.OneHotEncoding;
 using Microsoft.Extensions.Logging;
@@ -17,32 +17,29 @@ public class OneHotEncodingCommand : BaseCommand
     public OneHotEncodingCommand(ILoggerFactory loggerFactory)
         : base("one-hot-encoding", "Perform one-hot encoding on categorical columns", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _columnsOption = new Option<string[]>(
-            aliases: new[] { "--columns", "-c" },
-            description: "Columns to encode",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
-        _dropFirstOption = new Option<bool>("--drop-first", () => false, "Drop first category");
-        _keepOriginalOption = new Option<bool>("--keep-original", () => false, "Keep original columns");
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to encode", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _dropFirstOption = new Option<bool>("--drop-first") { Description = "Drop first category", DefaultValueFactory = _ => false };
+        _keepOriginalOption = new Option<bool>("--keep-original") { Description = "Keep original columns", DefaultValueFactory = _ => false };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_columnsOption);
-        AddOption(_dropFirstOption);
-        AddOption(_keepOriginalOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_columnsOption);
+        Add(_dropFirstOption);
+        Add(_keepOriginalOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_columnsOption)!,
-                context.ParseResult.GetValueForOption(_dropFirstOption),
-                context.ParseResult.GetValueForOption(_keepOriginalOption),
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_columnsOption)!,
+                parseResult.GetValue(_dropFirstOption),
+                parseResult.GetValue(_keepOriginalOption),
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

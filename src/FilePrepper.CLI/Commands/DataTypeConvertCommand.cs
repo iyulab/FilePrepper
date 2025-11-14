@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.Globalization;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.DataTypeConvert;
@@ -17,29 +17,26 @@ public class DataTypeConvertCommand : BaseCommand
     public DataTypeConvertCommand(ILoggerFactory loggerFactory)
         : base("convert-type", "Convert data types of columns", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _conversionsOption = new Option<string[]>(
-            aliases: new[] { "--conversions", "-c" },
-            description: "Type conversions in format column:type[:format] (e.g. Date:DateTime:yyyy-MM-dd)",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
-        _cultureOption = new Option<string>("--culture", () => "en-US", "Culture for parsing (e.g. en-US, ko-KR)");
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _conversionsOption = new Option<string[]>("--conversions", new[] { "-c" }) { Description = "Type conversions in format column:type[:format] (e.g. Date:DateTime:yyyy-MM-dd)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _cultureOption = new Option<string>("--culture") { Description = "Culture for parsing (e.g. en-US, ko-KR)", DefaultValueFactory = _ => "en-US" };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_conversionsOption);
-        AddOption(_cultureOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_conversionsOption);
+        Add(_cultureOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_conversionsOption)!,
-                context.ParseResult.GetValueForOption(_cultureOption)!,
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_conversionsOption)!,
+                parseResult.GetValue(_cultureOption)!,
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.CreateLagFeatures;
 using Microsoft.Extensions.Logging;
@@ -25,85 +25,66 @@ public class CreateLagFeaturesCommand : BaseCommand
         : base("create-lag-features", "Create lag features from time series data for machine learning", loggerFactory)
     {
         // Required options
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input CSV file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input CSV file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _groupByOption = new Option<string>(
-            aliases: new[] { "--group-by", "-g" },
-            description: "Column to group by (e.g., Part Number, Entity ID)")
-        { IsRequired = true };
+        _groupByOption = new Option<string>("--group-by", new[] { "-g" }) { Description = "Column to group by (e.g., Part Number, Entity ID)", Required = true };
 
-        _timeColumnOption = new Option<string>(
-            aliases: new[] { "--time-column", "-t" },
-            description: "Column representing time/sequence for sorting within groups")
-        { IsRequired = true };
+        _timeColumnOption = new Option<string>("--time-column", new[] { "-t" }) { Description = "Column representing time/sequence for sorting within groups", Required = true };
 
-        _lagColumnsOption = new Option<string[]>(
-            aliases: new[] { "--lag-columns", "-l" },
-            description: "Comma-separated list of columns to create lag features from",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
-        { IsRequired = true };
+        _lagColumnsOption = new Option<string[]>("--lag-columns", new[] { "-l" }) { Description = "Comma-separated list of columns to create lag features from", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
 
-        _lagPeriodsOption = new Option<int[]>(
-            aliases: new[] { "--lag-periods", "-p" },
-            description: "Comma-separated list of lag periods (e.g., 1,2,3)",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray())
-        { IsRequired = true };
+        _lagPeriodsOption = new Option<int[]>("--lag-periods", new[] { "-p" })
+        {
+            Description = "Comma-separated list of lag periods (e.g., 1,2,3)",
+            CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray(),
+            Required = true
+        };
 
         // Optional options
-        _targetColumnOption = new Option<string?>(
-            aliases: new[] { "--target" },
-            description: "Target column to predict (optional, will be kept in output)");
+        _targetColumnOption = new Option<string?>("--target") { Description = "Target column to predict (optional, will be kept in output)" };
 
-        _dropNullsOption = new Option<bool>(
-            aliases: new[] { "--drop-nulls" },
-            getDefaultValue: () => true,
-            description: "Drop rows with null lag values");
+        _dropNullsOption = new Option<bool>("--drop-nulls") { Description = "Drop rows with null lag values", DefaultValueFactory = _ => true };
 
-        _keepColumnsOption = new Option<string[]?>(
-            aliases: new[] { "--keep-columns", "-k" },
-            description: "Comma-separated list of additional columns to keep in output",
-            parseArgument: result =>
+        _keepColumnsOption = new Option<string[]?>("--keep-columns", new[] { "-k" })
+        {
+            Description = "Comma-separated list of additional columns to keep in output",
+            CustomParser = result =>
             {
                 if (result.Tokens.Count == 0) return null;
                 return result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            });
+            }
+        };
 
         // Add all options
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_groupByOption);
-        AddOption(_timeColumnOption);
-        AddOption(_lagColumnsOption);
-        AddOption(_lagPeriodsOption);
-        AddOption(_targetColumnOption);
-        AddOption(_dropNullsOption);
-        AddOption(_keepColumnsOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_groupByOption);
+        Add(_timeColumnOption);
+        Add(_lagColumnsOption);
+        Add(_lagPeriodsOption);
+        Add(_targetColumnOption);
+        Add(_dropNullsOption);
+        Add(_keepColumnsOption);
 
         // Set the handler (System.CommandLine max 8 parameters, use context for common options)
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var groupBy = context.ParseResult.GetValueForOption(_groupByOption)!;
-            var timeColumn = context.ParseResult.GetValueForOption(_timeColumnOption)!;
-            var lagColumns = context.ParseResult.GetValueForOption(_lagColumnsOption)!;
-            var lagPeriods = context.ParseResult.GetValueForOption(_lagPeriodsOption)!;
-            var targetColumn = context.ParseResult.GetValueForOption(_targetColumnOption);
-            var dropNulls = context.ParseResult.GetValueForOption(_dropNullsOption);
-            var keepColumns = context.ParseResult.GetValueForOption(_keepColumnsOption);
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var groupBy = parseResult.GetValue(_groupByOption)!;
+            var timeColumn = parseResult.GetValue(_timeColumnOption)!;
+            var lagColumns = parseResult.GetValue(_lagColumnsOption)!;
+            var lagPeriods = parseResult.GetValue(_lagPeriodsOption)!;
+            var targetColumn = parseResult.GetValue(_targetColumnOption);
+            var dropNulls = parseResult.GetValue(_dropNullsOption);
+            var keepColumns = parseResult.GetValue(_keepColumnsOption);
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, groupBy, timeColumn,
                 lagColumns, lagPeriods, targetColumn,
                 dropNulls, keepColumns,

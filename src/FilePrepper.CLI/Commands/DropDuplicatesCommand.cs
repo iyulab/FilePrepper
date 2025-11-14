@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.DropDuplicates;
 using Microsoft.Extensions.Logging;
@@ -17,32 +17,33 @@ public class DropDuplicatesCommand : BaseCommand
     public DropDuplicatesCommand(ILoggerFactory loggerFactory)
         : base("drop-duplicates", "Remove duplicate rows", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _keepFirstOption = new Option<bool>("--keep-first", () => true, "Keep first occurrence of duplicates");
-        _subsetOnlyOption = new Option<bool>("--subset-only", () => false, "Check duplicates only on specified columns");
-        _columnsOption = new Option<string[]?>(
-            aliases: new[] { "--columns", "-c" },
-            description: "Columns to check for duplicates",
-            parseArgument: result => result.Tokens.Count > 0 ? result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries) : null);
-
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_keepFirstOption);
-        AddOption(_subsetOnlyOption);
-        AddOption(_columnsOption);
-
-        this.SetHandler(async (context) =>
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _keepFirstOption = new Option<bool>("--keep-first") { Description = "Keep first occurrence of duplicates", DefaultValueFactory = _ => true };
+        _subsetOnlyOption = new Option<bool>("--subset-only") { Description = "Check duplicates only on specified columns", DefaultValueFactory = _ => false };
+        _columnsOption = new Option<string[]?>("--columns", new[] { "-c" })
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_keepFirstOption),
-                context.ParseResult.GetValueForOption(_subsetOnlyOption),
-                context.ParseResult.GetValueForOption(_columnsOption),
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            Description = "Columns to check for duplicates",
+            CustomParser = result => result.Tokens.Count > 0 ? result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries) : null
+        };
+
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_keepFirstOption);
+        Add(_subsetOnlyOption);
+        Add(_columnsOption);
+
+        this.SetAction(async (parseResult) =>
+        {
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_keepFirstOption),
+                parseResult.GetValue(_subsetOnlyOption),
+                parseResult.GetValue(_columnsOption),
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

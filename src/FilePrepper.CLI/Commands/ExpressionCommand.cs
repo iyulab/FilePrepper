@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.Expression;
 using Microsoft.Extensions.Logging;
@@ -20,45 +20,33 @@ public class ExpressionCommand : BaseCommand
         : base("expression", "Create computed columns from arithmetic expressions", loggerFactory)
     {
         // Required options
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _expressionsOption = new Option<string[]>(
-            aliases: new[] { "--expressions", "-e" },
-            description: "Column expressions (format: 'output=expression' or 'output=expression@position', space-separated)")
-        { IsRequired = true, AllowMultipleArgumentsPerToken = true };
+        _expressionsOption = new Option<string[]>("--expressions", new[] { "-e" }) { Description = "Column expressions (format: 'output=expression' or 'output=expression@position', space-separated)", Required = true, AllowMultipleArgumentsPerToken = true };
 
         // Optional options
-        _removeSourceOption = new Option<bool>(
-            aliases: new[] { "--remove-source", "-r" },
-            getDefaultValue: () => false,
-            description: "Remove source columns used in expressions");
+        _removeSourceOption = new Option<bool>("--remove-source", new[] { "-r" }) { Description = "Remove source columns used in expressions", DefaultValueFactory = _ => false };
 
         // Add all options
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_expressionsOption);
-        AddOption(_removeSourceOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_expressionsOption);
+        Add(_removeSourceOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var expressions = context.ParseResult.GetValueForOption(_expressionsOption)!;
-            var removeSource = context.ParseResult.GetValueForOption(_removeSourceOption);
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var expressions = parseResult.GetValue(_expressionsOption)!;
+            var removeSource = parseResult.GetValue(_removeSourceOption);
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, expressions, removeSource,
                 hasHeader, ignoreErrors, verbose);
         });

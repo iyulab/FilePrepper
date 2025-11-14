@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.ReorderColumns;
 using Microsoft.Extensions.Logging;
@@ -15,26 +15,23 @@ public class ReorderColumnsCommand : BaseCommand
     public ReorderColumnsCommand(ILoggerFactory loggerFactory)
         : base("reorder-columns", "Reorder columns in the specified order", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _orderOption = new Option<string[]>(
-            aliases: new[] { "--order" },
-            description: "Desired column order",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _orderOption = new Option<string[]>("--order") { Description = "Desired column order", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_orderOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_orderOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_orderOption)!,
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_orderOption)!,
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

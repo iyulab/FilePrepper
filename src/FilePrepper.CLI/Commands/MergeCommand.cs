@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.Merge;
 using Microsoft.Extensions.Logging;
@@ -22,63 +22,49 @@ public class MergeCommand : BaseCommand
         : base("merge", "Merge multiple files vertically (concatenate) or horizontally (join)", loggerFactory)
     {
         // Required options
-        _inputFilesOption = new Option<string[]>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file paths (space-separated)")
-        { IsRequired = true, AllowMultipleArgumentsPerToken = true };
+        _inputFilesOption = new Option<string[]>("--input", new[] { "-i" }) { Description = "Input file paths (space-separated)", Required = true, AllowMultipleArgumentsPerToken = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _mergeTypeOption = new Option<string>(
-            aliases: new[] { "--type", "-t" },
-            description: "Merge type: Vertical (concatenate rows) or Horizontal (join columns)")
-        { IsRequired = true };
+        _mergeTypeOption = new Option<string>("--type", new[] { "-t" }) { Description = "Merge type: Vertical (concatenate rows) or Horizontal (join columns)", Required = true };
 
         // Optional options
-        _joinTypeOption = new Option<string>(
-            aliases: new[] { "--join-type", "-j" },
-            getDefaultValue: () => "Inner",
-            description: "Join type for horizontal merge: Inner, Left, Right, Full");
+        _joinTypeOption = new Option<string>("--join-type", new[] { "-j" }) { Description = "Join type for horizontal merge: Inner, Left, Right, Full", DefaultValueFactory = _ => "Inner" };
 
-        _keyColumnsOption = new Option<string[]>(
-            aliases: new[] { "--key-columns", "-k" },
-            description: "Key columns for horizontal merge (comma-separated)",
-            parseArgument: result =>
+        _keyColumnsOption = new Option<string[]>("--key-columns", new[] { "-k" })
+        {
+            Description = "Key columns for horizontal merge (comma-separated)",
+            CustomParser = result =>
             {
                 if (result.Tokens.Count == 0) return Array.Empty<string>();
                 return result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            });
+            }
+        };
 
-        _joinMappingsOption = new Option<string[]>(
-            aliases: new[] { "--join-mappings", "-m" },
-            description: "Join column mappings for heterogeneous column names (format: 'left:right' or 'left:right:output', space-separated)")
-        { AllowMultipleArgumentsPerToken = true };
+        _joinMappingsOption = new Option<string[]>("--join-mappings", new[] { "-m" }) { Description = "Join column mappings for heterogeneous column names (format: 'left:right' or 'left:right:output', space-separated)", AllowMultipleArgumentsPerToken = true };
 
         // Add all options
-        AddOption(_inputFilesOption);
-        AddOption(_outputOption);
-        AddOption(_mergeTypeOption);
-        AddOption(_joinTypeOption);
-        AddOption(_keyColumnsOption);
-        AddOption(_joinMappingsOption);
+        Add(_inputFilesOption);
+        Add(_outputOption);
+        Add(_mergeTypeOption);
+        Add(_joinTypeOption);
+        Add(_keyColumnsOption);
+        Add(_joinMappingsOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputFiles = context.ParseResult.GetValueForOption(_inputFilesOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var mergeType = context.ParseResult.GetValueForOption(_mergeTypeOption)!;
-            var joinType = context.ParseResult.GetValueForOption(_joinTypeOption)!;
-            var keyColumns = context.ParseResult.GetValueForOption(_keyColumnsOption) ?? Array.Empty<string>();
-            var joinMappings = context.ParseResult.GetValueForOption(_joinMappingsOption) ?? Array.Empty<string>();
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputFiles = parseResult.GetValue(_inputFilesOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var mergeType = parseResult.GetValue(_mergeTypeOption)!;
+            var joinType = parseResult.GetValue(_joinTypeOption)!;
+            var keyColumns = parseResult.GetValue(_keyColumnsOption) ?? Array.Empty<string>();
+            var joinMappings = parseResult.GetValue(_joinMappingsOption) ?? Array.Empty<string>();
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputFiles, outputPath, mergeType, joinType, keyColumns, joinMappings,
                 hasHeader, ignoreErrors, verbose);
         });

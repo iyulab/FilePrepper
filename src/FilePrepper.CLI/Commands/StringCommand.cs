@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.StringOps;
 using Microsoft.Extensions.Logging;
@@ -36,98 +36,68 @@ public class StringCommand : BaseCommand
         : base("string", "String operations (substring, concat, replace, trim, upper, lower)", loggerFactory)
     {
         // Required options
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _modeOption = new Option<string>(
-            aliases: new[] { "--mode", "-m" },
-            getDefaultValue: () => "trim",
-            description: "Operation mode: substring, concat, replace, trim, upper, lower");
+        _modeOption = new Option<string>("--mode", new[] { "-m" }) { Description = "Operation mode: substring, concat, replace, trim, upper, lower", DefaultValueFactory = _ => "trim" };
 
-        _columnOption = new Option<string?>(
-            aliases: new[] { "--column", "-c" },
-            description: "Column to operate on");
+        _columnOption = new Option<string?>("--column", new[] { "-c" }) { Description = "Column to operate on" };
 
-        _outputColumnOption = new Option<string?>(
-            aliases: new[] { "--output-column", "-oc" },
-            description: "Output column name (default: same as input or auto-generated)");
+        _outputColumnOption = new Option<string?>("--output-column", new[] { "-oc" }) { Description = "Output column name (default: same as input or auto-generated)" };
 
         // Substring options
-        _startIndexOption = new Option<int>(
-            aliases: new[] { "--start-index", "-s" },
-            getDefaultValue: () => 0,
-            description: "Start index for substring (0-based)");
+        _startIndexOption = new Option<int>("--start-index", new[] { "-s" }) { Description = "Start index for substring (0-based)", DefaultValueFactory = _ => 0 };
 
-        _lengthOption = new Option<int?>(
-            aliases: new[] { "--length", "-l" },
-            description: "Length for substring (default: to end)");
+        _lengthOption = new Option<int?>("--length", new[] { "-l" }) { Description = "Length for substring (default: to end)" };
 
         // Concat options
-        _columnsOption = new Option<string?>(
-            aliases: new[] { "--columns", "-cols" },
-            description: "Columns to concatenate (comma-separated)");
+        _columnsOption = new Option<string?>("--columns", new[] { "-cols" }) { Description = "Columns to concatenate (comma-separated)" };
 
-        _separatorOption = new Option<string>(
-            aliases: new[] { "--separator", "-sep" },
-            getDefaultValue: () => "",
-            description: "Separator for concat");
+        _separatorOption = new Option<string>("--separator", new[] { "-sep" }) { Description = "Separator for concat", DefaultValueFactory = _ => "" };
 
         // Replace options
-        _oldValueOption = new Option<string?>(
-            aliases: new[] { "--old-value", "-old" },
-            description: "Value to replace");
+        _oldValueOption = new Option<string?>("--old-value", new[] { "-old" }) { Description = "Value to replace" };
 
-        _newValueOption = new Option<string?>(
-            aliases: new[] { "--new-value", "-new" },
-            description: "Replacement value");
+        _newValueOption = new Option<string?>("--new-value", new[] { "-new" }) { Description = "Replacement value" };
 
         // Trim options
-        _trimModeOption = new Option<string>(
-            aliases: new[] { "--trim-mode", "-tm" },
-            getDefaultValue: () => "both",
-            description: "Trim mode: both, start, end");
+        _trimModeOption = new Option<string>("--trim-mode", new[] { "-tm" }) { Description = "Trim mode: both, start, end", DefaultValueFactory = _ => "both" };
 
         // Add all options
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_modeOption);
-        AddOption(_columnOption);
-        AddOption(_outputColumnOption);
-        AddOption(_startIndexOption);
-        AddOption(_lengthOption);
-        AddOption(_columnsOption);
-        AddOption(_separatorOption);
-        AddOption(_oldValueOption);
-        AddOption(_newValueOption);
-        AddOption(_trimModeOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_modeOption);
+        Add(_columnOption);
+        Add(_outputColumnOption);
+        Add(_startIndexOption);
+        Add(_lengthOption);
+        Add(_columnsOption);
+        Add(_separatorOption);
+        Add(_oldValueOption);
+        Add(_newValueOption);
+        Add(_trimModeOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var mode = context.ParseResult.GetValueForOption(_modeOption)!;
-            var column = context.ParseResult.GetValueForOption(_columnOption);
-            var outputColumn = context.ParseResult.GetValueForOption(_outputColumnOption);
-            var startIndex = context.ParseResult.GetValueForOption(_startIndexOption);
-            var length = context.ParseResult.GetValueForOption(_lengthOption);
-            var columns = context.ParseResult.GetValueForOption(_columnsOption);
-            var separator = context.ParseResult.GetValueForOption(_separatorOption)!;
-            var oldValue = context.ParseResult.GetValueForOption(_oldValueOption);
-            var newValue = context.ParseResult.GetValueForOption(_newValueOption);
-            var trimMode = context.ParseResult.GetValueForOption(_trimModeOption)!;
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var mode = parseResult.GetValue(_modeOption)!;
+            var column = parseResult.GetValue(_columnOption);
+            var outputColumn = parseResult.GetValue(_outputColumnOption);
+            var startIndex = parseResult.GetValue(_startIndexOption);
+            var length = parseResult.GetValue(_lengthOption);
+            var columns = parseResult.GetValue(_columnsOption);
+            var separator = parseResult.GetValue(_separatorOption)!;
+            var oldValue = parseResult.GetValue(_oldValueOption);
+            var newValue = parseResult.GetValue(_newValueOption);
+            var trimMode = parseResult.GetValue(_trimModeOption)!;
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, mode, column, outputColumn, startIndex, length,
                 columns, separator, oldValue, newValue, trimMode,
                 hasHeader, ignoreErrors, verbose);

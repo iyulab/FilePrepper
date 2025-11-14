@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.WindowOps;
 using Microsoft.Extensions.Logging;
@@ -25,80 +25,54 @@ public class WindowCommand : BaseCommand
         : base("window", "Apply window operations (resample or rolling aggregations)", loggerFactory)
     {
         // Required options
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _typeOption = new Option<string>(
-            aliases: new[] { "--type", "-t" },
-            description: "Window type: resample (time-based) or rolling (row-based)")
-        { IsRequired = true };
+        _typeOption = new Option<string>("--type", new[] { "-t" }) { Description = "Window type: resample (time-based) or rolling (row-based)", Required = true };
 
-        _methodOption = new Option<string>(
-            aliases: new[] { "--method", "-m" },
-            getDefaultValue: () => "mean",
-            description: "Aggregation method: mean, min, max, sum, count, std");
+        _methodOption = new Option<string>("--method", new[] { "-m" }) { Description = "Aggregation method: mean, min, max, sum, count, std", DefaultValueFactory = _ => "mean" };
 
-        _columnsOption = new Option<string[]>(
-            aliases: new[] { "--columns", "-c" },
-            description: "Target columns to aggregate (comma-separated)",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
-        { IsRequired = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Target columns to aggregate (comma-separated)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
 
         // Resample-specific options
-        _timeColumnOption = new Option<string?>(
-            aliases: new[] { "--time-column", "-tc" },
-            description: "Time column for resample (required for resample type)");
+        _timeColumnOption = new Option<string?>("--time-column", new[] { "-tc" }) { Description = "Time column for resample (required for resample type)" };
 
-        _windowOption = new Option<string?>(
-            aliases: new[] { "--window", "-w" },
-            description: "Window size for resample: e.g., '5T' (5 minutes), '1H' (1 hour), '1D' (1 day)");
+        _windowOption = new Option<string?>("--window", new[] { "-w" }) { Description = "Window size for resample: e.g., '5T' (5 minutes), '1H' (1 hour), '1D' (1 day)" };
 
         // Rolling-specific options
-        _windowSizeOption = new Option<int>(
-            aliases: new[] { "--window-size", "-ws" },
-            getDefaultValue: () => 3,
-            description: "Window size in rows for rolling aggregation");
+        _windowSizeOption = new Option<int>("--window-size", new[] { "-ws" }) { Description = "Window size in rows for rolling aggregation", DefaultValueFactory = _ => 3 };
 
-        _suffixOption = new Option<string>(
-            aliases: new[] { "--suffix", "-s" },
-            getDefaultValue: () => "_rolling",
-            description: "Suffix for rolling aggregation output columns");
+        _suffixOption = new Option<string>("--suffix", new[] { "-s" }) { Description = "Suffix for rolling aggregation output columns", DefaultValueFactory = _ => "_rolling" };
 
         // Add all options
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_typeOption);
-        AddOption(_methodOption);
-        AddOption(_columnsOption);
-        AddOption(_timeColumnOption);
-        AddOption(_windowOption);
-        AddOption(_windowSizeOption);
-        AddOption(_suffixOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_typeOption);
+        Add(_methodOption);
+        Add(_columnsOption);
+        Add(_timeColumnOption);
+        Add(_windowOption);
+        Add(_windowSizeOption);
+        Add(_suffixOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var type = context.ParseResult.GetValueForOption(_typeOption)!;
-            var method = context.ParseResult.GetValueForOption(_methodOption)!;
-            var columns = context.ParseResult.GetValueForOption(_columnsOption) ?? Array.Empty<string>();
-            var timeColumn = context.ParseResult.GetValueForOption(_timeColumnOption);
-            var window = context.ParseResult.GetValueForOption(_windowOption);
-            var windowSize = context.ParseResult.GetValueForOption(_windowSizeOption);
-            var suffix = context.ParseResult.GetValueForOption(_suffixOption)!;
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var type = parseResult.GetValue(_typeOption)!;
+            var method = parseResult.GetValue(_methodOption)!;
+            var columns = parseResult.GetValue(_columnsOption) ?? Array.Empty<string>();
+            var timeColumn = parseResult.GetValue(_timeColumnOption);
+            var window = parseResult.GetValue(_windowOption);
+            var windowSize = parseResult.GetValue(_windowSizeOption);
+            var suffix = parseResult.GetValue(_suffixOption)!;
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, type, method, columns, timeColumn, window, windowSize, suffix,
                 hasHeader, ignoreErrors, verbose);
         });

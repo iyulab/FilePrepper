@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.Text;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.FileFormatConvert;
@@ -20,35 +20,35 @@ public class FileFormatConvertCommand : BaseCommand
     public FileFormatConvertCommand(ILoggerFactory loggerFactory)
         : base("convert-format", "Convert file format", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _targetOption = new Option<string>(new[] { "--target", "-t" }, "Target format (CSV/TSV/PSV/JSON/XML)") { IsRequired = true };
-        _encodingOption = new Option<string>(new[] { "--encoding", "-e" }, () => "utf-8", "File encoding");
-        _prettyOption = new Option<bool>("--pretty", () => false, "Pretty print for JSON/XML");
-        _rootOption = new Option<string>("--root", () => "root", "Root element name for XML");
-        _itemOption = new Option<string>("--item", () => "item", "Item element name for XML");
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _targetOption = new Option<string>("--target", new[] { "-t" }) { Description = "Target format (CSV/TSV/PSV/JSON/XML)", Required = true };
+        _encodingOption = new Option<string>("--encoding", new[] { "-e" }) { Description = "File encoding", DefaultValueFactory = _ => "utf-8" };
+        _prettyOption = new Option<bool>("--pretty") { Description = "Pretty print for JSON/XML", DefaultValueFactory = _ => false };
+        _rootOption = new Option<string>("--root") { Description = "Root element name for XML", DefaultValueFactory = _ => "root" };
+        _itemOption = new Option<string>("--item") { Description = "Item element name for XML", DefaultValueFactory = _ => "item" };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_targetOption);
-        AddOption(_encodingOption);
-        AddOption(_prettyOption);
-        AddOption(_rootOption);
-        AddOption(_itemOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_targetOption);
+        Add(_encodingOption);
+        Add(_prettyOption);
+        Add(_rootOption);
+        Add(_itemOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_targetOption)!,
-                context.ParseResult.GetValueForOption(_encodingOption)!,
-                context.ParseResult.GetValueForOption(_prettyOption),
-                context.ParseResult.GetValueForOption(_rootOption)!,
-                context.ParseResult.GetValueForOption(_itemOption)!,
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_targetOption)!,
+                parseResult.GetValue(_encodingOption)!,
+                parseResult.GetValue(_prettyOption),
+                parseResult.GetValue(_rootOption)!,
+                parseResult.GetValue(_itemOption)!,
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

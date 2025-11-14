@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.NormalizeData;
 using Microsoft.Extensions.Logging;
@@ -18,35 +18,32 @@ public class NormalizeDataCommand : BaseCommand
     public NormalizeDataCommand(ILoggerFactory loggerFactory)
         : base("normalize", "Normalize numeric columns", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _columnsOption = new Option<string[]>(
-            aliases: new[] { "--columns", "-c" },
-            description: "Columns to normalize",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
-        _methodOption = new Option<string>(new[] { "--method", "-m" }, "Normalization method (MinMax/ZScore)") { IsRequired = true };
-        _minOption = new Option<double>("--min", () => 0.0, "Min value for MinMax scaling");
-        _maxOption = new Option<double>("--max", () => 1.0, "Max value for MinMax scaling");
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to normalize", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _methodOption = new Option<string>("--method", new[] { "-m" }) { Description = "Normalization method (MinMax/ZScore)", Required = true };
+        _minOption = new Option<double>("--min") { Description = "Min value for MinMax scaling", DefaultValueFactory = _ => 0.0 };
+        _maxOption = new Option<double>("--max") { Description = "Max value for MinMax scaling", DefaultValueFactory = _ => 1.0 };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_columnsOption);
-        AddOption(_methodOption);
-        AddOption(_minOption);
-        AddOption(_maxOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_columnsOption);
+        Add(_methodOption);
+        Add(_minOption);
+        Add(_maxOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_columnsOption)!,
-                context.ParseResult.GetValueForOption(_methodOption)!,
-                context.ParseResult.GetValueForOption(_minOption),
-                context.ParseResult.GetValueForOption(_maxOption),
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_columnsOption)!,
+                parseResult.GetValue(_methodOption)!,
+                parseResult.GetValue(_minOption),
+                parseResult.GetValue(_maxOption),
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

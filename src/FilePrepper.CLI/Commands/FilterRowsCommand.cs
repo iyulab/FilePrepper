@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.FilterRows;
 using Microsoft.Extensions.Logging;
@@ -19,38 +19,28 @@ public class FilterRowsCommand : BaseCommand
         : base("filter-rows", "Filter rows based on column conditions (e.g., Age:GreaterThan:30)", loggerFactory)
     {
         // Required options
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _conditionsOption = new Option<string[]>(
-            aliases: new[] { "--conditions", "-c" },
-            description: "Filter conditions in format column:operator:value (e.g., Age:GreaterThan:30). Operators: Equals, NotEquals, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Contains, NotContains, StartsWith, EndsWith",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
-        { IsRequired = true };
+        _conditionsOption = new Option<string[]>("--conditions", new[] { "-c" }) { Description = "Filter conditions in format column:operator:value (e.g., Age:GreaterThan:30). Operators: Equals, NotEquals, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Contains, NotContains, StartsWith, EndsWith", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
 
         // Add all options
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_conditionsOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_conditionsOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var conditions = context.ParseResult.GetValueForOption(_conditionsOption)!;
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var conditions = parseResult.GetValue(_conditionsOption)!;
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, conditions,
                 hasHeader, ignoreErrors, verbose);
         });

@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.DataSampling;
 using Microsoft.Extensions.Logging;
@@ -19,35 +19,35 @@ public class DataSamplingCommand : BaseCommand
     public DataSamplingCommand(ILoggerFactory loggerFactory)
         : base("data-sampling", "Sample data from the input file", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _methodOption = new Option<string>(new[] { "--method", "-m" }, "Sampling method (Random/Systematic/Stratified)") { IsRequired = true };
-        _sizeOption = new Option<double>(new[] { "--size", "-s" }, "Sample size (ratio 0-1 or absolute count)") { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _methodOption = new Option<string>("--method", new[] { "-m" }) { Description = "Sampling method (Random/Systematic/Stratified)", Required = true };
+        _sizeOption = new Option<double>("--size", new[] { "-s" }) { Description = "Sample size (ratio 0-1 or absolute count)", Required = true };
         _seedOption = new Option<int?>("--seed", "Random seed for reproducibility");
         _stratifyOption = new Option<string?>("--stratify", "Column for stratified sampling");
         _intervalOption = new Option<int?>("--interval", "Interval for systematic sampling");
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_methodOption);
-        AddOption(_sizeOption);
-        AddOption(_seedOption);
-        AddOption(_stratifyOption);
-        AddOption(_intervalOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_methodOption);
+        Add(_sizeOption);
+        Add(_seedOption);
+        Add(_stratifyOption);
+        Add(_intervalOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_methodOption)!,
-                context.ParseResult.GetValueForOption(_sizeOption),
-                context.ParseResult.GetValueForOption(_seedOption),
-                context.ParseResult.GetValueForOption(_stratifyOption),
-                context.ParseResult.GetValueForOption(_intervalOption),
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_methodOption)!,
+                parseResult.GetValue(_sizeOption),
+                parseResult.GetValue(_seedOption),
+                parseResult.GetValue(_stratifyOption),
+                parseResult.GetValue(_intervalOption),
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

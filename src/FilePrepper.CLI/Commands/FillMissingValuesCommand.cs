@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.FillMissingValues;
 using Microsoft.Extensions.Logging;
@@ -17,32 +17,29 @@ public class FillMissingValuesCommand : BaseCommand
     public FillMissingValuesCommand(ILoggerFactory loggerFactory)
         : base("fill-missing", "Fill missing values in columns", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _methodsOption = new Option<string[]>(
-            aliases: new[] { "--methods", "-m" },
-            description: "Fill methods in format column:method[:value] (e.g. Age:Mean or Score:FixedValue:0)",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
-        _appendOption = new Option<bool>("--append-to-source", () => false, "Append to source");
-        _templateOption = new Option<string?>("--output-column", "Output column template");
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _methodsOption = new Option<string[]>("--methods", new[] { "-m" }) { Description = "Fill methods in format column:method[:value] (e.g. Age:Mean or Score:FixedValue:0)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _appendOption = new Option<bool>("--append-to-source") { Description = "Append to source", DefaultValueFactory = _ => false };
+        _templateOption = new Option<string?>("--output-column") { Description = "Output column template" };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_methodsOption);
-        AddOption(_appendOption);
-        AddOption(_templateOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_methodsOption);
+        Add(_appendOption);
+        Add(_templateOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_methodsOption)!,
-                context.ParseResult.GetValueForOption(_appendOption),
-                context.ParseResult.GetValueForOption(_templateOption),
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_methodsOption)!,
+                parseResult.GetValue(_appendOption),
+                parseResult.GetValue(_templateOption),
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

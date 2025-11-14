@@ -1,5 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 
@@ -22,9 +21,9 @@ public abstract class BaseCommand : Command
         Logger = LoggerFactory.CreateLogger(GetType());
 
         // Add common options
-        AddOption(CommonOptions.HasHeader);
-        AddOption(CommonOptions.IgnoreErrors);
-        AddOption(CommonOptions.Verbose);
+        Add(CommonOptions.HasHeader);
+        Add(CommonOptions.IgnoreErrors);
+        Add(CommonOptions.Verbose);
     }
 
     protected void DisplaySuccess(string message)
@@ -153,20 +152,30 @@ public abstract class BaseCommand : Command
 /// </summary>
 public static class CommonOptions
 {
-    public static readonly Option<bool> HasHeader = new(
-        aliases: new[] { "--has-header", "--header" },
-        getDefaultValue: () => true,
-        description: "Whether input files have headers");
+    public static readonly Option<bool> HasHeader;
+    public static readonly Option<bool> IgnoreErrors;
+    public static readonly Option<bool> Verbose;
 
-    public static readonly Option<bool> IgnoreErrors = new(
-        aliases: new[] { "--ignore-errors" },
-        getDefaultValue: () => false,
-        description: "Whether to ignore errors during processing");
+    static CommonOptions()
+    {
+        HasHeader = new Option<bool>("--has-header", new[] { "--header" })
+        {
+            Description = "Whether input files have headers",
+            DefaultValueFactory = _ => true
+        };
 
-    public static readonly Option<bool> Verbose = new(
-        aliases: new[] { "--verbose", "-v" },
-        getDefaultValue: () => false,
-        description: "Enable verbose output");
+        IgnoreErrors = new Option<bool>("--ignore-errors")
+        {
+            Description = "Whether to ignore errors during processing",
+            DefaultValueFactory = _ => false
+        };
+
+        Verbose = new Option<bool>("--verbose", new[] { "-v" })
+        {
+            Description = "Enable verbose output",
+            DefaultValueFactory = _ => false
+        };
+    }
 }
 
 /// <summary>

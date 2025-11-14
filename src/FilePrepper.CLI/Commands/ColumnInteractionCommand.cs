@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.ColumnInteraction;
 using Microsoft.Extensions.Logging;
@@ -19,39 +19,36 @@ public class ColumnInteractionCommand : BaseCommand
     public ColumnInteractionCommand(ILoggerFactory loggerFactory)
         : base("column-interaction", "Perform operations between columns", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _sourceOption = new Option<string[]>(
-            aliases: new[] { "--source", "-s" },
-            description: "Source columns",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
-        _typeOption = new Option<string>(new[] { "--type", "-t" }, "Operation type (Add/Subtract/Multiply/Divide/Concat/Custom)") { IsRequired = true };
-        _columnOption = new Option<string>(new[] { "--column", "-c" }, "Output column name") { IsRequired = true };
-        _expressionOption = new Option<string?>(new[] { "--expression", "-e" }, "Custom expression (use $1, $2, etc.)");
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _sourceOption = new Option<string[]>("--source", new[] { "-s" }) { Description = "Source columns", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _typeOption = new Option<string>("--type", new[] { "-t" }) { Description = "Operation type (Add/Subtract/Multiply/Divide/Concat/Custom)", Required = true };
+        _columnOption = new Option<string>("--column", new[] { "-c" }) { Description = "Output column name", Required = true };
+        _expressionOption = new Option<string?>("--expression", new[] { "-e" }) { Description = "Custom expression (use $1, $2, etc.)" };
         _defaultValueOption = new Option<string?>("--default-value", "Default value for errors");
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_sourceOption);
-        AddOption(_typeOption);
-        AddOption(_columnOption);
-        AddOption(_expressionOption);
-        AddOption(_defaultValueOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_sourceOption);
+        Add(_typeOption);
+        Add(_columnOption);
+        Add(_expressionOption);
+        Add(_defaultValueOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var source = context.ParseResult.GetValueForOption(_sourceOption)!;
-            var type = context.ParseResult.GetValueForOption(_typeOption)!;
-            var column = context.ParseResult.GetValueForOption(_columnOption)!;
-            var expression = context.ParseResult.GetValueForOption(_expressionOption);
-            var defaultValue = context.ParseResult.GetValueForOption(_defaultValueOption);
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var source = parseResult.GetValue(_sourceOption)!;
+            var type = parseResult.GetValue(_typeOption)!;
+            var column = parseResult.GetValue(_columnOption)!;
+            var expression = parseResult.GetValue(_expressionOption);
+            var defaultValue = parseResult.GetValue(_defaultValueOption);
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(inputPath, outputPath, source, type, column, expression,
+            return await ExecuteAsync(inputPath, outputPath, source, type, column, expression,
                 defaultValue, hasHeader, ignoreErrors, verbose);
         });
     }

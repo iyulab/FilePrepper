@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.Aggregate;
 using Microsoft.Extensions.Logging;
@@ -21,57 +21,38 @@ public class AggregateCommand : BaseCommand
     public AggregateCommand(ILoggerFactory loggerFactory)
         : base("aggregate", "Aggregate data based on group by columns", loggerFactory)
     {
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _groupByOption = new Option<string[]>(
-            aliases: new[] { "--group-by", "-g" },
-            description: "Columns to group by",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
-        { IsRequired = true };
+        _groupByOption = new Option<string[]>("--group-by", new[] { "-g" }) { Description = "Columns to group by", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
 
-        _aggregatesOption = new Option<string[]>(
-            aliases: new[] { "--aggregates", "-a" },
-            description: "Aggregate functions in format column:function:output (e.g. Sales:Sum:TotalSales). Functions: Sum, Average, Count, Min, Max",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
-        { IsRequired = true };
+        _aggregatesOption = new Option<string[]>("--aggregates", new[] { "-a" }) { Description = "Aggregate functions in format column:function:output (e.g. Sales:Sum:TotalSales). Functions: Sum, Average, Count, Min, Max", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
 
-        _appendOption = new Option<bool>(
-            aliases: new[] { "--append-to-source" },
-            description: "Append result to source file",
-            getDefaultValue: () => false);
+        _appendOption = new Option<bool>("--append-to-source") { Description = "Append result to source file", DefaultValueFactory = _ => false };
 
-        _templateOption = new Option<string?>(
-            aliases: new[] { "--output-column" },
-            description: "Output column name template when appending");
+        _templateOption = new Option<string?>("--output-column") { Description = "Output column name template when appending" };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_groupByOption);
-        AddOption(_aggregatesOption);
-        AddOption(_appendOption);
-        AddOption(_templateOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_groupByOption);
+        Add(_aggregatesOption);
+        Add(_appendOption);
+        Add(_templateOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var groupBy = context.ParseResult.GetValueForOption(_groupByOption)!;
-            var aggregates = context.ParseResult.GetValueForOption(_aggregatesOption)!;
-            var append = context.ParseResult.GetValueForOption(_appendOption);
-            var template = context.ParseResult.GetValueForOption(_templateOption);
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var groupBy = parseResult.GetValue(_groupByOption)!;
+            var aggregates = parseResult.GetValue(_aggregatesOption)!;
+            var append = parseResult.GetValue(_appendOption);
+            var template = parseResult.GetValue(_templateOption);
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, groupBy, aggregates, append, template,
                 hasHeader, ignoreErrors, verbose);
         });

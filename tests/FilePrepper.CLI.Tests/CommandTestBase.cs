@@ -109,7 +109,8 @@ public abstract class CommandTestBase : IDisposable
     /// </summary>
     protected async Task<int> RunCommandAsync(Command command, params string[] args)
     {
-        return await command.InvokeAsync(args);
+        var parseResult = command.Parse(args);
+        return await parseResult.InvokeAsync();
     }
 
     /// <summary>
@@ -128,7 +129,8 @@ public abstract class CommandTestBase : IDisposable
             Console.SetOut(outputWriter);
             Console.SetError(errorWriter);
 
-            var exitCode = await command.InvokeAsync(args);
+            var parseResult = command.Parse(args);
+            var exitCode = await parseResult.InvokeAsync();
 
             return (exitCode, outputWriter.ToString(), errorWriter.ToString());
         }

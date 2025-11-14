@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.ScaleData;
 using Microsoft.Extensions.Logging;
@@ -15,26 +15,23 @@ public class ScaleDataCommand : BaseCommand
     public ScaleDataCommand(ILoggerFactory loggerFactory)
         : base("scale", "Scale numeric columns using specified methods", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _scalingOption = new Option<string[]>(
-            aliases: new[] { "--scaling", "-s" },
-            description: "Scaling methods in format column:method (e.g. Price:MinMax,Score:Standardization)",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _scalingOption = new Option<string[]>("--scaling", new[] { "-s" }) { Description = "Scaling methods in format column:method (e.g. Price:MinMax,Score:Standardization)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_scalingOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_scalingOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_scalingOption)!,
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_scalingOption)!,
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 

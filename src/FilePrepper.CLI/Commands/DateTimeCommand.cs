@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.DateTimeOps;
 using Microsoft.Extensions.Logging;
@@ -24,73 +24,51 @@ public class DateTimeCommand : BaseCommand
         : base("datetime", "Parse DateTime and extract features", loggerFactory)
     {
         // Required options
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _columnOption = new Option<string>(
-            aliases: new[] { "--column", "-c" },
-            description: "Column to parse/transform")
-        { IsRequired = true };
+        _columnOption = new Option<string>("--column", new[] { "-c" }) { Description = "Column to parse/transform", Required = true };
 
         // Mode option
-        _modeOption = new Option<string>(
-            aliases: new[] { "--mode", "-m" },
-            getDefaultValue: () => "parse",
-            description: "Operation mode: parse, excel, features");
+        _modeOption = new Option<string>("--mode", new[] { "-m" }) { Description = "Operation mode: parse, excel, features", DefaultValueFactory = _ => "parse" };
 
         // Format options
-        _inputFormatOption = new Option<string?>(
-            aliases: new[] { "--format", "-f" },
-            description: "Input format for parse mode (e.g., 'yyyy-MM-dd HH:mm', 'yyyyMMddHHmm')");
+        _inputFormatOption = new Option<string?>("--format", new[] { "-f" }) { Description = "Input format for parse mode (e.g., 'yyyy-MM-dd HH:mm', 'yyyyMMddHHmm')" };
 
-        _outputFormatOption = new Option<string>(
-            aliases: new[] { "--output-format", "-of" },
-            getDefaultValue: () => "yyyy-MM-dd HH:mm:ss",
-            description: "Output format");
+        _outputFormatOption = new Option<string>("--output-format", new[] { "-of" }) { Description = "Output format", DefaultValueFactory = _ => "yyyy-MM-dd HH:mm:ss" };
 
         // Feature extraction options
-        _featuresOption = new Option<string?>(
-            aliases: new[] { "--features", "-ft" },
-            description: "Features to extract (comma-separated): Year,Month,Day,Hour,Minute,DayOfWeek,DayOfYear,WeekOfYear,Quarter");
+        _featuresOption = new Option<string?>("--features", new[] { "-ft" }) { Description = "Features to extract (comma-separated): Year,Month,Day,Hour,Minute,DayOfWeek,DayOfYear,WeekOfYear,Quarter" };
 
-        _removeOriginalOption = new Option<bool>(
-            aliases: new[] { "--remove-original" },
-            getDefaultValue: () => false,
-            description: "Remove original column after feature extraction");
+        _removeOriginalOption = new Option<bool>("--remove-original") { Description = "Remove original column after feature extraction", DefaultValueFactory = _ => false };
 
         // Add all options
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_columnOption);
-        AddOption(_modeOption);
-        AddOption(_inputFormatOption);
-        AddOption(_outputFormatOption);
-        AddOption(_featuresOption);
-        AddOption(_removeOriginalOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_columnOption);
+        Add(_modeOption);
+        Add(_inputFormatOption);
+        Add(_outputFormatOption);
+        Add(_featuresOption);
+        Add(_removeOriginalOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var column = context.ParseResult.GetValueForOption(_columnOption)!;
-            var mode = context.ParseResult.GetValueForOption(_modeOption)!;
-            var inputFormat = context.ParseResult.GetValueForOption(_inputFormatOption);
-            var outputFormat = context.ParseResult.GetValueForOption(_outputFormatOption)!;
-            var features = context.ParseResult.GetValueForOption(_featuresOption);
-            var removeOriginal = context.ParseResult.GetValueForOption(_removeOriginalOption);
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var column = parseResult.GetValue(_columnOption)!;
+            var mode = parseResult.GetValue(_modeOption)!;
+            var inputFormat = parseResult.GetValue(_inputFormatOption);
+            var outputFormat = parseResult.GetValue(_outputFormatOption)!;
+            var features = parseResult.GetValue(_featuresOption);
+            var removeOriginal = parseResult.GetValue(_removeOriginalOption);
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, column, mode, inputFormat, outputFormat, features, removeOriginal,
                 hasHeader, ignoreErrors, verbose);
         });

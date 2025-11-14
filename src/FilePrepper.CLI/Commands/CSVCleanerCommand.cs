@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.CSVCleaner;
 using Microsoft.Extensions.Logging;
@@ -21,53 +21,37 @@ public class CSVCleanerCommand : BaseCommand
         : base("clean", "Clean CSV numeric data (remove thousand separators)", loggerFactory)
     {
         // Required options
-        _inputOption = new Option<string>(
-            aliases: new[] { "--input", "-i" },
-            description: "Input file path")
-        { IsRequired = true };
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
 
-        _outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
-        { IsRequired = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
         // Optional options
-        _targetColumnsOption = new Option<string[]>(
-            aliases: new[] { "--columns", "-c" },
-            getDefaultValue: () => Array.Empty<string>(),
-            description: "Target columns to clean (if empty, all columns are cleaned, space-separated)")
-        { AllowMultipleArgumentsPerToken = true };
+        _targetColumnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Target columns to clean (if empty, all columns are cleaned, space-separated)", DefaultValueFactory = _ => Array.Empty<string>(), AllowMultipleArgumentsPerToken = true };
 
-        _separatorOption = new Option<char>(
-            aliases: new[] { "--separator", "-s" },
-            getDefaultValue: () => ',',
-            description: "Thousand separator character to remove");
+        _separatorOption = new Option<char>("--separator", new[] { "-s" }) { Description = "Thousand separator character to remove", DefaultValueFactory = _ => ',' };
 
-        _validateOption = new Option<bool>(
-            aliases: new[] { "--validate", "-val" },
-            getDefaultValue: () => false,
-            description: "Validate that cleaned values are valid numbers");
+        _validateOption = new Option<bool>("--validate", new[] { "-val" }) { Description = "Validate that cleaned values are valid numbers", DefaultValueFactory = _ => false };
 
         // Add all options
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_targetColumnsOption);
-        AddOption(_separatorOption);
-        AddOption(_validateOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_targetColumnsOption);
+        Add(_separatorOption);
+        Add(_validateOption);
 
         // Set the handler
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            var inputPath = context.ParseResult.GetValueForOption(_inputOption)!;
-            var outputPath = context.ParseResult.GetValueForOption(_outputOption)!;
-            var targetColumns = context.ParseResult.GetValueForOption(_targetColumnsOption) ?? Array.Empty<string>();
-            var separator = context.ParseResult.GetValueForOption(_separatorOption);
-            var validate = context.ParseResult.GetValueForOption(_validateOption);
-            var hasHeader = context.ParseResult.GetValueForOption(CommonOptions.HasHeader);
-            var ignoreErrors = context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors);
-            var verbose = context.ParseResult.GetValueForOption(CommonOptions.Verbose);
+            var inputPath = parseResult.GetValue(_inputOption)!;
+            var outputPath = parseResult.GetValue(_outputOption)!;
+            var targetColumns = parseResult.GetValue(_targetColumnsOption) ?? Array.Empty<string>();
+            var separator = parseResult.GetValue(_separatorOption);
+            var validate = parseResult.GetValue(_validateOption);
+            var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
+            var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
+            var verbose = parseResult.GetValue(CommonOptions.Verbose);
 
-            context.ExitCode = await ExecuteAsync(
+            return await ExecuteAsync(
                 inputPath, outputPath, targetColumns, separator, validate,
                 hasHeader, ignoreErrors, verbose);
         });

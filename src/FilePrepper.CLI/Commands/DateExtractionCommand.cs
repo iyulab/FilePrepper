@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.Globalization;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.DateExtraction;
@@ -19,35 +19,32 @@ public class DateExtractionCommand : BaseCommand
     public DateExtractionCommand(ILoggerFactory loggerFactory)
         : base("extract-date", "Extract components from date columns", loggerFactory)
     {
-        _inputOption = new Option<string>(new[] { "--input", "-i" }, "Input file path") { IsRequired = true };
-        _outputOption = new Option<string>(new[] { "--output", "-o" }, "Output file path") { IsRequired = true };
-        _extractionsOption = new Option<string[]>(
-            aliases: new[] { "--extractions", "-e" },
-            description: "Date extractions in format column:component1,component2[:format]",
-            parseArgument: result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries)) { IsRequired = true };
-        _cultureOption = new Option<string>("--culture", () => "en-US", "Culture for parsing dates");
-        _appendOption = new Option<bool>("--append-to-source", () => false, "Append to source file");
-        _templateOption = new Option<string?>("--output-column", "Output column template");
+        _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
+        _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
+        _extractionsOption = new Option<string[]>("--extractions", new[] { "-e" }) { Description = "Date extractions in format column:component1,component2[:format]", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _cultureOption = new Option<string>("--culture") { Description = "Culture for parsing dates", DefaultValueFactory = _ => "en-US" };
+        _appendOption = new Option<bool>("--append-to-source") { Description = "Append to source file", DefaultValueFactory = _ => false };
+        _templateOption = new Option<string?>("--output-column") { Description = "Output column template" };
 
-        AddOption(_inputOption);
-        AddOption(_outputOption);
-        AddOption(_extractionsOption);
-        AddOption(_cultureOption);
-        AddOption(_appendOption);
-        AddOption(_templateOption);
+        Add(_inputOption);
+        Add(_outputOption);
+        Add(_extractionsOption);
+        Add(_cultureOption);
+        Add(_appendOption);
+        Add(_templateOption);
 
-        this.SetHandler(async (context) =>
+        this.SetAction(async (parseResult) =>
         {
-            context.ExitCode = await ExecuteAsync(
-                context.ParseResult.GetValueForOption(_inputOption)!,
-                context.ParseResult.GetValueForOption(_outputOption)!,
-                context.ParseResult.GetValueForOption(_extractionsOption)!,
-                context.ParseResult.GetValueForOption(_cultureOption)!,
-                context.ParseResult.GetValueForOption(_appendOption),
-                context.ParseResult.GetValueForOption(_templateOption),
-                context.ParseResult.GetValueForOption(CommonOptions.HasHeader),
-                context.ParseResult.GetValueForOption(CommonOptions.IgnoreErrors),
-                context.ParseResult.GetValueForOption(CommonOptions.Verbose));
+            return await ExecuteAsync(
+                parseResult.GetValue(_inputOption)!,
+                parseResult.GetValue(_outputOption)!,
+                parseResult.GetValue(_extractionsOption)!,
+                parseResult.GetValue(_cultureOption)!,
+                parseResult.GetValue(_appendOption),
+                parseResult.GetValue(_templateOption),
+                parseResult.GetValue(CommonOptions.HasHeader),
+                parseResult.GetValue(CommonOptions.IgnoreErrors),
+                parseResult.GetValue(CommonOptions.Verbose));
         });
     }
 
