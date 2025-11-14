@@ -1,24 +1,33 @@
 <Project>
+  <!-- Common Properties for All Projects -->
   <PropertyGroup>
-    <Version>0.4.5</Version>
+    <!-- Versioning -->
+    <Version>0.4.6</Version>
+
+    <!-- Language Settings -->
     <LangVersion>preview</LangVersion>
-    <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- Package Metadata -->
     <Authors>iyulab</Authors>
     <Company>iyulab</Company>
     <Owners>iyulab</Owners>
     <Copyright>Copyright (c) Iyulab Corporation 2024.</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <!-- Repository Information -->
     <PackageProjectUrl>https://github.com/iyulab/FilePrepper</PackageProjectUrl>
     <RepositoryUrl>https://github.com/iyulab/FilePrepper.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageIconUrl>https://raw.githubusercontent.com/iyulab/public/main/images/iyulab_128.png</PackageIconUrl>
-    <PackageTags>file-preprocess,file format convert</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <!-- Package Assets -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>logo.png</PackageIcon>
   </PropertyGroup>
+
+  <!-- Package Files (for packable projects) -->
   <ItemGroup>
-    <None Include="../../README.md" Pack="true" PackagePath="\" />
-    <None Include="../logo.png" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)logo.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>

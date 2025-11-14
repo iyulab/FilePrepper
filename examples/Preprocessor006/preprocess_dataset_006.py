@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 # Configuration
-FILEPREPPER_CLI = Path("D:/data/FilePrepper/src/FilePrepper.CLI/bin/Release/net9.0/fileprepper.exe")
+FILEPREPPER_CLI = Path("D:/data/FilePrepper/src/FilePrepper.CLI/bin/Release/net10.0/fileprepper.exe")
 INPUT_DIR = Path("D:/data/MLoop/ML-Resource/003-소성가공 자원최적화/Dataset/data")
 OUTPUT_DIR = Path("D:/data/MLoop/ML-Resource/003-소성가공 자원최적화/mloop-project/processed-data")
 

@@ -50,12 +50,7 @@ W002,D002,제품B,2024-01-05,2024-01-12,500,3000,1500000,2024-01-18,200,2024-02-
                 HasHeader = true
             };
 
-            var context = new TaskContext
-            {
-                Options = option,
-                InputPath = option.InputPath,
-                OutputPath = option.OutputPath
-            };
+            var context = new TaskContext(option);
 
             // Act
             var result = await _task.ExecuteAsync(context);

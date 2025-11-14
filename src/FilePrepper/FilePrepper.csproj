@@ -1,24 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <NoWarn>IDE0290</NoWarn>
 
-    <!-- NuGet Package Metadata -->
+    <!-- Package-Specific Metadata -->
     <PackageId>FilePrepper</PackageId>
     <Title>FilePrepper SDK</Title>
     <Description>A powerful .NET library for data preprocessing. Provides Pipeline API for efficient in-memory data transformations with 67-90% reduction in file I/O. Perfect for ML, ETL, and data analysis workflows.</Description>
-    <Authors>iyulab</Authors>
-    <Company>iyulab</Company>
     <PackageTags>data-preprocessing;pipeline;etl;ml;sdk;csv;excel;data-transformation</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/iyulab/FilePrepper</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/iyulab/FilePrepper.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>logo.png</PackageIcon>
   </PropertyGroup>
 
   <!-- README.md and logo.png are already included from Directory.Build.props -->
@@ -27,13 +18,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="33.1.0" />
-    <PackageReference Include="EPPlus" Version="8.2.1" />
-    <PackageReference Include="ExcelDataReader" Version="3.8.0" />
-    <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.10" />
-    <PackageReference Include="Scrutor" Version="6.1.0" />
+    <PackageReference Include="CsvHelper" />
+    <PackageReference Include="EPPlus" />
+    <PackageReference Include="ExcelDataReader" />
+    <PackageReference Include="ExcelDataReader.DataSet" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Scrutor" />
   </ItemGroup>
 </Project>

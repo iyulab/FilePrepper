@@ -56,7 +56,7 @@ Version: 0.4.0
 Package Type: DotnetTool
 Package Path: D:\data\FilePrepper\src\FilePrepper.CLI\nupkg\fileprepper-cli.0.4.0.nupkg
 Tool Command: fileprepper
-Target Framework: net9.0
+Target Framework: net10.0
 ```
 
 ### Package Metadata
