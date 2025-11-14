@@ -21,7 +21,7 @@ public class FilterCondition
     public string Value { get; set; } = string.Empty;
 }
 
-public class FilterRowsOption : BaseColumnOption
+public class FilterRowsOption : SingleInputOption
 {
     // 여러 조건을 모두 만족해야 하는 AND 방식으로 처리
     public List<FilterCondition> Conditions { get; set; } = new();

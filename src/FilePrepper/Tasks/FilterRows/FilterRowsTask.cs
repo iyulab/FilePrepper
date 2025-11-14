@@ -75,8 +75,7 @@ public class FilterRowsTask : BaseTask<FilterRowsOption>
 
     protected override IEnumerable<string> GetRequiredColumns()
     {
-        // 조건에 사용되는 컬럼과 TargetColumns를 합침
-        var conditionCols = Options.Conditions.Select(c => c.ColumnName);
-        return Options.TargetColumns.Union(conditionCols);
+        // 조건에 사용되는 컬럼만 반환
+        return Options.Conditions.Select(c => c.ColumnName);
     }
 }

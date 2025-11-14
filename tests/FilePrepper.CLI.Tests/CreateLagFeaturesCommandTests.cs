@@ -34,8 +34,8 @@ public class CreateLagFeaturesCommandTests : CommandTestBase
 
         var (headers, rows) = ReadCsvWithHeaders(outputPath);
 
-        // Should have Value_Lag1 column
-        headers.Should().Contain("Value_Lag1");
+        // Should have Value_lag1 column
+        headers.Should().Contain("Value_lag1");
 
         // With lag 1 and drop nulls, each group should have 2 rows (3 - 1)
         // 2 groups × 2 rows = 4 rows
@@ -64,9 +64,9 @@ public class CreateLagFeaturesCommandTests : CommandTestBase
 
         var (headers, _) = ReadCsvWithHeaders(outputPath);
 
-        // Should have Value_Lag1 and Value_Lag2 columns
-        headers.Should().Contain("Value_Lag1");
-        headers.Should().Contain("Value_Lag2");
+        // Should have Value_lag1 and Value_lag2 columns
+        headers.Should().Contain("Value_lag1");
+        headers.Should().Contain("Value_lag2");
     }
 
     [Fact]
@@ -99,8 +99,8 @@ public class CreateLagFeaturesCommandTests : CommandTestBase
         var (outHeaders, _) = ReadCsvWithHeaders(outputPath);
 
         // Should have lag columns for both Temp and Humidity
-        outHeaders.Should().Contain("Temp_Lag1");
-        outHeaders.Should().Contain("Humidity_Lag1");
+        outHeaders.Should().Contain("Temp_lag1");
+        outHeaders.Should().Contain("Humidity_lag1");
     }
 
     [Fact]
@@ -278,23 +278,24 @@ public class CreateLagFeaturesCommandTests : CommandTestBase
         var inputPath = CreateSampleTimeSeriesData();
         var outputPath = GetTempPath("lag_names.csv");
 
-        // Act - Create multiple lags
+        // Act - Create multiple lags (keep nulls to ensure we have output rows)
         var exitCode = await RunCommandAsync(_command,
             "--input", inputPath,
             "--output", outputPath,
             "--group-by", "PartNumber",
             "--time-column", "Date",
             "--lag-columns", "Value",
-            "--lag-periods", "1,2,3");
+            "--lag-periods", "1,2,3",
+            "--drop-nulls", "false");
 
         // Assert
         exitCode.Should().Be(0);
         var (headers, _) = ReadCsvWithHeaders(outputPath);
 
         // Should have properly named lag columns
-        headers.Should().Contain("Value_Lag1");
-        headers.Should().Contain("Value_Lag2");
-        headers.Should().Contain("Value_Lag3");
+        headers.Should().Contain("Value_lag1");
+        headers.Should().Contain("Value_lag2");
+        headers.Should().Contain("Value_lag3");
     }
 
     [Fact]

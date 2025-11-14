@@ -29,7 +29,6 @@ public class FilterRowsTests : TaskBaseTest<FilterRowsTask>
         {
             InputPath = _testInputPath,
             OutputPath = _testOutputPath,
-            TargetColumns = new[] { "Name" },
             Conditions = new List<FilterCondition>
             {
                 new()
@@ -63,7 +62,6 @@ public class FilterRowsTests : TaskBaseTest<FilterRowsTask>
         {
             InputPath = _testInputPath,
             OutputPath = _testOutputPath,
-            TargetColumns = new[] { "Name" },
             Conditions = new List<FilterCondition>
             {
                 new()
@@ -97,7 +95,6 @@ public class FilterRowsTests : TaskBaseTest<FilterRowsTask>
         {
             InputPath = _testInputPath,
             OutputPath = _testOutputPath,
-            TargetColumns = new[] { "Name" },
             Conditions = new List<FilterCondition>
         {
             new()
@@ -133,7 +130,6 @@ public class FilterRowsTests : TaskBaseTest<FilterRowsTask>
         {
             InputPath = _testInputPath,
             OutputPath = _testOutputPath,
-            TargetColumns = new[] { "Score" },
             Conditions = new List<FilterCondition>
             {
                 new()
@@ -166,7 +162,6 @@ public class FilterRowsTests : TaskBaseTest<FilterRowsTask>
         {
             InputPath = _testInputPath,
             OutputPath = _testOutputPath,
-            TargetColumns = new[] { "Name" },
             Conditions = new List<FilterCondition>()
         };
 

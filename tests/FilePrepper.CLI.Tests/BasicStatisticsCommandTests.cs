@@ -38,7 +38,7 @@ public class BasicStatisticsCommandTests : CommandTestBase
         FileExists(outputPath).Should().BeTrue();
 
         var (outHeaders, outRows) = ReadCsvWithHeaders(outputPath);
-        outHeaders.Should().Contain("Score_stat");
+        outHeaders.Should().Contain("Score_stat_Mean");
         outRows.Count.Should().Be(3);
     }
 
@@ -99,7 +99,7 @@ public class BasicStatisticsCommandTests : CommandTestBase
         // Assert
         exitCode.Should().Be(0);
         FileExists(outputPath).Should().BeTrue();
-        AssertCsvHasHeader(outputPath, "Measurement_stat");
+        AssertCsvHasHeader(outputPath, "Measurement_stat_StandardDeviation");
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class BasicStatisticsCommandTests : CommandTestBase
         // Assert
         exitCode.Should().Be(0);
         FileExists(outputPath).Should().BeTrue();
-        AssertCsvHasHeader(outputPath, "Age_stat");
+        AssertCsvHasHeader(outputPath, "Age_stat_Median");
     }
 
     [Fact]
@@ -211,8 +211,8 @@ public class BasicStatisticsCommandTests : CommandTestBase
 
         var (outHeaders, _) = ReadCsvWithHeaders(outputPath);
         // Should have stat columns for both Math and Science
-        outHeaders.Should().Contain("Math_stat");
-        outHeaders.Should().Contain("Science_stat");
+        outHeaders.Should().Contain("Math_stat_Mean");
+        outHeaders.Should().Contain("Science_stat_Mean");
     }
 
     [Fact]
@@ -235,7 +235,7 @@ public class BasicStatisticsCommandTests : CommandTestBase
         // Assert
         exitCode.Should().Be(0);
         FileExists(outputPath).Should().BeTrue();
-        AssertCsvHasHeader(outputPath, "Value_avg");
+        AssertCsvHasHeader(outputPath, "Value_avg_Mean");
     }
 
     [Fact]
@@ -348,7 +348,7 @@ public class BasicStatisticsCommandTests : CommandTestBase
         // Assert
         exitCode.Should().Be(0);
         FileExists(outputPath).Should().BeTrue();
-        AssertCsvHasHeader(outputPath, "Value_stat");
+        AssertCsvHasHeader(outputPath, "Value_stat_ZScore");
     }
 
     [Fact]
