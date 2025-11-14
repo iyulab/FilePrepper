@@ -19,7 +19,7 @@ on:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  SOLUTION_PATH: 'src/FilePrepper.sln'
+  SOLUTION_PATH: 'FilePrepper.sln'
 
 jobs:
   build-and-publish:
