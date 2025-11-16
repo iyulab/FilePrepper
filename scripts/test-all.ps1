@@ -25,15 +25,14 @@ $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 # Save current location
 $originalLocation = Get-Location
 $scriptRoot = Split-Path -Parent $PSScriptRoot
-$srcPath = Join-Path $scriptRoot "src"
 
-# Verify src directory exists
-if (!(Test-Path $srcPath)) {
-    Write-Error "❌ Error: src directory not found at $srcPath"
+# Verify solution directory exists
+if (!(Test-Path $scriptRoot)) {
+    Write-Error "❌ Error: solution directory not found at $scriptRoot"
     exit 1
 }
 
-Set-Location $srcPath
+Set-Location $scriptRoot
 
 # Initialize result tracking
 $buildSuccess = $false
