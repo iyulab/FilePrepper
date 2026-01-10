@@ -762,8 +762,8 @@ dotnet run -- <command> [options]
 ## Getting Help
 
 - **Built-in help**: `fileprepper --help` or `fileprepper <command> --help`
-- **Documentation**: https://github.com/iyulab-rnd/FilePrepper
-- **Issues**: https://github.com/iyulab-rnd/FilePrepper/issues
+- **Documentation**: https://github.com/iyulab/FilePrepper
+- **Issues**: https://github.com/iyulab/FilePrepper/issues
 - **Examples**: See `docs/Common-Scenarios.md` for real-world examples
 
 ---

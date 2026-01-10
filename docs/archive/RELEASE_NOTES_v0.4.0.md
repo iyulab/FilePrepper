@@ -309,7 +309,7 @@ fileprepper stats -i survey_data.csv -o statistics.csv \
 
 ## 🐛 Known Issues
 
-None at this time. Report issues at: https://github.com/iyulab-rnd/FilePrepper/issues
+None at this time. Report issues at: https://github.com/iyulab/FilePrepper/issues
 
 ---
 
@@ -324,11 +324,11 @@ Special thanks to:
 
 ## 📚 Resources
 
-- **Documentation:** [GitHub Wiki](https://github.com/iyulab-rnd/FilePrepper/tree/main/docs)
-- **CLI Reference:** [CLI-Guide.md](https://github.com/iyulab-rnd/FilePrepper/blob/main/docs/CLI-Guide.md)
-- **Examples:** [Common-Scenarios.md](https://github.com/iyulab-rnd/FilePrepper/blob/main/docs/Common-Scenarios.md)
+- **Documentation:** [GitHub Wiki](https://github.com/iyulab/FilePrepper/tree/main/docs)
+- **CLI Reference:** [CLI-Guide.md](https://github.com/iyulab/FilePrepper/blob/main/docs/CLI-Guide.md)
+- **Examples:** [Common-Scenarios.md](https://github.com/iyulab/FilePrepper/blob/main/docs/Common-Scenarios.md)
 - **NuGet Package:** [fileprepper-cli](https://www.nuget.org/packages/fileprepper-cli/)
-- **Issue Tracker:** [GitHub Issues](https://github.com/iyulab-rnd/FilePrepper/issues)
+- **Issue Tracker:** [GitHub Issues](https://github.com/iyulab/FilePrepper/issues)
 
 ---
 
@@ -350,9 +350,9 @@ Special thanks to:
 
 ## 📞 Get Help
 
-- **Questions:** Open a [GitHub Discussion](https://github.com/iyulab-rnd/FilePrepper/discussions)
-- **Bug Reports:** [GitHub Issues](https://github.com/iyulab-rnd/FilePrepper/issues)
-- **Feature Requests:** [GitHub Issues](https://github.com/iyulab-rnd/FilePrepper/issues) with `enhancement` label
+- **Questions:** Open a [GitHub Discussion](https://github.com/iyulab/FilePrepper/discussions)
+- **Bug Reports:** [GitHub Issues](https://github.com/iyulab/FilePrepper/issues)
+- **Feature Requests:** [GitHub Issues](https://github.com/iyulab/FilePrepper/issues) with `enhancement` label
 
 ---
 

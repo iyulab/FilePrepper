@@ -5,6 +5,7 @@ using FilePrepper.Utils;
 using FilePrepper.Tasks.WindowOps;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace FilePrepper.Pipeline;
@@ -237,6 +238,280 @@ public class DataPipeline
         }
 
         return new DataPipeline(allRows, headers ?? new List<string>());
+    }
+
+    /// <summary>
+    /// Concatenate multiple CSV files with automatic filename metadata extraction
+    /// </summary>
+    /// <param name="pattern">File pattern (e.g., "*.csv", "sensor-*.csv")</param>
+    /// <param name="directory">Directory containing files (default: current directory)</param>
+    /// <param name="hasHeader">Whether files have header rows (default: true)</param>
+    /// <param name="metadataOptions">Options for metadata extraction from filenames</param>
+    /// <returns>DataPipeline with concatenated data and extracted metadata columns</returns>
+    /// <example>
+    /// // Extract date from sensor-2021.09.06.csv, sensor-2021.09.07.csv
+    /// var data = await DataPipeline.ConcatCsvAsync(
+    ///     "sensor-*.csv",
+    ///     "dataset/",
+    ///     metadataOptions: new FilenameMetadataOptions
+    ///     {
+    ///         Preset = FilenameMetadataPreset.SensorDate
+    ///     });
+    /// </example>
+    public static async Task<DataPipeline> ConcatCsvAsync(
+        string pattern,
+        string? directory,
+        bool hasHeader,
+        FilenameMetadataOptions metadataOptions)
+    {
+        var targetDir = string.IsNullOrEmpty(directory) ? Directory.GetCurrentDirectory() : directory;
+        var files = Directory.GetFiles(targetDir, pattern)
+            .OrderBy(f => f)
+            .ToList();
+
+        if (!files.Any())
+        {
+            Console.WriteLine($"Warning: No files matched pattern '{pattern}' in directory '{targetDir}'");
+            return new DataPipeline(Enumerable.Empty<Dictionary<string, string>>(), Enumerable.Empty<string>());
+        }
+
+        var allRows = new List<Dictionary<string, string>>();
+        List<string>? headers = null;
+        var metadataHeaders = new List<string>();
+
+        // Build metadata headers based on options
+        if (metadataOptions.AddSourceColumn)
+        {
+            metadataHeaders.Add(metadataOptions.SourceColumnName);
+        }
+
+        // Add preset-specific headers
+        var presetPatterns = GetPresetPatterns(metadataOptions.Preset);
+        foreach (var (columnName, _) in presetPatterns)
+        {
+            if (!metadataHeaders.Contains(columnName))
+            {
+                metadataHeaders.Add(columnName);
+            }
+        }
+
+        // Add custom pattern headers
+        if (metadataOptions.CustomPatterns != null)
+        {
+            foreach (var columnName in metadataOptions.CustomPatterns.Keys)
+            {
+                if (!metadataHeaders.Contains(columnName))
+                {
+                    metadataHeaders.Add(columnName);
+                }
+            }
+        }
+
+        // Add date column if date pattern specified
+        if (!string.IsNullOrEmpty(metadataOptions.DatePattern))
+        {
+            if (!metadataHeaders.Contains(metadataOptions.DateColumnName))
+            {
+                metadataHeaders.Add(metadataOptions.DateColumnName);
+            }
+        }
+
+        foreach (var filePath in files)
+        {
+            var fileName = Path.GetFileName(filePath);
+            var metadata = ExtractFilenameMetadata(fileName, metadataOptions);
+
+            try
+            {
+                using var reader = new StreamReader(filePath);
+                using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = hasHeader
+                });
+
+                await csv.ReadAsync();
+                csv.ReadHeader();
+                var currentHeaders = csv.HeaderRecord?.ToList() ?? new List<string>();
+
+                if (headers == null)
+                {
+                    headers = new List<string>(currentHeaders);
+                    headers.AddRange(metadataHeaders);
+                }
+                else
+                {
+                    var dataHeaders = headers.Where(h => !metadataHeaders.Contains(h)).ToList();
+                    if (!currentHeaders.SequenceEqual(dataHeaders))
+                    {
+                        throw new InvalidOperationException(
+                            $"Header mismatch in file '{fileName}'. " +
+                            $"Expected: [{string.Join(", ", dataHeaders)}], " +
+                            $"Found: [{string.Join(", ", currentHeaders)}]");
+                    }
+                }
+
+                while (await csv.ReadAsync())
+                {
+                    var row = new Dictionary<string, string>();
+
+                    foreach (var header in currentHeaders)
+                    {
+                        row[header] = csv.GetField(header) ?? string.Empty;
+                    }
+
+                    // Add metadata columns
+                    foreach (var (key, value) in metadata)
+                    {
+                        row[key] = value;
+                    }
+
+                    allRows.Add(row);
+                }
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                throw new InvalidOperationException(
+                    $"Error reading file '{fileName}': {ex.Message}", ex);
+            }
+        }
+
+        return new DataPipeline(allRows, headers ?? new List<string>());
+    }
+
+    /// <summary>
+    /// Extract metadata from filename based on options
+    /// </summary>
+    private static Dictionary<string, string> ExtractFilenameMetadata(string filename, FilenameMetadataOptions options)
+    {
+        var metadata = new Dictionary<string, string>();
+
+        // Add source filename
+        if (options.AddSourceColumn)
+        {
+            metadata[options.SourceColumnName] = filename;
+        }
+
+        // Apply preset patterns
+        var presetPatterns = GetPresetPatterns(options.Preset);
+        foreach (var (columnName, pattern) in presetPatterns)
+        {
+            var match = Regex.Match(filename, pattern, RegexOptions.IgnoreCase);
+            if (match.Success && match.Groups.Count > 1)
+            {
+                metadata[columnName] = match.Groups[1].Value;
+            }
+            else
+            {
+                metadata[columnName] = string.Empty;
+            }
+        }
+
+        // Apply custom patterns
+        if (options.CustomPatterns != null)
+        {
+            foreach (var (columnName, pattern) in options.CustomPatterns)
+            {
+                var match = Regex.Match(filename, pattern, RegexOptions.IgnoreCase);
+                if (match.Success && match.Groups.Count > 1)
+                {
+                    metadata[columnName] = match.Groups[1].Value;
+                }
+                else
+                {
+                    metadata[columnName] = string.Empty;
+                }
+            }
+        }
+
+        // Extract date if pattern specified
+        if (!string.IsNullOrEmpty(options.DatePattern))
+        {
+            var dateValue = ExtractDateFromFilename(filename, options.DatePattern);
+            metadata[options.DateColumnName] = dateValue;
+        }
+
+        return metadata;
+    }
+
+    /// <summary>
+    /// Get regex patterns for preset metadata types
+    /// </summary>
+    private static List<(string ColumnName, string Pattern)> GetPresetPatterns(FilenameMetadataPreset preset)
+    {
+        return preset switch
+        {
+            FilenameMetadataPreset.DateOnly => new List<(string, string)>
+            {
+                ("FileDate", @"(\d{4}[.\-]?\d{2}[.\-]?\d{2})")
+            },
+            FilenameMetadataPreset.SensorDate => new List<(string, string)>
+            {
+                ("FileDate", @"(\d{4}\.\d{2}\.\d{2})")
+            },
+            FilenameMetadataPreset.Manufacturing => new List<(string, string)>
+            {
+                ("BatchId", @"batch[_\-]?(\d+)"),
+                ("Category", @"(normal|outlier|train|test|valid)")
+            },
+            FilenameMetadataPreset.Category => new List<(string, string)>
+            {
+                ("Category", @"(normal|outlier|train|test|valid)")
+            },
+            _ => new List<(string, string)>()
+        };
+    }
+
+    /// <summary>
+    /// Extract and format date from filename
+    /// </summary>
+    private static string ExtractDateFromFilename(string filename, string datePattern)
+    {
+        // Common date patterns to try
+        var patterns = new[]
+        {
+            (@"(\d{4})\.(\d{2})\.(\d{2})", "yyyy.MM.dd"),    // 2021.09.06
+            (@"(\d{4})-(\d{2})-(\d{2})", "yyyy-MM-dd"),      // 2021-09-06
+            (@"(\d{4})(\d{2})(\d{2})", "yyyyMMdd"),          // 20210906
+            (@"(\d{2})\.(\d{2})\.(\d{4})", "dd.MM.yyyy"),    // 06.09.2021
+            (@"(\d{2})-(\d{2})-(\d{4})", "dd-MM-yyyy"),      // 06-09-2021
+        };
+
+        foreach (var (regex, format) in patterns)
+        {
+            if (datePattern.Equals(format, StringComparison.OrdinalIgnoreCase) ||
+                datePattern.Replace(".", "\\.").Equals(regex, StringComparison.OrdinalIgnoreCase))
+            {
+                var match = Regex.Match(filename, regex);
+                if (match.Success)
+                {
+                    try
+                    {
+                        if (format.StartsWith("yyyy"))
+                        {
+                            var year = int.Parse(match.Groups[1].Value);
+                            var month = int.Parse(match.Groups[2].Value);
+                            var day = int.Parse(match.Groups[3].Value);
+                            return new DateTime(year, month, day).ToString("yyyy-MM-dd");
+                        }
+                        else
+                        {
+                            var day = int.Parse(match.Groups[1].Value);
+                            var month = int.Parse(match.Groups[2].Value);
+                            var year = int.Parse(match.Groups[3].Value);
+                            return new DateTime(year, month, day).ToString("yyyy-MM-dd");
+                        }
+                    }
+                    catch
+                    {
+                        return match.Value;
+                    }
+                }
+            }
+        }
+
+        // Try generic extraction
+        var genericMatch = Regex.Match(filename, @"(\d{4}[.\-]?\d{2}[.\-]?\d{2})");
+        return genericMatch.Success ? genericMatch.Groups[1].Value : string.Empty;
     }
 
     #endregion
@@ -1014,6 +1289,166 @@ public class DataPipeline
 
     #endregion
 
+    #region Unpivot Operations
+
+    /// <summary>
+    /// Unpivot (wide-to-long) transformation: converts multiple column groups into rows
+    /// </summary>
+    /// <param name="baseColumns">Columns to keep in every output row (repeated for each unpivoted row)</param>
+    /// <param name="columnGroups">Groups of columns to unpivot together</param>
+    /// <param name="indexColumn">Name for the index column in output (identifies which group)</param>
+    /// <param name="valueColumns">Names for the value columns in output</param>
+    /// <param name="skipEmptyRows">Skip rows where all value columns are empty (default: true)</param>
+    /// <returns>New DataPipeline with unpivoted data</returns>
+    /// <example>
+    /// // Wide format: Date, Temp_1, Temp_2, Temp_3, Pressure_1, Pressure_2
+    /// // Long format: Date, Sensor_ID, Temperature, Pressure
+    /// pipeline.Unpivot(
+    ///     baseColumns: new[] { "Date" },
+    ///     columnGroups: new[] {
+    ///         new UnpivotColumnGroup { Columns = new[] { "Temp_1", "Pressure_1" }, IndexValue = "1" },
+    ///         new UnpivotColumnGroup { Columns = new[] { "Temp_2", "Pressure_2" }, IndexValue = "2" },
+    ///         new UnpivotColumnGroup { Columns = new[] { "Temp_3", "Pressure_3" }, IndexValue = "3" }
+    ///     },
+    ///     indexColumn: "Sensor_ID",
+    ///     valueColumns: new[] { "Temperature", "Pressure" }
+    /// )
+    /// </example>
+    public DataPipeline Unpivot(
+        string[] baseColumns,
+        UnpivotColumnGroup[] columnGroups,
+        string indexColumn,
+        string[] valueColumns,
+        bool skipEmptyRows = true)
+    {
+        // Validation
+        if (columnGroups == null || columnGroups.Length == 0)
+        {
+            throw new ArgumentException("At least one column group must be specified", nameof(columnGroups));
+        }
+
+        if (valueColumns == null || valueColumns.Length == 0)
+        {
+            throw new ArgumentException("Value column names must be specified", nameof(valueColumns));
+        }
+
+        var firstGroupColumnCount = columnGroups[0].Columns.Length;
+        if (columnGroups.Any(g => g.Columns.Length != firstGroupColumnCount))
+        {
+            throw new ArgumentException("All column groups must have the same number of columns", nameof(columnGroups));
+        }
+
+        if (valueColumns.Length != firstGroupColumnCount)
+        {
+            throw new ArgumentException(
+                $"Number of value column names ({valueColumns.Length}) must match number of columns in each group ({firstGroupColumnCount})",
+                nameof(valueColumns));
+        }
+
+        // Validate columns exist
+        foreach (var baseCol in baseColumns)
+        {
+            if (!_columnNames.Contains(baseCol))
+            {
+                throw new ArgumentException($"Base column '{baseCol}' not found in data", nameof(baseColumns));
+            }
+        }
+
+        foreach (var group in columnGroups)
+        {
+            foreach (var col in group.Columns)
+            {
+                if (!_columnNames.Contains(col))
+                {
+                    throw new ArgumentException($"Column '{col}' not found in data", nameof(columnGroups));
+                }
+            }
+        }
+
+        // Build output column names
+        var outputColumnNames = new List<string>();
+        outputColumnNames.AddRange(baseColumns);
+        outputColumnNames.Add(indexColumn);
+        outputColumnNames.AddRange(valueColumns);
+
+        // Process each row
+        var unpivotedRows = new List<Dictionary<string, string>>();
+
+        foreach (var row in _rows)
+        {
+            for (int i = 0; i < columnGroups.Length; i++)
+            {
+                var group = columnGroups[i];
+                var unpivotedRow = new Dictionary<string, string>();
+
+                // Add base columns
+                foreach (var baseCol in baseColumns)
+                {
+                    unpivotedRow[baseCol] = row.TryGetValue(baseCol, out var val) ? val : string.Empty;
+                }
+
+                // Add index column
+                unpivotedRow[indexColumn] = group.IndexValue ?? (i + 1).ToString();
+
+                // Add value columns
+                for (int j = 0; j < group.Columns.Length; j++)
+                {
+                    var sourceCol = group.Columns[j];
+                    var targetCol = valueColumns[j];
+                    unpivotedRow[targetCol] = row.TryGetValue(sourceCol, out var val) ? val : string.Empty;
+                }
+
+                // Check if row should be skipped (all values empty)
+                if (skipEmptyRows)
+                {
+                    var allEmpty = valueColumns.All(vc =>
+                    {
+                        var value = unpivotedRow.GetValueOrDefault(vc, string.Empty);
+                        return string.IsNullOrWhiteSpace(value) || value == "0";
+                    });
+
+                    if (allEmpty)
+                    {
+                        continue;
+                    }
+                }
+
+                unpivotedRows.Add(unpivotedRow);
+            }
+        }
+
+        return new DataPipeline(unpivotedRows, outputColumnNames);
+    }
+
+    /// <summary>
+    /// Simple unpivot for a single value column pattern (e.g., Temp_1, Temp_2, Temp_3 → Sensor_ID, Value)
+    /// </summary>
+    /// <param name="baseColumns">Columns to keep in every output row</param>
+    /// <param name="unpivotColumns">Columns to unpivot (e.g., "Temp_1", "Temp_2", "Temp_3")</param>
+    /// <param name="indexColumn">Name for the index column (default: "Index")</param>
+    /// <param name="valueColumn">Name for the value column (default: "Value")</param>
+    /// <param name="skipEmptyRows">Skip rows where value is empty (default: true)</param>
+    /// <returns>New DataPipeline with unpivoted data</returns>
+    public DataPipeline UnpivotSimple(
+        string[] baseColumns,
+        string[] unpivotColumns,
+        string indexColumn = "Index",
+        string valueColumn = "Value",
+        bool skipEmptyRows = true)
+    {
+        var columnGroups = unpivotColumns
+            .Select((col, i) => new UnpivotColumnGroup
+            {
+                Columns = new[] { col },
+                IndexValue = (i + 1).ToString()
+            })
+            .ToArray();
+
+        return Unpivot(baseColumns, columnGroups, indexColumn, new[] { valueColumn }, skipEmptyRows);
+    }
+
+    #endregion
+
     #region Window Operations
 
     /// <summary>
@@ -1352,4 +1787,94 @@ public enum DateFeatures
     WeekOfYear = 1 << 7,     // 128
     Quarter = 1 << 8,        // 256
     All = Year | Month | Day | Hour | Minute | DayOfWeek | DayOfYear | WeekOfYear | Quarter
+}
+
+/// <summary>
+/// Represents a group of columns to unpivot together
+/// </summary>
+public class UnpivotColumnGroup
+{
+    /// <summary>
+    /// List of column names that form a group (e.g., ["Temp_1", "Pressure_1"])
+    /// </summary>
+    public string[] Columns { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// Optional index value for this group (e.g., "1" for sensor 1)
+    /// If not specified, will use sequential numbering starting from 1
+    /// </summary>
+    public string? IndexValue { get; set; }
+}
+
+/// <summary>
+/// Configuration for filename metadata extraction
+/// </summary>
+public class FilenameMetadataOptions
+{
+    /// <summary>
+    /// Add source filename column (default: true)
+    /// </summary>
+    public bool AddSourceColumn { get; set; } = true;
+
+    /// <summary>
+    /// Name for source filename column (default: "SourceFile")
+    /// </summary>
+    public string SourceColumnName { get; set; } = "SourceFile";
+
+    /// <summary>
+    /// Extract date from filename using pattern (e.g., "yyyy.MM.dd", "yyyyMMdd")
+    /// </summary>
+    public string? DatePattern { get; set; }
+
+    /// <summary>
+    /// Name for extracted date column (default: "FileDate")
+    /// </summary>
+    public string DateColumnName { get; set; } = "FileDate";
+
+    /// <summary>
+    /// Custom regex patterns to extract metadata
+    /// Key: output column name, Value: regex pattern with capture group
+    /// Example: { "BatchId", @"batch[_-]?(\d+)" }
+    /// </summary>
+    public Dictionary<string, string>? CustomPatterns { get; set; }
+
+    /// <summary>
+    /// Preset pattern for common filename formats
+    /// </summary>
+    public FilenameMetadataPreset Preset { get; set; } = FilenameMetadataPreset.None;
+}
+
+/// <summary>
+/// Preset patterns for common filename metadata formats
+/// </summary>
+public enum FilenameMetadataPreset
+{
+    /// <summary>
+    /// No preset pattern
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// Date pattern: yyyy.MM.dd or yyyy-MM-dd or yyyyMMdd
+    /// Extracts: FileDate
+    /// </summary>
+    DateOnly,
+
+    /// <summary>
+    /// Sensor data pattern: sensor-yyyy.MM.dd.csv
+    /// Extracts: FileDate
+    /// </summary>
+    SensorDate,
+
+    /// <summary>
+    /// Manufacturing pattern: batch_001_normal.csv
+    /// Extracts: BatchId, Category
+    /// </summary>
+    Manufacturing,
+
+    /// <summary>
+    /// Category pattern: normal_data.csv, outlier_data.csv
+    /// Extracts: Category (normal, outlier, train, test)
+    /// </summary>
+    Category
 }

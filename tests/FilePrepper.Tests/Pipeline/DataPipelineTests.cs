@@ -595,4 +595,374 @@ public class DataPipelineTests
     }
 
     #endregion
+
+    #region Unpivot Tests
+
+    [Fact]
+    public void Unpivot_BasicTransformation_ConvertsWideToLong()
+    {
+        // Arrange - Wide format: Order, 1차_Date, 1차_Qty, 2차_Date, 2차_Qty
+        var data = new[]
+        {
+            new Dictionary<string, string>
+            {
+                ["Order"] = "W001", ["Product"] = "A",
+                ["1차_Date"] = "2024-01-15", ["1차_Qty"] = "300",
+                ["2차_Date"] = "2024-02-20", ["2차_Qty"] = "400"
+            },
+            new Dictionary<string, string>
+            {
+                ["Order"] = "W002", ["Product"] = "B",
+                ["1차_Date"] = "2024-01-18", ["1차_Qty"] = "200",
+                ["2차_Date"] = "2024-02-25", ["2차_Qty"] = "300"
+            }
+        };
+
+        // Act
+        var result = DataPipeline.FromData(data)
+            .Unpivot(
+                baseColumns: new[] { "Order", "Product" },
+                columnGroups: new[]
+                {
+                    new UnpivotColumnGroup { Columns = new[] { "1차_Date", "1차_Qty" }, IndexValue = "1" },
+                    new UnpivotColumnGroup { Columns = new[] { "2차_Date", "2차_Qty" }, IndexValue = "2" }
+                },
+                indexColumn: "Shipment",
+                valueColumns: new[] { "Date", "Qty" })
+            .ToDataFrame();
+
+        // Assert - Should have 4 rows (2 orders × 2 shipments)
+        result.Rows.Should().HaveCount(4);
+        result.ColumnNames.Should().BeEquivalentTo(new[] { "Order", "Product", "Shipment", "Date", "Qty" });
+
+        // Verify first row (W001, 1차)
+        result.Rows[0]["Order"].Should().Be("W001");
+        result.Rows[0]["Shipment"].Should().Be("1");
+        result.Rows[0]["Date"].Should().Be("2024-01-15");
+        result.Rows[0]["Qty"].Should().Be("300");
+
+        // Verify third row (W002, 1차)
+        result.Rows[2]["Order"].Should().Be("W002");
+        result.Rows[2]["Shipment"].Should().Be("1");
+    }
+
+    [Fact]
+    public void Unpivot_SkipEmptyRows_OmitsRowsWithAllEmptyValues()
+    {
+        // Arrange - Third shipment has empty values
+        var data = new[]
+        {
+            new Dictionary<string, string>
+            {
+                ["Order"] = "W001",
+                ["1차_Qty"] = "300",
+                ["2차_Qty"] = "400",
+                ["3차_Qty"] = ""  // Empty - should be skipped
+            }
+        };
+
+        // Act
+        var result = DataPipeline.FromData(data)
+            .Unpivot(
+                baseColumns: new[] { "Order" },
+                columnGroups: new[]
+                {
+                    new UnpivotColumnGroup { Columns = new[] { "1차_Qty" }, IndexValue = "1" },
+                    new UnpivotColumnGroup { Columns = new[] { "2차_Qty" }, IndexValue = "2" },
+                    new UnpivotColumnGroup { Columns = new[] { "3차_Qty" }, IndexValue = "3" }
+                },
+                indexColumn: "Index",
+                valueColumns: new[] { "Qty" },
+                skipEmptyRows: true)
+            .ToDataFrame();
+
+        // Assert - Should have 2 rows (empty 3차 skipped)
+        result.Rows.Should().HaveCount(2);
+        result.Rows.Select(r => r["Index"]).Should().BeEquivalentTo(new[] { "1", "2" });
+    }
+
+    [Fact]
+    public void UnpivotSimple_SingleValueColumn_TransformsCorrectly()
+    {
+        // Arrange - Simple wide format with Q1, Q2, Q3, Q4 columns
+        var data = new[]
+        {
+            new Dictionary<string, string>
+            {
+                ["Region"] = "North", ["Q1"] = "100", ["Q2"] = "150", ["Q3"] = "200", ["Q4"] = "250"
+            },
+            new Dictionary<string, string>
+            {
+                ["Region"] = "South", ["Q1"] = "80", ["Q2"] = "120", ["Q3"] = "160", ["Q4"] = "200"
+            }
+        };
+
+        // Act
+        var result = DataPipeline.FromData(data)
+            .UnpivotSimple(
+                baseColumns: new[] { "Region" },
+                unpivotColumns: new[] { "Q1", "Q2", "Q3", "Q4" },
+                indexColumn: "Quarter",
+                valueColumn: "Sales")
+            .ToDataFrame();
+
+        // Assert - Should have 8 rows (2 regions × 4 quarters)
+        result.Rows.Should().HaveCount(8);
+        result.ColumnNames.Should().BeEquivalentTo(new[] { "Region", "Quarter", "Sales" });
+
+        // Verify North Q1
+        result.Rows[0]["Region"].Should().Be("North");
+        result.Rows[0]["Quarter"].Should().Be("1");
+        result.Rows[0]["Sales"].Should().Be("100");
+
+        // Verify South Q4
+        result.Rows[7]["Region"].Should().Be("South");
+        result.Rows[7]["Quarter"].Should().Be("4");
+        result.Rows[7]["Sales"].Should().Be("200");
+    }
+
+    [Fact]
+    public void Unpivot_ValidationError_EmptyColumnGroups()
+    {
+        // Arrange
+        var data = new[] { new Dictionary<string, string> { ["A"] = "1" } };
+        var pipeline = DataPipeline.FromData(data);
+
+        // Act & Assert
+        var act = () => pipeline.Unpivot(
+            new[] { "A" },
+            Array.Empty<UnpivotColumnGroup>(),
+            "Index",
+            new[] { "Value" });
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*column group must be specified*");
+    }
+
+    [Fact]
+    public void Unpivot_ValidationError_MismatchedColumnCounts()
+    {
+        // Arrange
+        var data = new[] { new Dictionary<string, string> { ["A"] = "1", ["B"] = "2", ["C"] = "3" } };
+        var pipeline = DataPipeline.FromData(data);
+
+        // Act & Assert - Column groups have different counts
+        var act = () => pipeline.Unpivot(
+            new[] { "A" },
+            new[]
+            {
+                new UnpivotColumnGroup { Columns = new[] { "B", "C" } },  // 2 columns
+                new UnpivotColumnGroup { Columns = new[] { "B" } }       // 1 column - mismatch!
+            },
+            "Index",
+            new[] { "Value1", "Value2" });
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*same number of columns*");
+    }
+
+    #endregion
+
+    #region ConcatCsvAsync with Metadata Tests
+
+    [Fact]
+    public async Task ConcatCsvAsync_WithDatePreset_ExtractsDateFromFilename()
+    {
+        // Arrange - Create files with dates in filename
+        var testDir = Path.Combine("TestData", $"ConcatMeta_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDir);
+
+        await File.WriteAllTextAsync(
+            Path.Combine(testDir, "data_2024-01-15.csv"),
+            "Value\n10");
+
+        await File.WriteAllTextAsync(
+            Path.Combine(testDir, "data_2024-02-20.csv"),
+            "Value\n20");
+
+        // Act
+        var result = await DataPipeline.ConcatCsvAsync(
+            "data_*.csv",
+            testDir,
+            hasHeader: true,
+            new FilenameMetadataOptions
+            {
+                Preset = FilenameMetadataPreset.DateOnly
+            });
+
+        var df = result.ToDataFrame();
+
+        // Assert
+        df.ColumnNames.Should().Contain("SourceFile");
+        df.ColumnNames.Should().Contain("FileDate");
+
+        df.Rows[0]["SourceFile"].Should().Be("data_2024-01-15.csv");
+        df.Rows[0]["FileDate"].Should().Contain("2024-01-15");
+
+        df.Rows[1]["SourceFile"].Should().Be("data_2024-02-20.csv");
+        df.Rows[1]["FileDate"].Should().Contain("2024-02-20");
+
+        // Cleanup
+        Directory.Delete(testDir, true);
+    }
+
+    [Fact]
+    public async Task ConcatCsvAsync_WithSensorDatePreset_ExtractsDateFromSensorFilename()
+    {
+        // Arrange - Sensor filename pattern: sensor-2021.09.06.csv
+        var testDir = Path.Combine("TestData", $"ConcatSensor_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDir);
+
+        await File.WriteAllTextAsync(
+            Path.Combine(testDir, "sensor-2021.09.06.csv"),
+            "Temp,Press\n50.2,1.2");
+
+        await File.WriteAllTextAsync(
+            Path.Combine(testDir, "sensor-2021.09.07.csv"),
+            "Temp,Press\n51.3,1.3");
+
+        // Act
+        var result = await DataPipeline.ConcatCsvAsync(
+            "sensor-*.csv",
+            testDir,
+            hasHeader: true,
+            new FilenameMetadataOptions
+            {
+                Preset = FilenameMetadataPreset.SensorDate
+            });
+
+        var df = result.ToDataFrame();
+
+        // Assert
+        df.RowCount.Should().Be(2);
+        df.ColumnNames.Should().Contain("FileDate");
+
+        // Date should be extracted (format may vary)
+        df.Rows[0]["FileDate"].Should().NotBeEmpty();
+        df.Rows[1]["FileDate"].Should().NotBeEmpty();
+
+        // Cleanup
+        Directory.Delete(testDir, true);
+    }
+
+    [Fact]
+    public async Task ConcatCsvAsync_WithCustomPattern_ExtractsCustomMetadata()
+    {
+        // Arrange - Custom pattern: region-north_2024-01.csv
+        var testDir = Path.Combine("TestData", $"ConcatCustom_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDir);
+
+        await File.WriteAllTextAsync(
+            Path.Combine(testDir, "region-north_2024-01.csv"),
+            "Sales\n100");
+
+        await File.WriteAllTextAsync(
+            Path.Combine(testDir, "region-south_2024-02.csv"),
+            "Sales\n200");
+
+        // Act
+        var result = await DataPipeline.ConcatCsvAsync(
+            "region-*.csv",
+            testDir,
+            hasHeader: true,
+            new FilenameMetadataOptions
+            {
+                AddSourceColumn = true,
+                CustomPatterns = new Dictionary<string, string>
+                {
+                    ["Region"] = @"region-(\w+)_",
+                    ["Period"] = @"_(\d{4}-\d{2})"
+                }
+            });
+
+        var df = result.ToDataFrame();
+
+        // Assert
+        df.ColumnNames.Should().Contain("Region");
+        df.ColumnNames.Should().Contain("Period");
+
+        df.Rows[0]["Region"].Should().Be("north");
+        df.Rows[0]["Period"].Should().Be("2024-01");
+
+        df.Rows[1]["Region"].Should().Be("south");
+        df.Rows[1]["Period"].Should().Be("2024-02");
+
+        // Cleanup
+        Directory.Delete(testDir, true);
+    }
+
+    [Fact]
+    public async Task ConcatCsvAsync_WithMetadata_DisableSourceColumn()
+    {
+        // Arrange
+        var testDir = Path.Combine("TestData", $"ConcatNoSource_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDir);
+
+        await File.WriteAllTextAsync(
+            Path.Combine(testDir, "data_2024-01-15.csv"),
+            "Value\n10");
+
+        // Act
+        var result = await DataPipeline.ConcatCsvAsync(
+            "data_*.csv",
+            testDir,
+            hasHeader: true,
+            new FilenameMetadataOptions
+            {
+                AddSourceColumn = false,
+                Preset = FilenameMetadataPreset.DateOnly
+            });
+
+        var df = result.ToDataFrame();
+
+        // Assert - Should have FileDate but NOT SourceFile
+        df.ColumnNames.Should().NotContain("SourceFile");
+        df.ColumnNames.Should().Contain("FileDate");
+
+        // Cleanup
+        Directory.Delete(testDir, true);
+    }
+
+    [Fact]
+    public async Task ConcatCsvAsync_ManufacturingPreset_ExtractsMultipleFields()
+    {
+        // Arrange - Manufacturing pattern: batch_001_normal.csv
+        var testDir = Path.Combine("TestData", $"ConcatMfg_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDir);
+
+        await File.WriteAllTextAsync(
+            Path.Combine(testDir, "batch_001_normal.csv"),
+            "Value\n100");
+
+        await File.WriteAllTextAsync(
+            Path.Combine(testDir, "batch_002_outlier.csv"),
+            "Value\n200");
+
+        // Act
+        var result = await DataPipeline.ConcatCsvAsync(
+            "batch_*.csv",
+            testDir,
+            hasHeader: true,
+            new FilenameMetadataOptions
+            {
+                Preset = FilenameMetadataPreset.Manufacturing
+            });
+
+        var df = result.ToDataFrame();
+
+        // Assert
+        df.ColumnNames.Should().Contain("BatchId");
+        df.ColumnNames.Should().Contain("Category");
+
+        df.Rows[0]["BatchId"].Should().Be("001");
+        df.Rows[0]["Category"].Should().Be("normal");
+
+        df.Rows[1]["BatchId"].Should().Be("002");
+        df.Rows[1]["Category"].Should().Be("outlier");
+
+        // Cleanup
+        Directory.Delete(testDir, true);
+    }
+
+    #endregion
 }

@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.9] - 2026-01-11
+
+### Added
+
+- 🔄 **Unpivot (Wide-to-Long Transformation)** - Transform columnar data into row format
+  - `Unpivot()` method for complex multi-column group transformations
+  - `UnpivotSimple()` helper for simple single-value column unpivoting
+  - `UnpivotColumnGroup` class for defining column groupings with index values
+  - Support for multiple value columns per group (e.g., Date + Quantity pairs)
+  - `skipEmptyRows` option to exclude rows with all empty values
+  - Validation for column group consistency and value column matching
+  - ✅ 6 comprehensive tests (100% passing)
+
+- 📁 **Filename Metadata Extraction** - Extract metadata from filenames during CSV concatenation
+  - New `ConcatCsvAsync()` overload with `FilenameMetadataOptions` parameter
+  - `FilenameMetadataOptions` class for configuring extraction behavior
+  - `FilenameMetadataPreset` enum with 4 built-in patterns:
+    - `DateOnly`: Extract dates from `data_2024-01-15.csv` format
+    - `SensorDate`: Extract dates from `sensor-2021.09.06.csv` format
+    - `Manufacturing`: Extract BatchId and Category from `batch_001_normal.csv` format
+    - `Category`: Extract category labels (normal, outlier, train, test, valid)
+  - Custom regex patterns via `CustomPatterns` dictionary
+  - Configurable source column and date column names
+  - ✅ 5 comprehensive tests (100% passing)
+
+### Usage Examples
+
+**Unpivot - Transform Shipment Data:**
+```csharp
+// Wide format: Order, 1차_Date, 1차_Qty, 2차_Date, 2차_Qty
+var result = pipeline.Unpivot(
+    baseColumns: new[] { "Order", "Product" },
+    columnGroups: new[]
+    {
+        new UnpivotColumnGroup { Columns = new[] { "1차_Date", "1차_Qty" }, IndexValue = "1" },
+        new UnpivotColumnGroup { Columns = new[] { "2차_Date", "2차_Qty" }, IndexValue = "2" }
+    },
+    indexColumn: "Shipment",
+    valueColumns: new[] { "Date", "Qty" });
+// Result: Order, Product, Shipment, Date, Qty (long format)
+```
+
+**Simple Unpivot - Quarterly Data:**
+```csharp
+var result = pipeline.UnpivotSimple(
+    baseColumns: new[] { "Region" },
+    unpivotColumns: new[] { "Q1", "Q2", "Q3", "Q4" },
+    indexColumn: "Quarter",
+    valueColumn: "Sales");
+// Result: Region, Quarter, Sales
+```
+
+**Filename Metadata - Sensor Data with Dates:**
+```csharp
+var data = await DataPipeline.ConcatCsvAsync(
+    "sensor-*.csv",
+    "dataset/",
+    hasHeader: true,
+    new FilenameMetadataOptions
+    {
+        Preset = FilenameMetadataPreset.SensorDate
+    });
+// Result: Original columns + SourceFile + FileDate
+```
+
+**Custom Metadata Extraction:**
+```csharp
+var data = await DataPipeline.ConcatCsvAsync(
+    "region-*.csv",
+    directory,
+    hasHeader: true,
+    new FilenameMetadataOptions
+    {
+        CustomPatterns = new Dictionary<string, string>
+        {
+            ["Region"] = @"region-(\w+)_",
+            ["Period"] = @"_(\d{4}-\d{2})"
+        }
+    });
+// Result: Original columns + SourceFile + Region + Period
+```
+
+## [0.4.8] - 2026-01-10
+
 ### Changed
 
 - 🔧 **System.CommandLine Migration** - Upgraded from 2.0.0-beta4.22272.1 to 2.0.0 stable
@@ -519,7 +603,7 @@ For detailed release notes and upgrade guides, see:
 
 ## Links
 
-- [GitHub Repository](https://github.com/iyulab-rnd/FilePrepper)
+- [GitHub Repository](https://github.com/iyulab/FilePrepper)
 - [NuGet Package](https://www.nuget.org/packages/fileprepper-cli/)
-- [Documentation](https://github.com/iyulab-rnd/FilePrepper/tree/main/docs)
-- [Issue Tracker](https://github.com/iyulab-rnd/FilePrepper/issues)
+- [Documentation](https://github.com/iyulab/FilePrepper/tree/main/docs)
+- [Issue Tracker](https://github.com/iyulab/FilePrepper/issues)
