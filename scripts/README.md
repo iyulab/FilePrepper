@@ -96,7 +96,7 @@ pwsh -File scripts/test-all.ps1
 ## 🔧 개발 환경 요구사항
 
 - PowerShell 7+ (`pwsh`)
-- .NET 9.0 SDK
+- .NET 10.0 SDK
 - Windows, Linux, macOS 지원
 
 ## 📊 커버리지 리포트

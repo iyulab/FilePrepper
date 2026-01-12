@@ -83,7 +83,7 @@ fileprepper --help
 
 ## Requirements
 
-- .NET 9.0 SDK or later
+- .NET 10.0 SDK or later
 - Supported platforms: Windows, Linux, macOS
 
 ### Install .NET SDK

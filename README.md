@@ -84,9 +84,9 @@ Process data in multiple formats:
 - `one-hot-encoding` - Convert categorical to binary columns
 - `data-type-convert` - Convert column data types
 - `date-extraction` - Extract date features (Year, Month, Day, DayOfWeek)
-- `datetime` - Parse datetime and extract features ⭐ Phase 2
-- `string` - String transformations (upper, lower, trim, substring) ⭐ Phase 2
-- `conditional` - Conditional column creation with if-then-else logic ⭐ Phase 2
+- `datetime` - Parse datetime and extract features
+- `string` - String transformations (upper, lower, trim, substring)
+- `conditional` - Conditional column creation with if-then-else logic
 
 ### Data Cleaning
 - `fill-missing-values` - Fill missing data (Mean, Median, Mode, Forward, Backward, Constant)
@@ -104,18 +104,18 @@ Process data in multiple formats:
 - `basic-statistics` - Calculate statistics (Mean, Median, StdDev, ZScore)
 - `aggregate` - Group and aggregate data
 - `filter-rows` - Filter rows by conditions
-- `merge-asof` - Time-series merge with tolerance ⭐ Phase 2
+- `merge-asof` - Time-series merge with tolerance
 
 ### Data Organization
 - `merge` - Combine multiple files (Horizontal/Vertical merge)
-- `merge-asof` - Time-series merge with tolerance ⭐ Phase 2
+- `merge-asof` - Time-series merge with tolerance
 - `data-sampling` - Sample rows (Random, Stratified, Systematic)
 - `file-format-convert` - Convert between formats
-- `unpivot` - Reshape data from wide to long format ⭐ Phase 2
+- `unpivot` - Reshape data from wide to long format
 
 ### Feature Engineering
 - `create-lag-features` - Create time-series lag features
-- `window` - Window operations (resample, rolling aggregations) ⭐ Phase 2
+- `window` - Window operations (resample, rolling aggregations)
 - `file-format-convert` - Convert between formats
 
 
@@ -141,7 +141,7 @@ fileprepper normalize-data --input step3.csv --output clean.csv \
   --columns "Age,Salary,Score" --method MinMax
 ```
 
-### Time-Series Processing (Phase 2) ⭐
+### Time-Series Processing
 
 ```bash
 # 5-minute window aggregation for sensor data
@@ -313,7 +313,7 @@ See [SDK Usage Guide](docs/SDK-Usage-Guide.md) for comprehensive examples and be
 - **[Quick Start Guide](docs/Quick-Start.md)** - Get started with SDK in 5 minutes
 
 ### Advanced Features
-- **[Phase 2 Complete Guide](docs/FILEPREPPER_PHASE2_COMPLETE.md)** - Window operations, datetime, string, conditional features ⭐
+- **[Phase 2 Complete Guide](docs/FILEPREPPER_PHASE2_COMPLETE.md)** - Window operations, datetime, string, conditional features
 - **[Common Scenarios](docs/Common-Scenarios.md)** - Real-world use cases
 
 ### Use Cases
@@ -324,7 +324,7 @@ For more documentation, see the [docs/](docs/) directory.
 ## 🎯 Use Cases
 
 - **Machine Learning** - Prepare datasets for training (normalization, encoding, feature engineering)
-- **Time-Series Analysis** - Window aggregations, resampling, lag features ⭐ Phase 2 - Prepare datasets for training (normalization, encoding, feature engineering)
+- **Time-Series Analysis** - Window aggregations, resampling, lag features - Prepare datasets for training (normalization, encoding, feature engineering)
 - **Data Analysis** - Clean and transform data for analysis
 - **ETL Pipelines** - Extract, transform, and load data workflows with minimal I/O overhead
 - **Data Migration** - Convert between formats and clean legacy data
@@ -333,7 +333,7 @@ For more documentation, see the [docs/](docs/) directory.
 
 ## 📋 Requirements
 
-- **.NET 9.0** or later
+- **.NET 10.0** or later
 - **Cross-platform** - Windows, Linux, macOS
 - **Flexible Usage** - CLI tool (no coding) or SDK (programmatic)
 
@@ -353,7 +353,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Issues**: https://github.com/iyulab/FilePrepper/issues
 - **Documentation**: [docs/](docs/)
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md)
-
----
-
-**Made with ❤️ by iyulab | Efficient Data Preprocessing - CLI & SDK | **Phase 2 Complete** ⭐
