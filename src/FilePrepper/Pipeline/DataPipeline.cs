@@ -593,6 +593,62 @@ public class DataPipeline
     }
 
     /// <summary>
+    /// Remove duplicate rows based on specified key columns or all columns
+    /// </summary>
+    /// <param name="keyColumns">Columns to use for duplicate detection. If null or empty, uses all columns.</param>
+    /// <param name="keepFirst">If true, keeps the first occurrence; if false, keeps the last occurrence.</param>
+    /// <returns>New DataPipeline with duplicates removed</returns>
+    public DataPipeline DropDuplicates(string[]? keyColumns = null, bool keepFirst = true)
+    {
+        if (_rows.Count == 0)
+        {
+            return new DataPipeline(_rows, _columnNames);
+        }
+
+        // Determine columns to check for duplicates
+        var columnsToCheck = (keyColumns != null && keyColumns.Length > 0)
+            ? keyColumns.ToList()
+            : _columnNames.ToList();
+
+        // Validate that all specified columns exist
+        foreach (var col in columnsToCheck)
+        {
+            if (!_columnNames.Contains(col))
+            {
+                throw new ArgumentException(
+                    $"Column '{col}' not found. Available columns: {string.Join(", ", _columnNames)}",
+                    nameof(keyColumns));
+            }
+        }
+
+        var processedRows = new List<Dictionary<string, string>>();
+        var seen = new HashSet<string>();
+
+        // Process in appropriate order based on keepFirst setting
+        var rowsToProcess = keepFirst ? _rows : _rows.AsEnumerable().Reverse();
+
+        foreach (var row in rowsToProcess)
+        {
+            // Create composite key from selected columns
+            var key = string.Join("|", columnsToCheck.Select(col =>
+                row.TryGetValue(col, out var val) ? val : string.Empty));
+
+            if (seen.Add(key))
+            {
+                processedRows.Add(row);
+            }
+        }
+
+        // Restore original order if we processed in reverse
+        if (!keepFirst)
+        {
+            processedRows.Reverse();
+        }
+
+        return new DataPipeline(processedRows, _columnNames);
+    }
+
+    /// <summary>
     /// Normalize numeric columns (Min-Max or Z-Score)
     /// </summary>
     public DataPipeline Normalize(string[] columns, NormalizationMethod method, double minValue = 0, double maxValue = 1)

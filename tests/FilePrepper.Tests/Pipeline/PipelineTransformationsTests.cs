@@ -163,4 +163,107 @@ public class PipelineTransformationsTests
         result.ColumnNames.Should().NotContain("Temp");
         result.ColumnNames.Should().Contain("Grade");
     }
+
+    [Fact]
+    public void DropDuplicates_ShouldRemoveAllDuplicateRows()
+    {
+        // Arrange
+        var data = new[]
+        {
+            new Dictionary<string, string> { ["Name"] = "Alice", ["Score"] = "85" },
+            new Dictionary<string, string> { ["Name"] = "Bob", ["Score"] = "90" },
+            new Dictionary<string, string> { ["Name"] = "Alice", ["Score"] = "85" },  // duplicate
+            new Dictionary<string, string> { ["Name"] = "Charlie", ["Score"] = "75" }
+        };
+        var pipeline = DataPipeline.FromData(data);
+
+        // Act
+        var result = pipeline
+            .DropDuplicates()
+            .ToDataFrame();
+
+        // Assert
+        result.Rows.Should().HaveCount(3);
+        result.Rows[0]["Name"].Should().Be("Alice");
+        result.Rows[1]["Name"].Should().Be("Bob");
+        result.Rows[2]["Name"].Should().Be("Charlie");
+    }
+
+    [Fact]
+    public void DropDuplicates_WithKeyColumns_ShouldRemoveDuplicatesByKey()
+    {
+        // Arrange
+        var data = new[]
+        {
+            new Dictionary<string, string> { ["Id"] = "1", ["Name"] = "Alice", ["Score"] = "85" },
+            new Dictionary<string, string> { ["Id"] = "2", ["Name"] = "Bob", ["Score"] = "90" },
+            new Dictionary<string, string> { ["Id"] = "1", ["Name"] = "Alice Updated", ["Score"] = "95" },  // duplicate by Id
+            new Dictionary<string, string> { ["Id"] = "3", ["Name"] = "Charlie", ["Score"] = "75" }
+        };
+        var pipeline = DataPipeline.FromData(data);
+
+        // Act
+        var result = pipeline
+            .DropDuplicates(keyColumns: new[] { "Id" })
+            .ToDataFrame();
+
+        // Assert
+        result.Rows.Should().HaveCount(3);
+        result.Rows[0]["Name"].Should().Be("Alice");  // keepFirst = true by default
+        result.Rows[1]["Name"].Should().Be("Bob");
+        result.Rows[2]["Name"].Should().Be("Charlie");
+    }
+
+    [Fact]
+    public void DropDuplicates_WithKeepLast_ShouldKeepLastOccurrence()
+    {
+        // Arrange
+        var data = new[]
+        {
+            new Dictionary<string, string> { ["Id"] = "1", ["Name"] = "Alice First", ["Score"] = "85" },
+            new Dictionary<string, string> { ["Id"] = "2", ["Name"] = "Bob", ["Score"] = "90" },
+            new Dictionary<string, string> { ["Id"] = "1", ["Name"] = "Alice Last", ["Score"] = "95" }  // duplicate by Id
+        };
+        var pipeline = DataPipeline.FromData(data);
+
+        // Act
+        var result = pipeline
+            .DropDuplicates(keyColumns: new[] { "Id" }, keepFirst: false)
+            .ToDataFrame();
+
+        // Assert
+        result.Rows.Should().HaveCount(2);
+        result.Rows[0]["Name"].Should().Be("Bob");
+        result.Rows[1]["Name"].Should().Be("Alice Last");  // keepFirst = false, keeps last
+    }
+
+    [Fact]
+    public void DropDuplicates_WithEmptyData_ShouldReturnEmptyPipeline()
+    {
+        // Arrange
+        var data = Array.Empty<Dictionary<string, string>>();
+        var pipeline = DataPipeline.FromData(data);
+
+        // Act
+        var result = pipeline.DropDuplicates().ToDataFrame();
+
+        // Assert
+        result.Rows.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void DropDuplicates_WithInvalidKeyColumn_ShouldThrowException()
+    {
+        // Arrange
+        var data = new[]
+        {
+            new Dictionary<string, string> { ["Name"] = "Alice", ["Score"] = "85" }
+        };
+        var pipeline = DataPipeline.FromData(data);
+
+        // Act & Assert
+        var action = () => pipeline.DropDuplicates(keyColumns: new[] { "NonExistent" });
+        action.Should().Throw<ArgumentException>()
+            .WithMessage("*NonExistent*not found*");
+    }
 }
