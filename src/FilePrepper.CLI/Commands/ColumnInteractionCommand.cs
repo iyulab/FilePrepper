@@ -25,7 +25,7 @@ public class ColumnInteractionCommand : BaseCommand
         _typeOption = new Option<string>("--type", new[] { "-t" }) { Description = "Operation type (Add/Subtract/Multiply/Divide/Concat/Custom)", Required = true };
         _columnOption = new Option<string>("--column", new[] { "-c" }) { Description = "Output column name", Required = true };
         _expressionOption = new Option<string?>("--expression", new[] { "-e" }) { Description = "Custom expression (use $1, $2, etc.)" };
-        _defaultValueOption = new Option<string?>("--default-value", "Default value for errors");
+        _defaultValueOption = new Option<string?>("--default-value") { Description = "Default value for errors" };
 
         Add(_inputOption);
         Add(_outputOption);

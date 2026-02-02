@@ -23,9 +23,9 @@ public class DataSamplingCommand : BaseCommand
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
         _methodOption = new Option<string>("--method", new[] { "-m" }) { Description = "Sampling method (Random/Systematic/Stratified)", Required = true };
         _sizeOption = new Option<double>("--size", new[] { "-s" }) { Description = "Sample size (ratio 0-1 or absolute count)", Required = true };
-        _seedOption = new Option<int?>("--seed", "Random seed for reproducibility");
-        _stratifyOption = new Option<string?>("--stratify", "Column for stratified sampling");
-        _intervalOption = new Option<int?>("--interval", "Interval for systematic sampling");
+        _seedOption = new Option<int?>("--seed") { Description = "Random seed for reproducibility" };
+        _stratifyOption = new Option<string?>("--stratify") { Description = "Column for stratified sampling" };
+        _intervalOption = new Option<int?>("--interval") { Description = "Interval for systematic sampling" };
 
         Add(_inputOption);
         Add(_outputOption);

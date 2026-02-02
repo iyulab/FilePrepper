@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- When referenced by another project, build as library -->
+    <OutputType Condition="'$(IsLibraryBuild)' == 'true'">Library</OutputType>
+    <OutputType Condition="'$(IsLibraryBuild)' != 'true'">Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
 
