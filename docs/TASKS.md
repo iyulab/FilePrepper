@@ -1,8 +1,8 @@
 # FilePrepper 개발 작업 관리
 
-> **최종 업데이트**: 2025-01-09
-> **현재 버전**: v0.4.0 (Phase 2 Complete)
-> **다음 목표**: v1.0.0 (2025 Q1) or Phase 3 Planning
+> **최종 업데이트**: 2026-02-06
+> **현재 버전**: v0.4.9
+> **다음 목표**: Phase 3 Planning
 
 ---
 
@@ -86,7 +86,7 @@
 
 ---
 
-## 📋 Phase 2 명령어 목록 (26개)
+## 📋 전체 명령어 목록 (29개)
 
 ### Phase 1 명령어 (20개)
 1. normalize-data
@@ -110,13 +110,18 @@
 19. file-format-convert
 20. create-lag-features
 
-### Phase 2 추가 명령어 (6개) ⭐
+### Phase 2 추가 명령어 (6개)
 21. **datetime** - DateTime 파싱 및 변환
 22. **merge-asof** - 시계열 데이터 조인
 23. **string** - 문자열 변환 작업
 24. **conditional** - 조건부 컬럼 생성
 25. **unpivot** - Wide → Long 형식 변환
 26. **window** - Resample/Rolling 집계
+
+### v0.4.9 추가 명령어 (3개)
+27. **csv-cleaner** - CSV 파일 정리
+28. **expression** - 수식 기반 컬럼 생성
+29. **remove-constants** - 상수/준상수 컬럼 제거
 
 ---
 
@@ -150,8 +155,6 @@ python examples/Preprocessor006/preprocess_dataset_006.py
 
 ---
 
-**현재 상태: Phase 2 완료!** 🎉
+**현재 상태: v0.4.9** 🎉
 
-FilePrepper는 이제 고급 시계열 데이터 전처리 기능을 포함한 완전한 ML 데이터 전처리 도구입니다.
-
-**다음 작업**: MLoop 프로젝트 복귀 또는 Phase 3 계획 수립
+FilePrepper는 29개 명령어, 자동 인코딩 감지, glob 병합, 상수 컬럼 제거를 지원하는 완전한 ML 데이터 전처리 도구입니다.

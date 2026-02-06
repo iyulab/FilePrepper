@@ -1,6 +1,6 @@
 # API Reference
 
-**Version**: 0.4.4
+**Version**: 0.4.9
 
 Programmatic usage guide for integrating FilePrepper into .NET applications.
 
@@ -343,6 +343,8 @@ public interface ITaskOption
     string OutputPath { get; set; }
     bool HasHeader { get; set; }
     bool IgnoreErrors { get; set; }
+    string Encoding { get; set; }   // "auto", "utf-8", "cp949", "euc-kr" (default: "auto")
+    int SkipRows { get; set; }      // Rows to skip before header (default: 0)
     string[] Validate();
 }
 ```

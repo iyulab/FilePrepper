@@ -1,6 +1,6 @@
 # CLI Reference Guide
 
-Complete command-line reference for FilePrepper v0.4.0+
+Complete command-line reference for FilePrepper v0.4.9
 
 ## General Syntax
 
@@ -812,12 +812,21 @@ dotnet run -- <command> [options]
 
 ## Version History
 
-### v0.4.0 (Latest)
+### v0.4.9 (Latest)
+- Auto encoding detection (CP949/EUC-KR) with `--encoding` option
+- Skip metadata rows with `--skip-rows` option
+- Remove constant/near-constant columns with `remove-constants` command
+- Merge glob pattern support with `--input-pattern` option
+- Unpivot (wide-to-long) transformation
+- Filename metadata extraction during CSV concatenation
+- System.CommandLine 2.0.0 stable migration
+- 29 commands total, 359 tests passing
+
+### v0.4.0
 - System.CommandLine integration for robust CLI framework
 - Spectre.Console rich terminal UI with colors and progress
-- Enhanced validation and error messages
-- Improved help documentation
-- All 20 commands with consistent syntax
+- Phase 2: datetime, merge-asof, string, conditional, window commands
+- 26 commands with consistent syntax
 
 ### v0.3.x
 - Initial CLI implementation

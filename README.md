@@ -4,7 +4,7 @@
 [![NuGet CLI](https://img.shields.io/nuget/v/fileprepper-cli?label=CLI&logo=nuget&color=blue)](https://www.nuget.org/packages/fileprepper-cli)
 [![SDK Downloads](https://img.shields.io/nuget/dt/FilePrepper?label=SDK%20Downloads&logo=nuget&color=blue)](https://www.nuget.org/packages/FilePrepper)
 [![CLI Downloads](https://img.shields.io/nuget/dt/fileprepper-cli?label=CLI%20Downloads&logo=nuget&color=blue)](https://www.nuget.org/packages/fileprepper-cli)
-[![.NET Version](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET Version](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A powerful .NET library and CLI tool for data preprocessing. Features a **Pipeline API** for efficient in-memory data transformations with 67-90% reduction in file I/O. Perfect for ML data preparation, ETL pipelines, and data analysis workflows.
@@ -76,7 +76,7 @@ Process data in multiple formats:
 - **XML** (Extensible Markup Language)
 - **Excel** (XLSX/XLS files)
 
-## 🛠️ Available Commands (26+)
+## 🛠️ Available Commands (29+)
 
 ### Data Transformation
 - `normalize-data` - Normalize columns (MinMax, ZScore)
@@ -109,7 +109,7 @@ Process data in multiple formats:
 - `merge-asof` - Time-series merge with tolerance
 
 ### Data Organization
-- `merge` - Combine multiple files (Horizontal/Vertical merge)
+- `merge` - Combine multiple files (Horizontal/Vertical merge, glob pattern support)
 - `merge-asof` - Time-series merge with tolerance
 - `data-sampling` - Sample rows (Random, Stratified, Systematic)
 - `file-format-convert` - Convert between formats
@@ -118,7 +118,7 @@ Process data in multiple formats:
 ### Feature Engineering
 - `create-lag-features` - Create time-series lag features
 - `window` - Window operations (resample, rolling aggregations)
-- `file-format-convert` - Convert between formats
+- `expression` - Custom expression-based column creation
 
 
 ## 💡 Common Use Cases

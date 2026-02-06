@@ -2,7 +2,7 @@
 
 **Status**: ✅ Complete (5/5 Features Implemented)
 **Completion Date**: November 9, 2024
-**Version**: 0.4.0
+**Version**: 0.4.0 (current: 0.4.9)
 
 ## Phase 2 Features Implemented
 

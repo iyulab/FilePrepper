@@ -12,7 +12,7 @@ dotnet tool install -g fileprepper-cli
 
 # Verify installation
 fileprepper --version
-# Expected: 0.4.1
+# Expected: 0.4.9
 
 fileprepper --help
 ```
@@ -24,7 +24,7 @@ fileprepper --help
 dotnet add package FilePrepper
 
 # Or in .csproj
-<PackageReference Include="FilePrepper" Version="0.4.1" />
+<PackageReference Include="FilePrepper" Version="0.4.9" />
 ```
 
 ### Option 3: Build from Source
@@ -278,7 +278,7 @@ fileprepper --help | grep "  "
 Install as global tool:
 ```bash
 # Install globally
-dotnet tool install -g FilePrepper.CLI
+dotnet tool install -g fileprepper-cli
 
 # Or run from source
 cd src/FilePrepper.CLI
