@@ -1,10 +1,21 @@
-﻿using CsvHelper;
+﻿using System.Text;
+using CsvHelper;
 using CsvHelper.Configuration;
 
 namespace FilePrepper.Utils;
 
 public static class CsvUtils
 {
+    /// <summary>
+    /// Creates a StreamReader with the appropriate encoding.
+    /// When encoding is "auto", auto-detects the file encoding.
+    /// </summary>
+    public static StreamReader CreateReader(string path, string encoding = "auto")
+    {
+        var enc = EncodingDetector.ResolveEncoding(path, encoding);
+        return new StreamReader(path, enc);
+    }
+
     public static CsvConfiguration GetDefaultConfiguration(bool hasHeader = true)
     {
         return new CsvConfiguration(CultureInfo.InvariantCulture)

@@ -25,18 +25,23 @@ public class ValueReplaceCommand : BaseCommand
 
         this.SetAction(async (parseResult) =>
         {
+            var encoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
+
             return await ExecuteAsync(
                 parseResult.GetValue(_inputOption)!,
                 parseResult.GetValue(_outputOption)!,
                 parseResult.GetValue(_replacementsOption)!,
                 parseResult.GetValue(CommonOptions.HasHeader),
                 parseResult.GetValue(CommonOptions.IgnoreErrors),
-                parseResult.GetValue(CommonOptions.Verbose));
+                parseResult.GetValue(CommonOptions.Verbose),
+                encoding,
+                skipRows);
         });
     }
 
     private async Task<int> ExecuteAsync(string inputPath, string outputPath, string[] replacementStrings,
-        bool hasHeader, bool ignoreErrors, bool verbose)
+        bool hasHeader, bool ignoreErrors, bool verbose, string encoding, int skipRows)
     {
         try
         {
@@ -79,7 +84,9 @@ public class ValueReplaceCommand : BaseCommand
                 OutputPath = outputPath,
                 ReplaceMethods = replaceMethods,
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                Encoding = encoding,
+                SkipRows = skipRows
             };
 
             return await AnsiConsole.Status()

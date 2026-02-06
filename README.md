@@ -92,6 +92,8 @@ Process data in multiple formats:
 - `fill-missing-values` - Fill missing data (Mean, Median, Mode, Forward, Backward, Constant)
 - `drop-duplicates` - Remove duplicate rows
 - `value-replace` - Replace values in columns
+- `remove-constants` - Remove constant/near-constant columns
+- `csv-cleaner` - Clean malformed CSV files
 
 ### Column Operations
 - `add-columns` - Add new calculated columns

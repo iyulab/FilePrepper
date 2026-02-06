@@ -24,6 +24,8 @@ public abstract class BaseCommand : Command
         Add(CommonOptions.HasHeader);
         Add(CommonOptions.IgnoreErrors);
         Add(CommonOptions.Verbose);
+        Add(CommonOptions.Encoding);
+        Add(CommonOptions.SkipRows);
     }
 
     protected void DisplaySuccess(string message)
@@ -155,6 +157,8 @@ public static class CommonOptions
     public static readonly Option<bool> HasHeader;
     public static readonly Option<bool> IgnoreErrors;
     public static readonly Option<bool> Verbose;
+    public static readonly Option<string> Encoding;
+    public static readonly Option<int> SkipRows;
 
     static CommonOptions()
     {
@@ -174,6 +178,18 @@ public static class CommonOptions
         {
             Description = "Enable verbose output",
             DefaultValueFactory = _ => false
+        };
+
+        Encoding = new Option<string>("--encoding")
+        {
+            Description = "File encoding (auto, utf-8, cp949, euc-kr)",
+            DefaultValueFactory = _ => "auto"
+        };
+
+        SkipRows = new Option<int>("--skip-rows")
+        {
+            Description = "Number of rows to skip before header",
+            DefaultValueFactory = _ => 0
         };
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.Merge;
 using Microsoft.Extensions.Logging;
@@ -12,6 +12,7 @@ namespace FilePrepper.CLI.Commands;
 public class MergeCommand : BaseCommand
 {
     private readonly Option<string[]> _inputFilesOption;
+    private readonly Option<string> _inputPatternOption;
     private readonly Option<string> _outputOption;
     private readonly Option<string> _mergeTypeOption;
     private readonly Option<string> _joinTypeOption;
@@ -21,8 +22,10 @@ public class MergeCommand : BaseCommand
     public MergeCommand(ILoggerFactory loggerFactory)
         : base("merge", "Merge multiple files vertically (concatenate) or horizontally (join)", loggerFactory)
     {
-        // Required options
-        _inputFilesOption = new Option<string[]>("--input", new[] { "-i" }) { Description = "Input file paths (space-separated)", Required = true, AllowMultipleArgumentsPerToken = true };
+        // Input options (either --input or --input-pattern, not both)
+        _inputFilesOption = new Option<string[]>("--input", new[] { "-i" }) { Description = "Input file paths (space-separated)", AllowMultipleArgumentsPerToken = true };
+
+        _inputPatternOption = new Option<string>("--input-pattern", new[] { "-p" }) { Description = "Glob pattern for input files (e.g., 'data/*.csv')" };
 
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
@@ -45,6 +48,7 @@ public class MergeCommand : BaseCommand
 
         // Add all options
         Add(_inputFilesOption);
+        Add(_inputPatternOption);
         Add(_outputOption);
         Add(_mergeTypeOption);
         Add(_joinTypeOption);
@@ -54,7 +58,8 @@ public class MergeCommand : BaseCommand
         // Set the handler
         this.SetAction(async (parseResult) =>
         {
-            var inputFiles = parseResult.GetValue(_inputFilesOption)!;
+            var inputFiles = parseResult.GetValue(_inputFilesOption) ?? Array.Empty<string>();
+            var inputPattern = parseResult.GetValue(_inputPatternOption);
             var outputPath = parseResult.GetValue(_outputOption)!;
             var mergeType = parseResult.GetValue(_mergeTypeOption)!;
             var joinType = parseResult.GetValue(_joinTypeOption)!;
@@ -63,17 +68,68 @@ public class MergeCommand : BaseCommand
             var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
             var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
             var verbose = parseResult.GetValue(CommonOptions.Verbose);
+            var encoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
+
+            // Resolve input files from pattern if specified
+            var resolvedFiles = ResolveInputFiles(inputFiles, inputPattern);
+            if (resolvedFiles == null)
+            {
+                return ExitCodes.InvalidArguments;
+            }
 
             return await ExecuteAsync(
-                inputFiles, outputPath, mergeType, joinType, keyColumns, joinMappings,
-                hasHeader, ignoreErrors, verbose);
+                resolvedFiles, outputPath, mergeType, joinType, keyColumns, joinMappings,
+                hasHeader, ignoreErrors, verbose, encoding, skipRows);
         });
+    }
+
+    private string[]? ResolveInputFiles(string[] inputFiles, string? inputPattern)
+    {
+        bool hasInputFiles = inputFiles.Length > 0;
+        bool hasPattern = !string.IsNullOrEmpty(inputPattern);
+
+        if (hasInputFiles && hasPattern)
+        {
+            DisplayError("Cannot specify both --input and --input-pattern. Use one or the other.");
+            return null;
+        }
+
+        if (!hasInputFiles && !hasPattern)
+        {
+            DisplayError("Either --input or --input-pattern must be specified.");
+            return null;
+        }
+
+        if (hasPattern)
+        {
+            var dir = Path.GetDirectoryName(inputPattern!) ?? ".";
+            var pattern = Path.GetFileName(inputPattern!);
+
+            if (!Directory.Exists(dir))
+            {
+                DisplayError($"Directory not found: {dir}");
+                return null;
+            }
+
+            var globFiles = Directory.GetFiles(dir, pattern).OrderBy(f => f).ToArray();
+            if (globFiles.Length < 2)
+            {
+                DisplayError($"Pattern '{inputPattern}' matched {globFiles.Length} file(s). At least 2 files required.");
+                return null;
+            }
+
+            DisplayInfo($"Pattern matched {globFiles.Length} files");
+            return globFiles;
+        }
+
+        return inputFiles;
     }
 
     private async Task<int> ExecuteAsync(
         string[] inputFiles, string outputPath, string mergeTypeStr, string joinTypeStr,
         string[] keyColumns, string[] joinMappings,
-        bool hasHeader, bool ignoreErrors, bool verbose)
+        bool hasHeader, bool ignoreErrors, bool verbose, string encoding, int skipRows)
     {
         try
         {
@@ -171,7 +227,9 @@ public class MergeCommand : BaseCommand
                 }).ToList(),
                 JoinMappings = joinMappings.Select(JoinMapping.Parse).ToList(),
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                Encoding = encoding,
+                SkipRows = skipRows
             };
 
             // Execute with progress display

@@ -30,19 +30,21 @@ public class FileFormatConvertHandler : BaseCommandHandler<FileFormatConvertPara
                 return ExitCodes.InvalidArguments;
             }
 
-            var encoding = Encoding.GetEncoding(opts.Encoding);
+            var outputEncoding = Encoding.GetEncoding(opts.OutputEncoding);
 
             var options = new FileFormatConvertOption
             {
                 InputPath = opts.InputPath,
                 OutputPath = opts.OutputPath,
                 TargetFormat = format,
-                Encoding = encoding,
+                OutputEncoding = outputEncoding,
                 HasHeader = opts.HasHeader,
                 PrettyPrint = opts.PrettyPrint,
                 RootElementName = opts.RootElementName,
                 ItemElementName = opts.ItemElementName,
-                IgnoreErrors = opts.IgnoreErrors
+                IgnoreErrors = opts.IgnoreErrors,
+                Encoding = opts.Encoding,
+                SkipRows = opts.SkipRows
             };
 
             var taskLogger = _loggerFactory.CreateLogger<FileFormatConvertTask>();

@@ -45,6 +45,14 @@ public abstract class BaseParameters : ICommandParameters
         HelpText = "Whether to ignore errors during processing. Use --ignore-errors=true to enable.")]
     public bool IgnoreErrors { get; set; }
 
+    [Option("encoding", Required = false, Default = "auto",
+        HelpText = "File encoding (auto, utf-8, cp949, euc-kr)")]
+    public string Encoding { get; set; } = "auto";
+
+    [Option("skip-rows", Required = false, Default = 0,
+        HelpText = "Number of rows to skip before header")]
+    public int SkipRows { get; set; } = 0;
+
     [Option('o', "output", Required = true,
         HelpText = "Output file path")]
     public string OutputPath { get; set; } = string.Empty;

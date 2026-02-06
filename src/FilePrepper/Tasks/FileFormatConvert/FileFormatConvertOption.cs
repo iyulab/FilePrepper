@@ -12,7 +12,7 @@ public enum FileFormat
 public class FileFormatConvertOption : SingleInputOption
 {
     public FileFormat TargetFormat { get; set; }
-    public Encoding? Encoding { get; set; }
+    public System.Text.Encoding? OutputEncoding { get; set; }
     public string? Delimiter { get; set; }
     public new bool HasHeader { get; set; } = true;
     public string? DateTimeFormat { get; set; }

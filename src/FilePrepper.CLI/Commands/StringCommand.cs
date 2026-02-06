@@ -96,11 +96,13 @@ public class StringCommand : BaseCommand
             var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
             var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
             var verbose = parseResult.GetValue(CommonOptions.Verbose);
+            var encoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
 
             return await ExecuteAsync(
                 inputPath, outputPath, mode, column, outputColumn, startIndex, length,
                 columns, separator, oldValue, newValue, trimMode,
-                hasHeader, ignoreErrors, verbose);
+                hasHeader, ignoreErrors, verbose, encoding, skipRows);
         });
     }
 
@@ -108,7 +110,7 @@ public class StringCommand : BaseCommand
         string inputPath, string outputPath, string mode, string? column, string? outputColumn,
         int startIndex, int? length, string? columns, string separator,
         string? oldValue, string? newValue, string trimMode,
-        bool hasHeader, bool ignoreErrors, bool verbose)
+        bool hasHeader, bool ignoreErrors, bool verbose, string encoding, int skipRows)
     {
         try
         {
@@ -199,7 +201,9 @@ public class StringCommand : BaseCommand
                 NewValue = newValue,
                 TrimMode = trimModeEnum,
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                Encoding = encoding,
+                SkipRows = skipRows
             };
 
             // Execute with progress display

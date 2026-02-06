@@ -34,6 +34,9 @@ public class NormalizeDataCommand : BaseCommand
 
         this.SetAction(async (parseResult) =>
         {
+            var encoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
+
             return await ExecuteAsync(
                 parseResult.GetValue(_inputOption)!,
                 parseResult.GetValue(_outputOption)!,
@@ -43,12 +46,14 @@ public class NormalizeDataCommand : BaseCommand
                 parseResult.GetValue(_maxOption),
                 parseResult.GetValue(CommonOptions.HasHeader),
                 parseResult.GetValue(CommonOptions.IgnoreErrors),
-                parseResult.GetValue(CommonOptions.Verbose));
+                parseResult.GetValue(CommonOptions.Verbose),
+                encoding,
+                skipRows);
         });
     }
 
     private async Task<int> ExecuteAsync(string inputPath, string outputPath, string[] columns, string methodStr,
-        double min, double max, bool hasHeader, bool ignoreErrors, bool verbose)
+        double min, double max, bool hasHeader, bool ignoreErrors, bool verbose, string encoding, int skipRows)
     {
         try
         {
@@ -73,7 +78,9 @@ public class NormalizeDataCommand : BaseCommand
                 MinValue = min,
                 MaxValue = max,
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                Encoding = encoding,
+                SkipRows = skipRows
             };
 
             return await AnsiConsole.Status()

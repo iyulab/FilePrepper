@@ -5,6 +5,8 @@ public abstract class BaseOption : ITaskOption
     public string OutputPath { get; set; } = string.Empty;
     public bool HasHeader { get; set; } = true;
     public bool IgnoreErrors { get; set; }
+    public string Encoding { get; set; } = "auto";
+    public int SkipRows { get; set; } = 0;
 
     public bool IsValid => Validate().Length == 0;
 
@@ -23,6 +25,11 @@ public abstract class BaseOption : ITaskOption
         if (string.IsNullOrWhiteSpace(OutputPath))
         {
             errors.Add("Output path cannot be empty");
+        }
+
+        if (SkipRows < 0)
+        {
+            errors.Add("SkipRows cannot be negative");
         }
 
         return [.. errors];

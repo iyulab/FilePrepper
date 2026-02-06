@@ -1,4 +1,4 @@
-﻿using FilePrepper.Tasks;
+using FilePrepper.Tasks;
 using FilePrepper.Tasks.Merge;
 using Microsoft.Extensions.Logging;
 
@@ -35,9 +35,17 @@ public class MergeHandler : BaseCommandHandler<MergeParameters>
                 return ExitCodes.InvalidArguments;
             }
 
+            // Resolve input files from pattern if specified
+            var inputFiles = ResolveInputFiles(opts);
+            if (inputFiles == null || inputFiles.Count < 2)
+            {
+                _logger.LogError("At least 2 input files are required");
+                return ExitCodes.InvalidArguments;
+            }
+
             var options = new MergeOption
             {
-                InputPaths = opts.InputFiles.ToList(),
+                InputPaths = inputFiles,
                 OutputPath = opts.OutputPath,
                 MergeType = mergeType,
                 JoinType = joinType,
@@ -50,7 +58,9 @@ public class MergeHandler : BaseCommandHandler<MergeParameters>
                     return ColumnIdentifier.ByName(column);
                 }).ToList(),
                 HasHeader = opts.HasHeader,
-                IgnoreErrors = opts.IgnoreErrors
+                IgnoreErrors = opts.IgnoreErrors,
+                Encoding = opts.Encoding,
+                SkipRows = opts.SkipRows
             };
 
             var taskLogger = _loggerFactory.CreateLogger<MergeTask>();
@@ -58,10 +68,31 @@ public class MergeHandler : BaseCommandHandler<MergeParameters>
             var context = new TaskContext(options);
 
             _logger.LogInformation("Merging {Count} files using {Type} merge type",
-                opts.InputFiles.Count(), mergeType);
+                inputFiles.Count, mergeType);
 
             var success = await task.ExecuteAsync(context);
             return success ? ExitCodes.Success : ExitCodes.Error;
         });
+    }
+
+    private List<string>? ResolveInputFiles(MergeParameters opts)
+    {
+        if (!string.IsNullOrEmpty(opts.InputPattern))
+        {
+            var dir = Path.GetDirectoryName(opts.InputPattern) ?? ".";
+            var pattern = Path.GetFileName(opts.InputPattern);
+
+            if (!Directory.Exists(dir))
+            {
+                _logger.LogError("Directory not found: {Dir}", dir);
+                return null;
+            }
+
+            var globFiles = Directory.GetFiles(dir, pattern).OrderBy(f => f).ToList();
+            _logger.LogInformation("Pattern '{Pattern}' matched {Count} file(s)", opts.InputPattern, globFiles.Count);
+            return globFiles;
+        }
+
+        return opts.InputFiles.ToList();
     }
 }

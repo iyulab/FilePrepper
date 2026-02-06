@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Auto Encoding Detection** - Automatic file encoding detection for CP949/EUC-KR Korean files
+  - `--encoding` option for all commands (auto, utf-8, cp949, euc-kr)
+  - BOM detection, UTF-8 validation, and CP949 Korean pattern detection
+  - Default `auto` mode detects encoding automatically
+  - New `EncodingDetector` utility in FilePrepper.Utils
+
+- **Skip Rows (Multi-Header CSV)** - Skip metadata rows before the actual CSV header
+  - `--skip-rows` option for all commands (default: 0)
+  - Handles files with title rows, notes, or multi-line headers above actual data
+
+- **Remove Constants** - Auto-detect and remove constant/near-constant columns
+  - `remove-constants` command with `--threshold` and `--report-only` options
+  - `UniqueRatioThreshold` for fine-grained control (0.0 = exact constants only)
+  - Report-only mode for analysis without data modification
+
+- **Merge Glob Pattern** - Merge multiple files using glob patterns
+  - `--input-pattern` / `-p` option for merge command (e.g., `data/*.csv`)
+  - Alternative to listing files individually with `--input`
+
+### Changed
+
+- Renamed `FileFormatConvertOption.Encoding` to `OutputEncoding` to avoid conflict with base encoding option
+- `--encoding` on `convert-format` command renamed to `--output-encoding`
+
 ## [0.4.9] - 2026-01-11
 
 ### Added

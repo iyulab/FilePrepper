@@ -75,17 +75,19 @@ public class UnpivotCommand : BaseCommand
             var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
             var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
             var verbose = parseResult.GetValue(CommonOptions.Verbose);
+            var encoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
 
             return await ExecuteAsync(
                 inputPath, outputPath, baseColumns, columnGroups, indexColumn, valueColumns, skipEmpty,
-                hasHeader, ignoreErrors, verbose);
+                hasHeader, ignoreErrors, verbose, encoding, skipRows);
         });
     }
 
     private async Task<int> ExecuteAsync(
         string inputPath, string outputPath, string[] baseColumns, string[] columnGroups,
         string indexColumn, string[] valueColumns, bool skipEmpty,
-        bool hasHeader, bool ignoreErrors, bool verbose)
+        bool hasHeader, bool ignoreErrors, bool verbose, string encoding, int skipRows)
     {
         try
         {
@@ -158,7 +160,9 @@ public class UnpivotCommand : BaseCommand
                 ValueColumnNames = valueColumns.ToList(),
                 SkipEmptyRows = skipEmpty,
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                Encoding = encoding,
+                SkipRows = skipRows
             };
 
             // Execute with progress display

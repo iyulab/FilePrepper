@@ -37,6 +37,9 @@ public class DataSamplingCommand : BaseCommand
 
         this.SetAction(async (parseResult) =>
         {
+            var encoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
+
             return await ExecuteAsync(
                 parseResult.GetValue(_inputOption)!,
                 parseResult.GetValue(_outputOption)!,
@@ -47,12 +50,15 @@ public class DataSamplingCommand : BaseCommand
                 parseResult.GetValue(_intervalOption),
                 parseResult.GetValue(CommonOptions.HasHeader),
                 parseResult.GetValue(CommonOptions.IgnoreErrors),
-                parseResult.GetValue(CommonOptions.Verbose));
+                parseResult.GetValue(CommonOptions.Verbose),
+                encoding,
+                skipRows);
         });
     }
 
     private async Task<int> ExecuteAsync(string inputPath, string outputPath, string methodStr, double sampleSize,
-        int? seed, string? stratifyColumn, int? interval, bool hasHeader, bool ignoreErrors, bool verbose)
+        int? seed, string? stratifyColumn, int? interval, bool hasHeader, bool ignoreErrors, bool verbose,
+        string encoding, int skipRows)
     {
         try
         {
@@ -72,7 +78,9 @@ public class DataSamplingCommand : BaseCommand
                 StratifyColumn = stratifyColumn,
                 SystematicInterval = interval,
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                Encoding = encoding,
+                SkipRows = skipRows
             };
 
             return await AnsiConsole.Status()

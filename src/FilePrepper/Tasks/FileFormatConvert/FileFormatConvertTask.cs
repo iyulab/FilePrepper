@@ -32,7 +32,7 @@ public class FileFormatConvertTask : BaseTask<FileFormatConvertOption>
         IEnumerable<Dictionary<string, string>> records)
     {
         var recordsList = records.ToList();
-        var encoding = Options.Encoding ?? Encoding.UTF8;
+        var encoding = Options.OutputEncoding ?? Encoding.UTF8;
 
         try
         {

@@ -5,6 +5,8 @@ public interface ITaskOption
     string OutputPath { get; set; }
     bool HasHeader { get; set; }
     bool IgnoreErrors { get; set; }
+    string Encoding { get; set; }
+    int SkipRows { get; set; }
     bool IsValid { get; }
     string[] Validate();
 }

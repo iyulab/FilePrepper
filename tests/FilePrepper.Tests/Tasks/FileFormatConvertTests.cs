@@ -31,7 +31,7 @@ public class FileFormatConvertTests : TaskBaseTest<FileFormatConvertTask>
             OutputPath = _testOutputPath,
             TargetFormat = FileFormat.TSV,
             HasHeader = true,
-            Encoding = Encoding.UTF8
+            OutputEncoding = Encoding.UTF8
         };
 
         var task = new FileFormatConvertTask(_mockLogger.Object);
@@ -145,7 +145,7 @@ public class FileFormatConvertTests : TaskBaseTest<FileFormatConvertTask>
             InputPath = _testInputPath,
             OutputPath = _testOutputPath,
             TargetFormat = FileFormat.CSV,
-            Encoding = Encoding.UTF32
+            OutputEncoding = Encoding.UTF32
         };
 
         var task = new FileFormatConvertTask(_mockLogger.Object);

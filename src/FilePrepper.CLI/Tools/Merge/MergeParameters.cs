@@ -19,6 +19,10 @@ public class MergeParameters : MultipleInputParameters
         HelpText = "Key columns for horizontal merge")]
     public IEnumerable<string> JoinKeyColumns { get; set; } = Array.Empty<string>();
 
+    [Option('p', "input-pattern",
+        HelpText = "Glob pattern for input files (e.g., 'data/*.csv')")]
+    public string? InputPattern { get; set; }
+
     public override Type GetHandlerType() => typeof(MergeHandler);
 
     protected override bool ValidateInternal(ILogger logger)

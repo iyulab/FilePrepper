@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using FilePrepper.Utils;
 
 namespace FilePrepper.Tasks.Merge;
 
@@ -324,8 +325,11 @@ public class MergeOption : MultipleInputOption
 
     private List<string> GetFileHeaders(string filePath)
     {
-        using var reader = new StreamReader(filePath);
+        using var reader = CsvUtils.CreateReader(filePath, Encoding);
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+        for (int i = 0; i < SkipRows; i++)
+            csv.Parser.Read();
 
         csv.Read();
         csv.ReadHeader();
@@ -334,8 +338,11 @@ public class MergeOption : MultipleInputOption
 
     private (int ColumnCount, int RowCount) GetFileStats(string filePath)
     {
-        using var reader = new StreamReader(filePath);
+        using var reader = CsvUtils.CreateReader(filePath, Encoding);
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+        for (int i = 0; i < SkipRows; i++)
+            csv.Parser.Read();
 
         // Get column count from first row
         csv.Read();

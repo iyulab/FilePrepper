@@ -29,6 +29,9 @@ public class DataTypeConvertCommand : BaseCommand
 
         this.SetAction(async (parseResult) =>
         {
+            var encoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
+
             return await ExecuteAsync(
                 parseResult.GetValue(_inputOption)!,
                 parseResult.GetValue(_outputOption)!,
@@ -36,12 +39,14 @@ public class DataTypeConvertCommand : BaseCommand
                 parseResult.GetValue(_cultureOption)!,
                 parseResult.GetValue(CommonOptions.HasHeader),
                 parseResult.GetValue(CommonOptions.IgnoreErrors),
-                parseResult.GetValue(CommonOptions.Verbose));
+                parseResult.GetValue(CommonOptions.Verbose),
+                encoding,
+                skipRows);
         });
     }
 
     private async Task<int> ExecuteAsync(string inputPath, string outputPath, string[] conversionStrings,
-        string cultureStr, bool hasHeader, bool ignoreErrors, bool verbose)
+        string cultureStr, bool hasHeader, bool ignoreErrors, bool verbose, string encoding, int skipRows)
     {
         try
         {
@@ -78,7 +83,9 @@ public class DataTypeConvertCommand : BaseCommand
                 OutputPath = outputPath,
                 Conversions = conversions,
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                Encoding = encoding,
+                SkipRows = skipRows
             };
 
             return await AnsiConsole.Status()

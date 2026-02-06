@@ -23,7 +23,7 @@ public class FileFormatConvertCommand : BaseCommand
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
         _targetOption = new Option<string>("--target", new[] { "-t" }) { Description = "Target format (CSV/TSV/PSV/JSON/XML)", Required = true };
-        _encodingOption = new Option<string>("--encoding", new[] { "-e" }) { Description = "File encoding", DefaultValueFactory = _ => "utf-8" };
+        _encodingOption = new Option<string>("--output-encoding", new[] { "-e" }) { Description = "Output file encoding", DefaultValueFactory = _ => "utf-8" };
         _prettyOption = new Option<bool>("--pretty") { Description = "Pretty print for JSON/XML", DefaultValueFactory = _ => false };
         _rootOption = new Option<string>("--root") { Description = "Root element name for XML", DefaultValueFactory = _ => "root" };
         _itemOption = new Option<string>("--item") { Description = "Item element name for XML", DefaultValueFactory = _ => "item" };
@@ -38,6 +38,9 @@ public class FileFormatConvertCommand : BaseCommand
 
         this.SetAction(async (parseResult) =>
         {
+            var commonEncoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
+
             return await ExecuteAsync(
                 parseResult.GetValue(_inputOption)!,
                 parseResult.GetValue(_outputOption)!,
@@ -48,12 +51,15 @@ public class FileFormatConvertCommand : BaseCommand
                 parseResult.GetValue(_itemOption)!,
                 parseResult.GetValue(CommonOptions.HasHeader),
                 parseResult.GetValue(CommonOptions.IgnoreErrors),
-                parseResult.GetValue(CommonOptions.Verbose));
+                parseResult.GetValue(CommonOptions.Verbose),
+                commonEncoding,
+                skipRows);
         });
     }
 
     private async Task<int> ExecuteAsync(string inputPath, string outputPath, string targetStr, string encodingStr,
-        bool pretty, string root, string item, bool hasHeader, bool ignoreErrors, bool verbose)
+        bool pretty, string root, string item, bool hasHeader, bool ignoreErrors, bool verbose,
+        string commonEncoding, int skipRows)
     {
         try
         {
@@ -70,12 +76,14 @@ public class FileFormatConvertCommand : BaseCommand
                 InputPath = inputPath,
                 OutputPath = outputPath,
                 TargetFormat = format,
-                Encoding = encoding,
+                OutputEncoding = encoding,
                 PrettyPrint = pretty,
                 RootElementName = root,
                 ItemElementName = item,
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                SkipRows = skipRows,
+                Encoding = commonEncoding
             };
 
             return await AnsiConsole.Status()

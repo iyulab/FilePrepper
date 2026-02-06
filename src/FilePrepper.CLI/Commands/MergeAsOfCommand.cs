@@ -60,17 +60,19 @@ public class MergeAsOfCommand : BaseCommand
             var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
             var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
             var verbose = parseResult.GetValue(CommonOptions.Verbose);
+            var encoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
 
             return await ExecuteAsync(
                 inputFiles, outputPath, leftOn, rightOn, directionStr, tolerance, suffix,
-                hasHeader, ignoreErrors, verbose);
+                hasHeader, ignoreErrors, verbose, encoding, skipRows);
         });
     }
 
     private async Task<int> ExecuteAsync(
         string[] inputFiles, string outputPath, string leftOn, string rightOn,
         string directionStr, double? tolerance, string suffix,
-        bool hasHeader, bool ignoreErrors, bool verbose)
+        bool hasHeader, bool ignoreErrors, bool verbose, string encoding, int skipRows)
     {
         try
         {
@@ -150,7 +152,9 @@ public class MergeAsOfCommand : BaseCommand
                 Tolerance = tolerance,
                 Suffix = suffix,
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                Encoding = encoding,
+                SkipRows = skipRows
             };
 
             // Execute with progress display

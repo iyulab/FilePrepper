@@ -45,16 +45,18 @@ public class ExpressionCommand : BaseCommand
             var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
             var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
             var verbose = parseResult.GetValue(CommonOptions.Verbose);
+            var encoding = parseResult.GetValue(CommonOptions.Encoding) ?? "auto";
+            var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
 
             return await ExecuteAsync(
                 inputPath, outputPath, expressions, removeSource,
-                hasHeader, ignoreErrors, verbose);
+                hasHeader, ignoreErrors, verbose, encoding, skipRows);
         });
     }
 
     private async Task<int> ExecuteAsync(
         string inputPath, string outputPath, string[] expressions, bool removeSource,
-        bool hasHeader, bool ignoreErrors, bool verbose)
+        bool hasHeader, bool ignoreErrors, bool verbose, string encoding, int skipRows)
     {
         try
         {
@@ -129,7 +131,9 @@ public class ExpressionCommand : BaseCommand
                 Expressions = parsedExpressions,
                 RemoveSourceColumns = removeSource,
                 HasHeader = hasHeader,
-                IgnoreErrors = ignoreErrors
+                IgnoreErrors = ignoreErrors,
+                Encoding = encoding,
+                SkipRows = skipRows
             };
 
             // Execute with progress display

@@ -1,5 +1,6 @@
 ﻿using CsvHelper;
 using FilePrepper.Tasks.Merge;
+using FilePrepper.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace FilePrepper.Tasks;
@@ -86,8 +87,11 @@ public abstract class BaseTask<TOption> : ITask
 
     protected List<string> GetFileHeaders(string inputPath)
     {
-        using var reader = new StreamReader(inputPath);
+        using var reader = CsvUtils.CreateReader(inputPath, Options.Encoding);
         using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration());
+
+        for (int i = 0; i < Options.SkipRows; i++)
+            csv.Parser.Read();
 
         csv.Read();
         csv.ReadHeader();
@@ -154,8 +158,12 @@ public abstract class BaseTask<TOption> : ITask
     {
         _logger.LogInformation("Reading input file: {Path}", path);
 
-        using var reader = new StreamReader(path);
+        using var reader = CsvUtils.CreateReader(path, Options.Encoding);
         using var parser = new CsvParser(reader, CsvUtils.GetDefaultConfiguration(Options.HasHeader));
+
+        // Skip rows before header
+        for (int i = 0; i < Options.SkipRows; i++)
+            await parser.ReadAsync();
 
         var records = new List<Dictionary<string, string>>();
         var headers = new List<string>();

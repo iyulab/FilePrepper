@@ -23,6 +23,8 @@ Available for all commands:
 | `--has-header` | `--header` | Input has header row | true |
 | `--ignore-errors` | - | Continue on errors | false |
 | `--verbose` | `-v` | Enable verbose output | false |
+| `--encoding` | - | File encoding (auto, utf-8, cp949, euc-kr) | auto |
+| `--skip-rows` | - | Number of rows to skip before header | 0 |
 
 ## Supported File Formats
 
@@ -500,6 +502,7 @@ Merge multiple files vertically (concatenate) or horizontally (join).
 **Syntax:**
 ```bash
 fileprepper merge -i FILE1 FILE2 [FILE3...] -o OUTPUT -t TYPE [OPTIONS]
+fileprepper merge -p "data/*.csv" -o OUTPUT -t TYPE [OPTIONS]
 ```
 
 **Examples:**
@@ -511,15 +514,54 @@ fileprepper merge -i file1.csv file2.csv file3.csv -o merged.csv \
 # Horizontal merge (join on ID column)
 fileprepper merge -i users.csv salaries.csv -o combined.csv \
   --type Horizontal --join-type Inner --key-columns "ID" --verbose
+
+# Merge all CSV files matching a glob pattern
+fileprepper merge -p "sensor-data/*.csv" -o merged.csv \
+  --type Vertical --verbose
 ```
 
 **Options:**
-- `-i, --input` - Input file paths (space-separated, required, minimum 2 files)
+- `-i, --input` - Input file paths (space-separated, minimum 2 files)
+- `-p, --input-pattern` - Glob pattern for input files (e.g., `data/*.csv`)
 - `-o, --output` - Output file path (required)
 - `-t, --type` - Merge type: Vertical (concatenate rows) or Horizontal (join columns) (required)
 - `-j, --join-type` - Join type for horizontal merge: Inner, Left, Right, Full (default: Inner)
 - `-k, --key-columns` - Key columns for horizontal merge (comma-separated, required for horizontal)
 - `--has-header` - Input files have headers (default: true)
+- `--verbose` - Show detailed progress
+
+> **Note:** Use either `--input` or `--input-pattern`, not both.
+
+---
+
+#### remove-constants
+Remove constant or near-constant columns from the dataset.
+
+**Syntax:**
+```bash
+fileprepper remove-constants -i INPUT -o OUTPUT [OPTIONS]
+```
+
+**Examples:**
+```bash
+# Remove columns where all values are identical
+fileprepper remove-constants -i data.csv -o cleaned.csv --verbose
+
+# Remove columns with less than 1% unique values
+fileprepper remove-constants -i data.csv -o cleaned.csv \
+  --threshold 0.01 --verbose
+
+# Report-only mode (list constant columns without removing)
+fileprepper remove-constants -i data.csv -o data.csv \
+  --report-only --verbose
+```
+
+**Options:**
+- `-i, --input` - Input file path (required)
+- `-o, --output` - Output file path (required)
+- `--threshold` - Unique ratio threshold (0.0 = exact constants only, 0.01 = below 1% unique ratio) (default: 0.0)
+- `--report-only` - List constant columns without removing them (default: false)
+- `--has-header` - Input has headers (default: true)
 - `--verbose` - Show detailed progress
 
 ---

@@ -11,9 +11,9 @@ public class FileFormatConvertParameters : SingleInputParameters
         HelpText = "Target format (CSV/TSV/PSV/JSON/XML)")]
     public string TargetFormat { get; set; } = string.Empty;
 
-    [Option('e', "encoding", Default = "utf-8",
-        HelpText = "File encoding")]
-    public string Encoding { get; set; } = "utf-8";
+    [Option('e', "output-encoding", Default = "utf-8",
+        HelpText = "Output file encoding")]
+    public string OutputEncoding { get; set; } = "utf-8";
 
     [Option("pretty", Default = false,
         HelpText = "Enable pretty printing for JSON/XML")]
@@ -44,11 +44,11 @@ public class FileFormatConvertParameters : SingleInputParameters
         // 인코딩 유효성 검사
         try
         {
-            _ = System.Text.Encoding.GetEncoding(Encoding);
+            _ = System.Text.Encoding.GetEncoding(OutputEncoding);
         }
         catch (ArgumentException)
         {
-            logger.LogError("Invalid encoding: {Encoding}", Encoding);
+            logger.LogError("Invalid encoding: {Encoding}", OutputEncoding);
             return false;
         }
 
