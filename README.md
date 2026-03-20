@@ -76,50 +76,107 @@ Process data in multiple formats:
 - **XML** (Extensible Markup Language)
 - **Excel** (XLSX/XLS files)
 
-## 🛠️ Available Commands (29+)
+## 🛠️ Feature Matrix (30 Tasks)
 
-### Data Transformation
-- `normalize-data` - Normalize columns (MinMax, ZScore)
-- `scale-data` - Scale numeric data (StandardScaler, MinMaxScaler, RobustScaler)
-- `one-hot-encoding` - Convert categorical to binary columns
-- `data-type-convert` - Convert column data types
-- `date-extraction` - Extract date features (Year, Month, Day, DayOfWeek)
-- `datetime` - Parse datetime and extract features
-- `string` - String transformations (upper, lower, trim, substring)
-- `conditional` - Conditional column creation with if-then-else logic
+| Category | CLI Command | Task | Description |
+|----------|-------------|------|-------------|
+| **Data Transformation** | `normalize` | NormalizeData | MinMax, ZScore normalization |
+| | `scale` | ScaleData | StandardScaler, MinMaxScaler, RobustScaler |
+| | `one-hot-encoding` | OneHotEncoding | Categorical → binary columns |
+| | `convert-type` | DataTypeConvert | Column data type conversion |
+| | `extract-date` | DateExtraction | Extract Year, Month, Day, DayOfWeek |
+| | `datetime` | DateTimeOps | Parse datetime and extract features |
+| | `string` | StringOps | upper, lower, trim, substring, concat, replace |
+| | `conditional` | Conditional | If-then-else column creation |
+| | `expression` | Expression | Arithmetic expression-based columns |
+| **Data Cleaning** | `fill-missing` | FillMissingValues | Mean, Median, Mode, Forward, Backward, Constant |
+| | `drop-duplicates` | DropDuplicates | Remove duplicate rows by key columns |
+| | `replace` | ValueReplace | Replace values in columns |
+| | `remove-constants` | RemoveConstants | Remove constant/near-constant columns |
+| | `clean` | CSVCleaner | Thousand separators, whitespace, `\r` strip |
+| **Column Operations** | `add-columns` | AddColumns | Add computed columns |
+| | `remove-columns` | RemoveColumns | Delete columns |
+| | `rename-columns` | RenameColumns | Rename column headers |
+| | `reorder-columns` | ReorderColumns | Change column order |
+| | `column-interaction` | ColumnInteraction | Create interaction features between columns |
+| **Data Organization** | `merge` | Merge | Vertical (concat) / Horizontal (join), glob support |
+| | `merge-asof` | MergeAsOf | Time-series merge with tolerance |
+| | `data-sampling` | DataSampling | Random, Stratified, Systematic sampling |
+| | `convert-format` | FileFormatConvert | CSV ↔ TSV ↔ JSON ↔ XML ↔ Excel |
+| | `unpivot` | Unpivot | Wide → Long format reshape |
+| | `filter-rows` | FilterRows | Row filtering by conditions |
+| **Data Analysis** | `stats` | BasicStatistics | Mean, Median, StdDev, ZScore |
+| | `aggregate` | Aggregate | Group-by aggregations |
+| **Feature Engineering** | `create-lag-features` | CreateLagFeatures | Time-series lag features |
+| | `window` | WindowOps | Resample, rolling aggregations |
+| **Common Options** | — | — | `--skip-rows`, `--has-header`, `--encoding`, `--ignore-errors` |
 
-### Data Cleaning
-- `fill-missing-values` - Fill missing data (Mean, Median, Mode, Forward, Backward, Constant)
-- `drop-duplicates` - Remove duplicate rows
-- `value-replace` - Replace values in columns
-- `remove-constants` - Remove constant/near-constant columns
-- `csv-cleaner` - Clean malformed CSV files
 
-### Column Operations
-- `add-columns` - Add new calculated columns
-- `remove-columns` - Delete unwanted columns
-- `rename-columns` - Rename column headers
-- `reorder-columns` - Change column order
-- `column-interaction` - Create interaction features
+## 🧪 ML Data Preparation Cookbook
 
-### Data Analysis
-- `basic-statistics` - Calculate statistics (Mean, Median, StdDev, ZScore)
-- `aggregate` - Group and aggregate data
-- `filter-rows` - Filter rows by conditions
-- `merge-asof` - Time-series merge with tolerance
+Common scenarios for machine learning data preparation:
 
-### Data Organization
-- `merge` - Combine multiple files (Horizontal/Vertical merge, glob pattern support)
-- `merge-asof` - Time-series merge with tolerance
-- `data-sampling` - Sample rows (Random, Stratified, Systematic)
-- `file-format-convert` - Convert between formats
-- `unpivot` - Reshape data from wide to long format
+### Large Dataset Sampling (100K+ rows → 10K sample)
 
-### Feature Engineering
-- `create-lag-features` - Create time-series lag features
-- `window` - Window operations (resample, rolling aggregations)
-- `expression` - Custom expression-based column creation
+```bash
+# Random sampling with fixed seed for reproducibility
+fileprepper data-sampling -i large_dataset.csv -o sampled.csv \
+  --method Random --sample-size 10000 --seed 42
 
+# Stratified sampling (preserve label distribution)
+fileprepper data-sampling -i large_dataset.csv -o sampled.csv \
+  --method Stratified --sample-size 10000 --stratify-column "label"
+```
+
+```csharp
+// Pipeline API
+await DataPipeline
+    .FromCsvAsync("large_dataset.csv")
+    .Sample(10000, SamplingMethod.Random, seed: 42)
+    .ToCsvAsync("sampled.csv");
+```
+
+### Merging X/Y Split Files (Features + Labels)
+
+```bash
+# Horizontal merge: combine X_train.csv (features) + Y_train.csv (labels) by row index
+fileprepper merge -i X_train.csv Y_train.csv -o merged_train.csv --direction Horizontal
+```
+
+```csharp
+// Pipeline API
+var features = await DataPipeline.FromCsvAsync("X_train.csv");
+var labels = await DataPipeline.FromCsvAsync("Y_train.csv");
+await features
+    .Join(labels, JoinType.Full, leftKey: null, rightKey: null) // row-by-row join
+    .ToCsvAsync("merged_train.csv");
+```
+
+### Multi-Row Header Files (Skip metadata rows)
+
+```bash
+# Skip first row (category header), use second row as actual column names
+fileprepper filter-rows -i messy_data.csv -o clean_data.csv --skip-rows 1
+
+# No header in file — use numeric column indices
+fileprepper normalize -i raw.csv -o normalized.csv \
+  --columns "0,1,2" --method MinMax --has-header false
+```
+
+### Cleaning External Data (Mixed line endings)
+
+```bash
+# Strip \r from quoted fields + remove thousand separators
+fileprepper clean -i external_export.csv -o cleaned.csv --strip-cr -s ','
+```
+
+```csharp
+// Pipeline API
+await DataPipeline
+    .FromCsvAsync("external_export.csv")
+    .StripCarriageReturn()
+    .ToCsvAsync("cleaned.csv");
+```
 
 ## 💡 Common Use Cases
 
