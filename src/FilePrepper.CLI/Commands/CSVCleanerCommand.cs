@@ -16,6 +16,7 @@ public class CSVCleanerCommand : BaseCommand
     private readonly Option<string[]> _targetColumnsOption;
     private readonly Option<char> _separatorOption;
     private readonly Option<bool> _validateOption;
+    private readonly Option<bool> _stripCrOption;
 
     public CSVCleanerCommand(ILoggerFactory loggerFactory)
         : base("clean", "Clean CSV numeric data (remove thousand separators)", loggerFactory)
@@ -32,12 +33,15 @@ public class CSVCleanerCommand : BaseCommand
 
         _validateOption = new Option<bool>("--validate", new[] { "-val" }) { Description = "Validate that cleaned values are valid numbers", DefaultValueFactory = _ => false };
 
+        _stripCrOption = new Option<bool>("--strip-cr") { Description = "Strip carriage return (\\r) characters from field values", DefaultValueFactory = _ => false };
+
         // Add all options
         Add(_inputOption);
         Add(_outputOption);
         Add(_targetColumnsOption);
         Add(_separatorOption);
         Add(_validateOption);
+        Add(_stripCrOption);
 
         // Set the handler
         this.SetAction(async (parseResult) =>
@@ -47,6 +51,7 @@ public class CSVCleanerCommand : BaseCommand
             var targetColumns = parseResult.GetValue(_targetColumnsOption) ?? Array.Empty<string>();
             var separator = parseResult.GetValue(_separatorOption);
             var validate = parseResult.GetValue(_validateOption);
+            var stripCr = parseResult.GetValue(_stripCrOption);
             var hasHeader = parseResult.GetValue(CommonOptions.HasHeader);
             var ignoreErrors = parseResult.GetValue(CommonOptions.IgnoreErrors);
             var verbose = parseResult.GetValue(CommonOptions.Verbose);
@@ -54,13 +59,13 @@ public class CSVCleanerCommand : BaseCommand
             var skipRows = parseResult.GetValue(CommonOptions.SkipRows);
 
             return await ExecuteAsync(
-                inputPath, outputPath, targetColumns, separator, validate,
+                inputPath, outputPath, targetColumns, separator, validate, stripCr,
                 hasHeader, ignoreErrors, verbose, encoding, skipRows);
         });
     }
 
     private async Task<int> ExecuteAsync(
-        string inputPath, string outputPath, string[] targetColumns, char separator, bool validate,
+        string inputPath, string outputPath, string[] targetColumns, char separator, bool validate, bool stripCr,
         bool hasHeader, bool ignoreErrors, bool verbose, string encoding, int skipRows)
     {
         try
@@ -73,6 +78,7 @@ public class CSVCleanerCommand : BaseCommand
                 ("Target columns", true, targetColumns.Length > 0 ? $"{targetColumns.Length} column(s)" : "All columns"),
                 ("Thousand separator", true, $"'{separator}'"),
                 ("Validate numeric", true, validate ? "Enabled" : "Disabled"),
+                ("Strip CR", true, stripCr ? "Enabled" : "Disabled"),
             };
 
             var table = new Table()
@@ -109,6 +115,7 @@ public class CSVCleanerCommand : BaseCommand
                 ThousandSeparator = separator,
                 RemoveWhitespace = true,
                 ValidateNumeric = validate,
+                StripCarriageReturn = stripCr,
                 HasHeader = hasHeader,
                 IgnoreErrors = ignoreErrors,
                 Encoding = encoding,

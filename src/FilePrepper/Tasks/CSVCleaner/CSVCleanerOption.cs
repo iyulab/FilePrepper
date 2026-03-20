@@ -26,6 +26,12 @@ public class CSVCleanerOption : SingleInputOption
     /// </summary>
     public bool ValidateNumeric { get; set; } = false;
 
+    /// <summary>
+    /// Whether to strip carriage return (\r) characters from field values.
+    /// Useful for cleaning data from external sources with mixed line endings.
+    /// </summary>
+    public bool StripCarriageReturn { get; set; } = false;
+
     protected override string[] ValidateInternal()
     {
         // CSV Cleaner has no strict validation requirements

@@ -42,6 +42,13 @@ public class CSVCleanerTask : BaseTask<CSVCleanerOption>
             {
                 var value = record[column];
 
+                // Strip carriage return applies to all columns
+                if (Options.StripCarriageReturn && value.Contains('\r'))
+                {
+                    value = value.Replace("\r", "");
+                    totalCleaned++;
+                }
+
                 if (columnsToClean.Contains(column))
                 {
                     var cleanedValue = CleanNumericValue(value, out bool wasCleaned, out bool hasError);

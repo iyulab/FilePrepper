@@ -266,4 +266,45 @@ public class PipelineTransformationsTests
         action.Should().Throw<ArgumentException>()
             .WithMessage("*NonExistent*not found*");
     }
+
+    [Fact]
+    public void StripCarriageReturn_ShouldRemoveCrFromAllFields()
+    {
+        // Arrange
+        var data = new[]
+        {
+            new Dictionary<string, string> { ["Name"] = "Alice\r", ["Value"] = "hello\rworld" },
+            new Dictionary<string, string> { ["Name"] = "Bob", ["Value"] = "clean" }
+        };
+        var pipeline = DataPipeline.FromData(data);
+
+        // Act
+        var result = pipeline.StripCarriageReturn().ToDataFrame();
+
+        // Assert
+        result.Rows[0]["Name"].Should().Be("Alice");
+        result.Rows[0]["Value"].Should().Be("helloworld");
+        result.Rows[1]["Name"].Should().Be("Bob");
+        result.Rows[1]["Value"].Should().Be("clean");
+    }
+
+    [Fact]
+    public void StripCarriageReturn_WithNoCr_ShouldReturnUnchanged()
+    {
+        // Arrange
+        var data = new[]
+        {
+            new Dictionary<string, string> { ["Name"] = "Alice", ["Value"] = "100" },
+            new Dictionary<string, string> { ["Name"] = "Bob", ["Value"] = "200" }
+        };
+        var pipeline = DataPipeline.FromData(data);
+
+        // Act
+        var result = pipeline.StripCarriageReturn().ToDataFrame();
+
+        // Assert
+        result.Rows.Should().HaveCount(2);
+        result.Rows[0]["Value"].Should().Be("100");
+        result.Rows[1]["Value"].Should().Be("200");
+    }
 }

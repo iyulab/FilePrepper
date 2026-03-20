@@ -593,6 +593,21 @@ public class DataPipeline
     }
 
     /// <summary>
+    /// Strip carriage return (\r) characters from all field values.
+    /// Useful for cleaning data from external sources with mixed line endings.
+    /// </summary>
+    public DataPipeline StripCarriageReturn()
+    {
+        var cleanedRows = _rows.Select(row =>
+            row.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.Contains('\r') ? kvp.Value.Replace("\r", "") : kvp.Value
+            )).ToList();
+
+        return new DataPipeline(cleanedRows, _columnNames);
+    }
+
+    /// <summary>
     /// Remove duplicate rows based on specified key columns or all columns
     /// </summary>
     /// <param name="keyColumns">Columns to use for duplicate detection. If null or empty, uses all columns.</param>
