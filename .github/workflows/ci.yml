@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+    # Skip release commits — those are handled by nuget-publish.yml which
+    # runs the same build/test pipeline before pack/push.
+    paths-ignore:
+      - 'Directory.Build.props'
+      - '**/*.md'
+      - 'docs/**'
+      - 'claudedocs/**'
+      - '.gitignore'
+      - 'LICENSE'
+  pull_request:
+    branches: [ "main" ]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'claudedocs/**'
+      - '.gitignore'
+      - 'LICENSE'
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  SOLUTION_PATH: 'FilePrepper.sln'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+    - name: Check for vulnerable dependencies (warn-only)
+      run: |
+        echo "Scanning for vulnerable transitive packages..."
+        dotnet list ${{ env.SOLUTION_PATH }} package --vulnerable --include-transitive
+
+    - name: Build
+      run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test ${{ env.SOLUTION_PATH }} --no-build --configuration Release --verbosity normal
