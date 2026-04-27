@@ -35,6 +35,13 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore ${{ env.SOLUTION_PATH }}
 
+    - name: Check for vulnerable dependencies (warn-only)
+      # Phase 1: surface only. Future tightening (fail on High/Critical) will be a follow-up
+      # once we observe the signal is stable and false-positive-free.
+      run: |
+        echo "Scanning for vulnerable transitive packages..."
+        dotnet list ${{ env.SOLUTION_PATH }} package --vulnerable --include-transitive
+
     - name: Build
       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
