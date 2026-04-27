@@ -6,7 +6,7 @@
   <ItemGroup>
     <!-- Production Dependencies -->
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
-    <PackageVersion Include="EPPlus" Version="8.5.0" />
+    <PackageVersion Include="EPPlus" Version="8.5.3" />
     <PackageVersion Include="ExcelDataReader" Version="3.8.0" />
     <PackageVersion Include="ExcelDataReader.DataSet" Version="3.8.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
