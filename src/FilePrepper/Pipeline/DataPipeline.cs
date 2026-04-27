@@ -29,13 +29,13 @@ public class DataPipeline
     /// <summary>
     /// Create pipeline from CSV file
     /// </summary>
-    public static async Task<DataPipeline> FromCsvAsync(string path, bool hasHeader = true)
+    /// <param name="path">CSV file path</param>
+    /// <param name="hasHeader">Whether the file has a header row (default: true)</param>
+    /// <param name="encoding">File encoding name, or "auto" to auto-detect (default: "auto" — handles UTF-8/BOM/CP949/EUC-KR)</param>
+    public static async Task<DataPipeline> FromCsvAsync(string path, bool hasHeader = true, string encoding = "auto")
     {
-        using var reader = new StreamReader(path);
-        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            HasHeaderRecord = hasHeader
-        });
+        using var reader = CsvUtils.CreateReader(path, encoding);
+        using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration(hasHeader));
 
         var rows = new List<Dictionary<string, string>>();
         var headers = new List<string>();
@@ -145,13 +145,15 @@ public class DataPipeline
     /// <param name="hasHeader">Whether files have header rows (default: true)</param>
     /// <param name="addSourceColumn">Add column tracking source filename (default: false)</param>
     /// <param name="sourceColumnName">Name for source tracking column (default: "SourceFile")</param>
+    /// <param name="encoding">File encoding name, or "auto" to auto-detect (default: "auto" — handles UTF-8/BOM/CP949/EUC-KR)</param>
     /// <returns>DataPipeline with concatenated data from all matching files</returns>
     public static async Task<DataPipeline> ConcatCsvAsync(
         string pattern,
         string? directory = null,
         bool hasHeader = true,
         bool addSourceColumn = false,
-        string sourceColumnName = "SourceFile")
+        string sourceColumnName = "SourceFile",
+        string encoding = "auto")
     {
         // Get target directory
         var targetDir = string.IsNullOrEmpty(directory) ? Directory.GetCurrentDirectory() : directory;
@@ -177,11 +179,8 @@ public class DataPipeline
 
             try
             {
-                using var reader = new StreamReader(filePath);
-                using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
-                {
-                    HasHeaderRecord = hasHeader
-                });
+                using var reader = CsvUtils.CreateReader(filePath, encoding);
+                using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration(hasHeader));
 
                 await csv.ReadAsync();
                 csv.ReadHeader();
@@ -247,6 +246,7 @@ public class DataPipeline
     /// <param name="directory">Directory containing files (default: current directory)</param>
     /// <param name="hasHeader">Whether files have header rows (default: true)</param>
     /// <param name="metadataOptions">Options for metadata extraction from filenames</param>
+    /// <param name="encoding">File encoding name, or "auto" to auto-detect (default: "auto" — handles UTF-8/BOM/CP949/EUC-KR)</param>
     /// <returns>DataPipeline with concatenated data and extracted metadata columns</returns>
     /// <example>
     /// // Extract date from sensor-2021.09.06.csv, sensor-2021.09.07.csv
@@ -262,7 +262,8 @@ public class DataPipeline
         string pattern,
         string? directory,
         bool hasHeader,
-        FilenameMetadataOptions metadataOptions)
+        FilenameMetadataOptions metadataOptions,
+        string encoding = "auto")
     {
         var targetDir = string.IsNullOrEmpty(directory) ? Directory.GetCurrentDirectory() : directory;
         var files = Directory.GetFiles(targetDir, pattern)
@@ -323,11 +324,8 @@ public class DataPipeline
 
             try
             {
-                using var reader = new StreamReader(filePath);
-                using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
-                {
-                    HasHeaderRecord = hasHeader
-                });
+                using var reader = CsvUtils.CreateReader(filePath, encoding);
+                using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration(hasHeader));
 
                 await csv.ReadAsync();
                 csv.ReadHeader();
