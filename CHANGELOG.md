@@ -5,6 +5,18 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1]
+
+### Security
+
+- **Transitive vulnerability remediated (EPPlus 8.5.3 → 8.5.4)** — EPPlus 8.5.3 pulled `System.Security.Cryptography.Xml` 10.0.0, which carries known high-severity advisories (GHSA-37gx-xxp4-5rgx, GHSA-w3x6-4m5h-cxqf). EPPlus 8.5.4 raises its declared floor to the patched 10.0.7. This release publishes that already-in-main dependency bump so consumers resolve a non-vulnerable graph without needing a consumer-side pin. Verified via `dotnet list package --vulnerable --include-transitive` (no vulnerable packages) and by a downstream consumer (MLoop) building clean after removing its temporary pin.
+
+### Changed
+
+- Accumulated dependency bumps since 0.7.0 (all Dependabot, no public API change): System.CommandLine 2.0.7 → 2.0.8, Microsoft.Extensions group (5 packages), Microsoft.NET.Test.Sdk 18.4.0 → 18.5.1.
+
+> **Note (changelog drift):** the `[Unreleased]` entries below predate 0.7.0 and were already shipped in 0.5.x–0.7.0 releases (no corresponding feature commits exist after the 0.7.0 version bump); they remain here pending a separate history-reconciliation pass and are **not** newly introduced by 0.7.1.
+
 ## [Unreleased]
 
 ### Added
