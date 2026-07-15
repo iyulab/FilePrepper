@@ -6,22 +6,24 @@
   <ItemGroup>
     <!-- Production Dependencies -->
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
-    <PackageVersion Include="EPPlus" Version="8.5.4" />
-    <PackageVersion Include="ExcelDataReader" Version="3.8.0" />
-    <PackageVersion Include="ExcelDataReader.DataSet" Version="3.8.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.8" />
+    <PackageVersion Include="EPPlus" Version="8.6.1" />
+    <PackageVersion Include="ExcelDataReader" Version="3.9.0" />
+    <PackageVersion Include="ExcelDataReader.DataSet" Version="3.9.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.10" />
     <PackageVersion Include="Scrutor" Version="7.0.0" />
+    <!-- Spectre.Console pinned to 0.55.x to stay paired with Spectre.Console.Cli 0.55.0
+         (latest stable .Cli); pre-1.0 minor bump of the core ahead of .Cli risks API skew. -->
     <PackageVersion Include="Spectre.Console" Version="0.55.2" />
     <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />
-    <PackageVersion Include="System.CommandLine" Version="2.0.8" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.10" />
 
     <!-- Test Dependencies -->
     <PackageVersion Include="coverlet.collector" Version="10.0.0" />
     <PackageVersion Include="FluentAssertions" Version="8.9.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="xunit" Version="2.9.3" />

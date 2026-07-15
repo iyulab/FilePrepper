@@ -5,6 +5,12 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2]
+
+### Changed
+
+- **Dependency modernization** — EPPlus 8.5.4 → 8.6.1, ExcelDataReader / ExcelDataReader.DataSet 3.8.0 → 3.9.0, `Microsoft.Extensions.*` 10.0.8 → 10.0.10, System.CommandLine 2.0.8 → 2.0.10. Verified `dotnet list package --vulnerable --include-transitive` is clean (EPPlus 8.6.1 carries no known advisories) and all 370 tests pass. `Spectre.Console` deliberately held at 0.55.2 to stay paired with `Spectre.Console.Cli` 0.55.0 (latest stable `.Cli`); bumping the core ahead of `.Cli` risks pre-1.0 API skew.
+
 ## [0.7.1]
 
 ### Security
