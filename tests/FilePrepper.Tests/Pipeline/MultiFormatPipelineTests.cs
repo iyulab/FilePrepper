@@ -1,4 +1,5 @@
 using FilePrepper.Pipeline;
+using FilePrepper.Utils;
 using FluentAssertions;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -37,7 +38,7 @@ public class MultiFormatPipelineTests : IDisposable
         };
         var headers = new List<string> { "Name", "Age", "City" };
 
-        await Utils.ExcelUtils.WriteExcelFileAsync(excelPath, testData, headers);
+        await ExcelUtils.WriteExcelFileAsync(excelPath, testData, headers);
 
         // Act
         var pipeline = await DataPipeline.FromExcelAsync(excelPath);
@@ -45,7 +46,7 @@ public class MultiFormatPipelineTests : IDisposable
 
         // Assert
         File.Exists(outputPath).Should().BeTrue();
-        var (records, _) = await Utils.ExcelUtils.ReadExcelFileAsync(outputPath);
+        var (records, _) = await ExcelUtils.ReadExcelFileAsync(outputPath);
         records.Should().HaveCount(2);
         records[0]["Name"].Should().Be("Alice");
         records[1]["Age"].Should().Be("30");
@@ -64,7 +65,7 @@ public class MultiFormatPipelineTests : IDisposable
             new() { ["Name"] = "Bob", ["Score"] = "92" }
         };
         var headers = new List<string> { "Name", "Score" };
-        await Utils.ExcelUtils.WriteExcelFileAsync(excelPath, testData, headers);
+        await ExcelUtils.WriteExcelFileAsync(excelPath, testData, headers);
 
         // Act
         var pipeline = await DataPipeline.FromExcelAsync(excelPath);
@@ -130,7 +131,7 @@ public class MultiFormatPipelineTests : IDisposable
             .ToExcelAsync(excelPath);
 
         // Assert
-        var (records, _) = await Utils.ExcelUtils.ReadExcelFileAsync(excelPath);
+        var (records, _) = await ExcelUtils.ReadExcelFileAsync(excelPath);
         records.Should().HaveCount(1);
         records[0]["Product"].Should().Be("Apple");
     }
@@ -193,7 +194,7 @@ public class MultiFormatPipelineTests : IDisposable
         File.Exists(xmlPath).Should().BeTrue();
 
         // Verify Excel
-        var (excelRecords, _) = await Utils.ExcelUtils.ReadExcelFileAsync(excelPath);
+        var (excelRecords, _) = await ExcelUtils.ReadExcelFileAsync(excelPath);
         excelRecords.Should().HaveCount(2);
 
         // Verify JSON
@@ -217,7 +218,7 @@ public class MultiFormatPipelineTests : IDisposable
         var headers = new List<string> { "ID", "Value" };
 
         // Act
-        await Utils.ExcelUtils.WriteExcelFileAsync(excelPath, testData, headers, sheetName: "CustomSheet");
+        await ExcelUtils.WriteExcelFileAsync(excelPath, testData, headers, sheetName: "CustomSheet");
         var pipeline = await DataPipeline.FromExcelAsync(excelPath, sheetName: "CustomSheet");
 
         // Assert
@@ -264,7 +265,7 @@ public class MultiFormatPipelineTests : IDisposable
             new() { ["Product"] = "Mouse", ["Price"] = "20", ["Quantity"] = "50" },
             new() { ["Product"] = "Keyboard", ["Price"] = "80", ["Quantity"] = "30" }
         };
-        await Utils.ExcelUtils.WriteExcelFileAsync(excelPath, salesData, new List<string> { "Product", "Price", "Quantity" });
+        await ExcelUtils.WriteExcelFileAsync(excelPath, salesData, new List<string> { "Product", "Price", "Quantity" });
 
         // Act
         var pipeline = await DataPipeline.FromExcelAsync(excelPath);

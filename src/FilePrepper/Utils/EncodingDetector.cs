@@ -109,22 +109,25 @@ public static class EncodingDetector
             }
             else if ((b & 0xE0) == 0xC0)
             {
-                if (i + 1 >= data.Length || (data[i + 1] & 0xC0) != 0x80)
-                    return false;
+                // Truncated at the detection-buffer boundary is incomplete, not invalid — a large
+                // UTF-8 file whose 64KB sample cuts a multibyte char must not fail UTF-8 validation
+                // (else it falls through to the Korean check and is misdetected as CP949).
+                if (i + 1 >= data.Length) break;
+                if ((data[i + 1] & 0xC0) != 0x80) return false;
                 i += 2;
             }
             else if ((b & 0xF0) == 0xE0)
             {
-                if (i + 2 >= data.Length ||
-                    (data[i + 1] & 0xC0) != 0x80 ||
+                if (i + 2 >= data.Length) break;
+                if ((data[i + 1] & 0xC0) != 0x80 ||
                     (data[i + 2] & 0xC0) != 0x80)
                     return false;
                 i += 3;
             }
             else if ((b & 0xF8) == 0xF0)
             {
-                if (i + 3 >= data.Length ||
-                    (data[i + 1] & 0xC0) != 0x80 ||
+                if (i + 3 >= data.Length) break;
+                if ((data[i + 1] & 0xC0) != 0x80 ||
                     (data[i + 2] & 0xC0) != 0x80 ||
                     (data[i + 3] & 0xC0) != 0x80)
                     return false;

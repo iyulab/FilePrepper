@@ -5,6 +5,12 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3]
+
+### Fixed
+
+- **`EncodingDetector` no longer misdetects large UTF-8 files as CP949** when a multibyte UTF-8 sequence straddles the 64KB detection-buffer boundary. `IsValidUtf8` previously treated a sequence truncated at the sample boundary as *invalid* (returning `false`), so the file fell through to the Korean-pattern check and could be classified as CP949 — corrupting Korean column names/labels on read. Truncation at the buffer boundary is now treated as *incomplete-but-valid* (the detector stops scanning), matching a correct UTF-8 validator. Detection of genuine CP949/EUC-KR and small UTF-8 files is unchanged. This makes `EncodingDetector` a reliable single authority for consumers converging their own CP949→UTF-8 duplication onto it.
+
 ## [0.7.2]
 
 ### Changed
