@@ -5,6 +5,12 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4]
+
+### Security
+
+- **Lifted the transitive `System.Security.Cryptography.Xml` floor to 10.0.10.** EPPlus 8.6.1 (the latest stable) resolves it at 10.0.7, against which four High-severity advisories were published (GHSA-cvvh-rhrc-wg4q, GHSA-g8r8-53c2-pm3f, GHSA-23rf-6693-g89p, GHSA-8q5v-6pqq-x66h) — a new batch, distinct from the pair fixed by the 0.7.2 EPPlus upgrade. The package now carries a direct reference so the fixed floor ships in FilePrepper's own dependency graph and every consumer inherits it, instead of each consumer re-pinning downstream. To be dropped when EPPlus raises its own floor.
+
 ## [0.7.3]
 
 ### Fixed
