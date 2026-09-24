@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 using System.CommandLine;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
@@ -92,12 +93,10 @@ public abstract class BaseCommand : Command
             return false;
         }
 
-        var extension = Path.GetExtension(inputPath).ToLowerInvariant();
-        var supportedFormats = new[] { ".csv", ".tsv", ".json", ".xml", ".xlsx", ".xls" };
-
-        if (!supportedFormats.Contains(extension))
+        if (!DataFileFormats.IsReadable(inputPath))
         {
-            errorMessage = $"Unsupported file format: {extension}. Supported formats: CSV, TSV, JSON, XML, Excel (XLSX/XLS)";
+            errorMessage = $"Unsupported input format: {Path.GetExtension(inputPath).ToLowerInvariant()}. " +
+                           $"Readable formats: {string.Join(", ", DataFileFormats.ReadableExtensions)} (XML is an output format only)";
             return false;
         }
 
@@ -118,6 +117,7 @@ public abstract class BaseCommand : Command
             ".json" => "JSON",
             ".xml" => "XML",
             ".xlsx" or ".xls" => "Excel",
+            ".parquet" => "Parquet",
             _ => "Unknown"
         };
     }
@@ -136,8 +136,9 @@ public abstract class BaseCommand : Command
         table.AddRow("[cyan]CSV[/]", ".csv", "Comma-Separated Values");
         table.AddRow("[cyan]TSV[/]", ".tsv", "Tab-Separated Values");
         table.AddRow("[cyan]JSON[/]", ".json", "JavaScript Object Notation");
-        table.AddRow("[cyan]XML[/]", ".xml", "Extensible Markup Language");
+        table.AddRow("[cyan]XML[/]", ".xml", "Extensible Markup Language (output only)");
         table.AddRow("[cyan]Excel[/]", ".xlsx, .xls", "Microsoft Excel Spreadsheet");
+        table.AddRow("[cyan]Parquet[/]", ".parquet", "Apache Parquet (input only; struct fields become dotted columns)");
 
         var panel = new Panel(table)
         {

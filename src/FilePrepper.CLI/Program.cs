@@ -75,7 +75,7 @@ public class Program
 
         AnsiConsole.Write(banner);
         AnsiConsole.MarkupLine("[dim]ML Data Preprocessing Tool - No Coding Required[/]");
-        AnsiConsole.MarkupLine($"[dim]Version {GetVersion()} | CSV, TSV, JSON, XML, Excel Support[/]");
+        AnsiConsole.MarkupLine($"[dim]Version {GetVersion()} | CSV, TSV, JSON, XML, Excel, Parquet Support[/]");
         AnsiConsole.WriteLine();
     }
 
@@ -127,7 +127,7 @@ public class Program
 
     private static RootCommand BuildRootCommand()
     {
-        var rootCommand = new RootCommand("FilePrepper - ML Data Preprocessing Tool (CSV, TSV, JSON, XML, Excel)");
+        var rootCommand = new RootCommand("FilePrepper - ML Data Preprocessing Tool (CSV, TSV, JSON, XML, Excel, Parquet)");
 
         // Add all commands via CommandFactory (single source of truth)
         foreach (var command in CommandFactory.CreateAllCommands(_loggerFactory))

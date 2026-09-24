@@ -46,8 +46,7 @@ fileprepper filter-rows --input sales.csv --output filtered.csv \
   --conditions "Revenue:GreaterThan:1000"
 
 # Convert formats
-fileprepper file-format-convert --input data.csv --output data.json \
-  --format JSON
+fileprepper convert-format -i data.csv -o data.json -t JSON
 ```
 
 ### Get Help

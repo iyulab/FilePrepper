@@ -15,6 +15,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.10" />
+    <PackageVersion Include="Parquet.Net" Version="6.1.0" />
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <!-- Spectre.Console pinned to 0.55.x to stay paired with Spectre.Console.Cli 0.55.0
          (latest stable .Cli); pre-1.0 minor bump of the core ahead of .Cli risks API skew. -->

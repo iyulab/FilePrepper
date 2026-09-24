@@ -119,10 +119,13 @@ public abstract class BaseTask<TOption> : ITask
     {
         _logger.LogInformation("Reading input file: {InputPath}", context.InputPath);
 
-        // Check if file is Excel format
-        var (records, headers) = ExcelUtils.IsExcelFile(context.InputPath)
-            ? await ReadExcelFileAsync(context.InputPath)
-            : await ReadCsvFileAsync(context.InputPath);
+        var (records, headers) = DataFileFormats.FromPath(context.InputPath) switch
+        {
+            DataFileFormat.Excel => await ReadExcelFileAsync(context.InputPath),
+            DataFileFormat.Parquet => await ParquetUtils.ReadParquetFileAsync(context.InputPath),
+            DataFileFormat.Json => await JsonUtils.ReadJsonFileAsync(context.InputPath),
+            _ => await ReadCsvFileAsync(context.InputPath)
+        };
 
         _originalHeaders = headers;
         return await PreProcessRecordsAsync(records);
@@ -159,7 +162,7 @@ public abstract class BaseTask<TOption> : ITask
         _logger.LogInformation("Reading input file: {Path}", path);
 
         using var reader = CsvUtils.CreateReader(path, Options.Encoding);
-        using var parser = new CsvParser(reader, CsvUtils.GetDefaultConfiguration(Options.HasHeader));
+        using var parser = new CsvParser(reader, CsvUtils.GetDefaultConfiguration(Options.HasHeader, DataFileFormats.DelimiterFor(path)));
 
         // Skip rows before header
         for (int i = 0; i < Options.SkipRows; i++)

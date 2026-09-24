@@ -16,11 +16,12 @@ public static class CsvUtils
         return new StreamReader(path, enc);
     }
 
-    public static CsvConfiguration GetDefaultConfiguration(bool hasHeader = true)
+    public static CsvConfiguration GetDefaultConfiguration(bool hasHeader = true, string delimiter = ",")
     {
         return new CsvConfiguration(CultureInfo.InvariantCulture)
         {
             HasHeaderRecord = hasHeader,
+            Delimiter = delimiter,
             MissingFieldFound = null
         };
     }

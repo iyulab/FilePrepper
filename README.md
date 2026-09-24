@@ -75,6 +75,8 @@ Process data in multiple formats:
 - **JSON** (JavaScript Object Notation)
 - **XML** (Extensible Markup Language)
 - **Excel** (XLSX/XLS files)
+- **Parquet** (input only) — a struct column becomes one column per leaf, named by its dotted path
+  (`labels.label`); a list or map column holds its value as JSON text
 
 ## 🛠️ Feature Matrix (30 Tasks)
 
@@ -102,7 +104,7 @@ Process data in multiple formats:
 | **Data Organization** | `merge` | Merge | Vertical (concat) / Horizontal (join), glob support |
 | | `merge-asof` | MergeAsOf | Time-series merge with tolerance |
 | | `data-sampling` | DataSampling | Random, Stratified, Systematic sampling |
-| | `convert-format` | FileFormatConvert | CSV ↔ TSV ↔ JSON ↔ XML ↔ Excel |
+| | `convert-format` | FileFormatConvert | CSV ↔ TSV ↔ JSON ↔ XML ↔ Excel; Parquet in |
 | | `unpivot` | Unpivot | Wide → Long format reshape |
 | | `filter-rows` | FilterRows | Row filtering by conditions |
 | **Data Analysis** | `stats` | BasicStatistics | Mean, Median, StdDev, ZScore |
@@ -232,13 +234,16 @@ await DataPipeline
 
 ```bash
 # CSV to JSON
-fileprepper file-format-convert --input data.csv --output data.json --format JSON
+fileprepper convert-format -i data.csv -o data.json -t JSON
 
 # Excel to CSV
-fileprepper file-format-convert --input report.xlsx --output report.csv --format CSV
+fileprepper convert-format -i report.xlsx -o report.csv -t CSV
+
+# Parquet to CSV (nested struct fields become dotted columns)
+fileprepper convert-format -i pairs.parquet -o pairs.csv -t CSV
 
 # CSV to XML
-fileprepper file-format-convert --input data.csv --output data.xml --format XML
+fileprepper convert-format -i data.csv -o data.xml -t XML
 ```
 
 ### Data Analysis

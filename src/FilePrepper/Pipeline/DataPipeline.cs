@@ -35,7 +35,7 @@ public class DataPipeline
     public static async Task<DataPipeline> FromCsvAsync(string path, bool hasHeader = true, string encoding = "auto")
     {
         using var reader = CsvUtils.CreateReader(path, encoding);
-        using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration(hasHeader));
+        using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration(hasHeader, DataFileFormats.DelimiterFor(path)));
 
         var rows = new List<Dictionary<string, string>>();
         var headers = new List<string>();
@@ -82,26 +82,34 @@ public class DataPipeline
     }
 
     /// <summary>
+    /// Create pipeline from an Apache Parquet file. A struct column becomes one column per leaf,
+    /// named by its dotted path (<c>labels.label</c>); a list or map column holds JSON text.
+    /// </summary>
+    public static async Task<DataPipeline> FromParquetAsync(string path)
+    {
+        var (rows, headers) = await ParquetUtils.ReadParquetFileAsync(path);
+        return new DataPipeline(rows, headers);
+    }
+
+    /// <summary>
+    /// Create pipeline from a file, choosing the reader by its extension
+    /// (<see cref="DataFileFormats.FromPath"/>): Excel, Parquet, JSON, TSV, and CSV otherwise.
+    /// </summary>
+    public static Task<DataPipeline> FromFileAsync(string path) =>
+        DataFileFormats.FromPath(path) switch
+        {
+            DataFileFormat.Excel => FromExcelAsync(path),
+            DataFileFormat.Parquet => FromParquetAsync(path),
+            DataFileFormat.Json => FromJsonAsync(path),
+            _ => FromCsvAsync(path)
+        };
+
+    /// <summary>
     /// Create pipeline from JSON file (array of objects)
     /// </summary>
     public static async Task<DataPipeline> FromJsonAsync(string path)
     {
-        var jsonContent = await File.ReadAllTextAsync(path);
-        var jsonArray = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(jsonContent);
-
-        if (jsonArray == null || !jsonArray.Any())
-        {
-            return new DataPipeline(Enumerable.Empty<Dictionary<string, string>>(), Enumerable.Empty<string>());
-        }
-
-        var headers = jsonArray.First().Keys.ToList();
-        var rows = jsonArray.Select(obj =>
-            obj.ToDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.ValueKind == JsonValueKind.Null ? string.Empty : kvp.Value.ToString()
-            )
-        ).ToList();
-
+        var (rows, headers) = await JsonUtils.ReadJsonFileAsync(path);
         return new DataPipeline(rows, headers);
     }
 
