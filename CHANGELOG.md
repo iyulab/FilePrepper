@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A JSON document that is not a table says so.** A file whose rows sit under a property
+  (`{"annotation": [...]}`) failed with the parser's own message about `List<Dictionary<…>>`. It now
+  says a table is an array of objects and names the array properties the rows may be under.
 - **XML is an output format only.** An `.xml` input used to be read as comma-separated text, so a
   conversion "succeeded" with the markup as its header. Reading one now fails with a
   `NotSupportedException` that names the formats FilePrepper reads.

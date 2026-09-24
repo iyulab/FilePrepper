@@ -75,4 +75,16 @@ public class InputFormatTests : IDisposable
         var ex = Assert.Throws<NotSupportedException>(() => DataFileFormats.FromPath("data.xml"));
         Assert.Contains("output format only", ex.Message);
     }
+
+    [Fact]
+    public async Task A_json_document_with_its_rows_under_a_property_is_described_not_dumped()
+    {
+        var path = Path.Combine(_dir, "doc.json");
+        File.WriteAllText(path, """{"meta": 1, "annotation": [{"text": "a", "label": "x"}]}""");
+
+        var ex = await Assert.ThrowsAsync<InvalidDataException>(() => JsonUtils.ReadJsonFileAsync(path));
+
+        Assert.Contains("array of objects", ex.Message);
+        Assert.Contains("'annotation' (1 items)", ex.Message);
+    }
 }
