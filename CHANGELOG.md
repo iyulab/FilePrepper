@@ -5,6 +5,33 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0]
+
+### Added
+
+- **Parquet input.** Every command, and `DataPipeline.FromParquetAsync`, reads Apache Parquet
+  files. A table has one level of columns, so nested data is flattened on the way in: a struct
+  becomes one column per leaf, named by its dotted path (`labels.label`), and a list or map stays one
+  column holding its value as JSON text. Values are written in the invariant culture; a null is an
+  empty cell.
+- `DataPipeline.FromFileAsync` — chooses the reader by extension (`.xls`/`.xlsx`, `.parquet`,
+  `.json`, `.tsv`, CSV otherwise), so a caller that accepts "a data file" does not repeat that
+  dispatch. `DataFileFormats` is where that choice is made, for commands, tasks and the pipeline
+  alike.
+
+### Fixed
+
+- **JSON and TSV input to commands.** The commands accepted `.json` and `.tsv` files but every task
+  read anything that was not Excel as comma-separated text, so a JSON array failed with a parser
+  dump and a TSV file came back as one column per line. Tasks now read JSON as JSON and split TSV on
+  tabs, and `DataPipeline.FromCsvAsync` splits a `.tsv` file on tabs too.
+
+### Changed
+
+- **XML is an output format only.** An `.xml` input used to be read as comma-separated text, so a
+  conversion "succeeded" with the markup as its header. Reading one now fails with a
+  `NotSupportedException` that names the formats FilePrepper reads.
+
 ## [0.7.4]
 
 ### Security
