@@ -34,7 +34,7 @@ public static class JsonUtils
     // List<Dictionary<...>>") says nothing a person can act on, so say what was found instead.
     private static string DescribeShape(JsonElement root, string filePath)
     {
-        const string expected = "FilePrepper reads a JSON file as a table when it is an array of objects, one per row";
+        const string expected = "A JSON file is read as a table when it is an array of objects, one per row";
         if (root.ValueKind == JsonValueKind.Object)
         {
             var arrays = root.EnumerateObject()
