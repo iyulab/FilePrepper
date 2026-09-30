@@ -5,6 +5,23 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0]
+
+### Added
+
+- **JSON record paths.** `DataPipeline.FromJsonAsync(path, recordPath)`, `FromFileAsync(path,
+  jsonRecordPath)` and a task's `JsonRecordPath` read the rows of a nested array: `data.paragraphs.qas`
+  walks `data[]`, each item's `paragraphs[]`, and those items' `qas[]`, and each question becomes a
+  row. A row also carries the other fields of every item it was reached through, named by the array
+  that item came from — `paragraphs.context` — so a question keeps its passage although the two are
+  stored at different levels. The file's top-level fields are not carried; a field only some rows have
+  is an empty cell in the others; an object or array field is one column of JSON text.
+
+### Changed
+
+- A JSON document that is not a table now names the record paths that would read it, however deep
+  its rows are (`'data.paragraphs.qas.answers'`), not only the arrays at its top level.
+
 ## [0.8.0]
 
 ### Added

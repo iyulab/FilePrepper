@@ -1,4 +1,4 @@
-﻿using CsvHelper;
+using CsvHelper;
 using FilePrepper.Tasks.Merge;
 using FilePrepper.Utils;
 using Microsoft.Extensions.Logging;
@@ -123,7 +123,7 @@ public abstract class BaseTask<TOption> : ITask
         {
             DataFileFormat.Excel => await ReadExcelFileAsync(context.InputPath),
             DataFileFormat.Parquet => await ParquetUtils.ReadParquetFileAsync(context.InputPath),
-            DataFileFormat.Json => await JsonUtils.ReadJsonFileAsync(context.InputPath),
+            DataFileFormat.Json => await JsonUtils.ReadJsonFileAsync(context.InputPath, Options.JsonRecordPath),
             _ => await ReadCsvFileAsync(context.InputPath)
         };
 

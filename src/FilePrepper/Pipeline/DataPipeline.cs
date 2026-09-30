@@ -94,22 +94,25 @@ public class DataPipeline
     /// <summary>
     /// Create pipeline from a file, choosing the reader by its extension
     /// (<see cref="DataFileFormats.FromPath"/>): Excel, Parquet, JSON, TSV, and CSV otherwise.
+    /// <paramref name="jsonRecordPath"/> applies to JSON only — see <see cref="FromJsonAsync"/>.
     /// </summary>
-    public static Task<DataPipeline> FromFileAsync(string path) =>
+    public static Task<DataPipeline> FromFileAsync(string path, string? jsonRecordPath = null) =>
         DataFileFormats.FromPath(path) switch
         {
             DataFileFormat.Excel => FromExcelAsync(path),
             DataFileFormat.Parquet => FromParquetAsync(path),
-            DataFileFormat.Json => FromJsonAsync(path),
+            DataFileFormat.Json => FromJsonAsync(path, jsonRecordPath),
             _ => FromCsvAsync(path)
         };
 
     /// <summary>
-    /// Create pipeline from JSON file (array of objects)
+    /// Create pipeline from a JSON file: an array of objects, or — with <paramref name="recordPath"/> —
+    /// the objects of the nested array that dotted path leads to, each carrying the fields of the items it
+    /// was reached through (<see cref="JsonUtils.ReadJsonFileAsync"/>).
     /// </summary>
-    public static async Task<DataPipeline> FromJsonAsync(string path)
+    public static async Task<DataPipeline> FromJsonAsync(string path, string? recordPath = null)
     {
-        var (rows, headers) = await JsonUtils.ReadJsonFileAsync(path);
+        var (rows, headers) = await JsonUtils.ReadJsonFileAsync(path, recordPath);
         return new DataPipeline(rows, headers);
     }
 

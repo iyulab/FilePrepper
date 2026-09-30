@@ -1,4 +1,4 @@
-﻿namespace FilePrepper.Tasks;
+namespace FilePrepper.Tasks;
 
 public interface ITaskOption
 {
@@ -7,6 +7,13 @@ public interface ITaskOption
     bool IgnoreErrors { get; set; }
     string Encoding { get; set; }
     int SkipRows { get; set; }
+
+    /// <summary>
+    /// For JSON input: the dotted path to the array whose objects are the rows
+    /// (see <see cref="Utils.JsonUtils.ReadJsonFileAsync"/>). Unset, the file must be an array of objects.
+    /// </summary>
+    string? JsonRecordPath { get => null; set { } }
+
     bool IsValid { get; }
     string[] Validate();
 }

@@ -1,4 +1,4 @@
-﻿using FilePrepper.Tasks;
+using FilePrepper.Tasks;
 
 public abstract class BaseOption : ITaskOption
 {
@@ -7,6 +7,7 @@ public abstract class BaseOption : ITaskOption
     public bool IgnoreErrors { get; set; }
     public string Encoding { get; set; } = "auto";
     public int SkipRows { get; set; } = 0;
+    public string? JsonRecordPath { get; set; }
 
     public bool IsValid => Validate().Length == 0;
 
