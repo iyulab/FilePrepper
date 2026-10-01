@@ -5,6 +5,20 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0]
+
+### Added
+
+- **SVMlight / libsvm input.** `label [qid:q] index:value … [# comment]` reads as a table: `label`,
+  `qid` when the rows are grouped, and one `f<index>` column per feature index that occurs, in index
+  order, with `0` where a line leaves a feature out. Without `qid:`, a group-size file beside the data
+  (`<file>.query`, LightGBM's convention, or `<file>.group`, XGBoost's) numbers the groups; one that
+  does not cover the rows exactly is refused. `DataFileFormat.SvmLight`,
+  `DataPipeline.FromSvmLightAsync` and `SvmLightUtils.ReadSvmLightFileAsync`.
+- The `.svm`, `.svmlight` and `.libsvm` extensions name the format. A file whose extension names no
+  format is recognized by its lines (`rank.train`): before, it was read as CSV — one column, headed by
+  its first data row.
+
 ## [0.10.0]
 
 ### Added

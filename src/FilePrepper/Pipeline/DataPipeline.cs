@@ -92,8 +92,18 @@ public class DataPipeline
     }
 
     /// <summary>
+    /// Create pipeline from an SVMlight / libsvm file — <c>label</c>, <c>qid</c> when grouped, and one
+    /// <c>f&lt;index&gt;</c> column per feature index (<see cref="SvmLightUtils.ReadSvmLightFileAsync"/>).
+    /// </summary>
+    public static async Task<DataPipeline> FromSvmLightAsync(string path)
+    {
+        var (rows, headers) = await SvmLightUtils.ReadSvmLightFileAsync(path);
+        return new DataPipeline(rows, headers);
+    }
+
+    /// <summary>
     /// Create pipeline from a file, choosing the reader by its extension
-    /// (<see cref="DataFileFormats.FromPath"/>): Excel, Parquet, JSON, TSV, and CSV otherwise.
+    /// (<see cref="DataFileFormats.FromPath"/>): Excel, Parquet, JSON, SVMlight, TSV, and CSV otherwise.
     /// <paramref name="jsonRecordPath"/> applies to JSON only — see <see cref="FromJsonAsync"/>.
     /// </summary>
     public static Task<DataPipeline> FromFileAsync(string path, string? jsonRecordPath = null) =>
@@ -102,6 +112,7 @@ public class DataPipeline
             DataFileFormat.Excel => FromExcelAsync(path),
             DataFileFormat.Parquet => FromParquetAsync(path),
             DataFileFormat.Json => FromJsonAsync(path, jsonRecordPath),
+            DataFileFormat.SvmLight => FromSvmLightAsync(path),
             _ => FromCsvAsync(path)
         };
 

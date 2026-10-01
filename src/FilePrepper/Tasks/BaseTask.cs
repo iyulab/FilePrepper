@@ -124,6 +124,7 @@ public abstract class BaseTask<TOption> : ITask
             DataFileFormat.Excel => await ReadExcelFileAsync(context.InputPath),
             DataFileFormat.Parquet => await ParquetUtils.ReadParquetFileAsync(context.InputPath),
             DataFileFormat.Json => await JsonUtils.ReadJsonFileAsync(context.InputPath, Options.JsonRecordPath),
+            DataFileFormat.SvmLight => await SvmLightUtils.ReadSvmLightFileAsync(context.InputPath),
             _ => await ReadCsvFileAsync(context.InputPath)
         };
 

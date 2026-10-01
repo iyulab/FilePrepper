@@ -80,6 +80,11 @@ Process data in multiple formats:
 - **Excel** (XLSX/XLS files)
 - **Parquet** (input only) — a struct column becomes one column per leaf, named by its dotted path
   (`labels.label`); a list or map column holds its value as JSON text
+- **SVMlight / libsvm** (input only) — `label [qid:q] index:value …`, one row per line, as
+  learning-to-rank sets publish it: a `label` column, `qid` when the rows are grouped, and one
+  `f<index>` column per feature index that occurs (an absent pair is `0`). Groups may also come from a
+  group-size file beside the data (`rank.train.query` or `rank.train.group`). Recognized by the
+  `.svm`/`.svmlight`/`.libsvm` extensions, or by its lines when the extension names no format
 
 ## 🛠️ Feature Matrix (30 Tasks)
 
@@ -244,6 +249,9 @@ fileprepper convert-format -i report.xlsx -o report.csv -t CSV
 
 # Parquet to CSV (nested struct fields become dotted columns)
 fileprepper convert-format -i pairs.parquet -o pairs.csv -t CSV
+
+# SVMlight (learning-to-rank) to CSV — rank.train.query beside it supplies the groups
+fileprepper convert-format -i rank.train -o rank.csv -t CSV
 
 # CSV to XML
 fileprepper convert-format -i data.csv -o data.xml -t XML
