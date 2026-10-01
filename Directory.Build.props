@@ -2,7 +2,7 @@
   <!-- Common Properties for All Projects -->
   <PropertyGroup>
     <!-- Versioning -->
-    <Version>0.9.0</Version>
+    <Version>0.10.0</Version>
 
     <!-- Language Settings -->
     <LangVersion>preview</LangVersion>

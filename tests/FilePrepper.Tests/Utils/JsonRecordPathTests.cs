@@ -92,7 +92,7 @@ public class JsonRecordPathTests : IDisposable
     [Fact]
     public async Task A_document_that_is_not_a_table_names_the_record_paths_that_would_read_it()
     {
-        var ex = await Assert.ThrowsAsync<InvalidDataException>(() => JsonUtils.ReadJsonFileAsync(Write(Squad)));
+        var ex = await Assert.ThrowsAsync<JsonShapeException>(() => JsonUtils.ReadJsonFileAsync(Write(Squad)));
 
         Assert.Contains("'data.paragraphs.qas.answers'", ex.Message);
     }

@@ -82,7 +82,7 @@ public class InputFormatTests : IDisposable
         var path = Path.Combine(_dir, "doc.json");
         File.WriteAllText(path, """{"meta": 1, "annotation": [{"text": "a", "label": "x"}]}""");
 
-        var ex = await Assert.ThrowsAsync<InvalidDataException>(() => JsonUtils.ReadJsonFileAsync(path));
+        var ex = await Assert.ThrowsAsync<JsonShapeException>(() => JsonUtils.ReadJsonFileAsync(path));
 
         Assert.Contains("array of objects", ex.Message);
         Assert.Contains("'annotation' (1 items)", ex.Message);

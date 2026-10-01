@@ -5,6 +5,23 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0]
+
+### Added
+
+- **A JSON object is one row.** A document that is a single object — the shape of exports that write
+  one file per record, such as a sensor reading per timestamp — reads as a one-row table: its fields
+  are the columns, an object or array field is one column of JSON text, and `{}` is an empty table.
+  An object that keeps rows of its own in an array of objects is still refused, since which array is
+  the table is the caller's to say with a record path.
+- `JsonShapeException` (a `FormatException`) is what a JSON document that is not a table throws. Its
+  `RecordPaths` lists the record paths that would read it — empty when there are none — so a caller
+  can offer them in its own terms instead of reading the message.
+
+### Changed
+
+- A JSON document that is not a table throws `JsonShapeException` rather than `InvalidDataException`.
+
 ## [0.9.0]
 
 ### Added

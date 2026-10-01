@@ -6,8 +6,10 @@ namespace FilePrepper.Utils;
 public static class JsonUtils
 {
     /// <summary>
-    /// Reads <paramref name="filePath"/> as a table. Without <paramref name="recordPath"/> the file must be
-    /// an array of objects, one per row. With it, the rows are the objects of the array the dotted path
+    /// Reads <paramref name="filePath"/> as a table. Without <paramref name="recordPath"/> the file is an
+    /// array of objects, one per row, or a single object, which is one row — the shape of exports that
+    /// write a file per record. An object that keeps rows of its own in an array of objects is refused
+    /// with a <see cref="JsonShapeException"/> naming the record paths that would read it. With a path, the rows are the objects of the array the dotted path
     /// leads to — <c>data.paragraphs.qas</c> walks <c>data[]</c>, then each item's <c>paragraphs[]</c>,
     /// then each of those items' <c>qas[]</c> — and each row also carries the other fields of every item
     /// it was reached through, named by the array that item came from (<c>paragraphs.context</c>). That is
@@ -26,8 +28,18 @@ public static class JsonUtils
         if (!string.IsNullOrWhiteSpace(recordPath))
             return ReadRecordPath(root, recordPath, filePath);
 
+        // An object is a record: one row, unless it keeps rows of its own in an array of objects — then
+        // which array is the table is the caller's to say, with a record path.
+        if (root.ValueKind == JsonValueKind.Object && !RecordPaths(root, "", depth: 0).Any())
+        {
+            var fields = root.EnumerateObject().ToList();
+            if (fields.Count == 0)
+                return ([], []);
+            return ([fields.ToDictionary(p => p.Name, p => Text(p.Value))], fields.Select(p => p.Name).ToList());
+        }
+
         if (root.ValueKind != JsonValueKind.Array || root.EnumerateArray().Any(e => e.ValueKind != JsonValueKind.Object))
-            throw new InvalidDataException(DescribeShape(root, filePath));
+            throw new JsonShapeException(DescribeShape(root, filePath), RecordPaths(root, "", depth: 0).ToList());
 
         var rows = root.EnumerateArray().ToList();
         if (rows.Count == 0)

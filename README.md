@@ -72,10 +72,10 @@ fileprepper <command> --help
 Process data in multiple formats:
 - **CSV** (Comma-Separated Values)
 - **TSV** (Tab-Separated Values)
-- **JSON** (JavaScript Object Notation) — an array of objects, one per row; or, for rows kept in a
-  nested array, a record path: `DataPipeline.FromJsonAsync(path, "data.paragraphs.qas")` reads each
-  item of that array as a row, carrying the fields of the items it sits in, named by their array
-  (`paragraphs.context`)
+- **JSON** (JavaScript Object Notation) — an array of objects, one per row; a single object, which
+  is one row (a file per record); or, for rows kept in a nested array, a record path:
+  `DataPipeline.FromJsonAsync(path, "data.paragraphs.qas")` reads each item of that array as a row,
+  carrying the fields of the items it sits in, named by their array (`paragraphs.context`)
 - **XML** (Extensible Markup Language)
 - **Excel** (XLSX/XLS files)
 - **Parquet** (input only) — a struct column becomes one column per leaf, named by its dotted path
