@@ -47,6 +47,19 @@ public static class DataFileFormats
         ReadableExtensions.Contains(Path.GetExtension(path).ToLowerInvariant())
         || SvmLightUtils.LooksLikeSvmLight(path);
 
+    /// <summary>
+    /// The data files directly inside <paramref name="directory"/> — those FilePrepper reads
+    /// (<see cref="IsReadable"/>) — ordered by file name, ordinally. Ordinal because the order is the
+    /// row order of the table they make, and a culture-aware comparison can ignore characters such as
+    /// '-' and so put <c>a_1</c> before <c>a-2</c>. Sequence numbers sort right when they are padded,
+    /// as exports that write a file per record pad them.
+    /// </summary>
+    public static IReadOnlyList<string> FilesIn(string directory) =>
+        Directory.EnumerateFiles(directory)
+            .Where(IsReadable)
+            .OrderBy(Path.GetFileName, StringComparer.Ordinal)
+            .ToList();
+
     /// <summary>The field delimiter for a delimited-text file at this path.</summary>
     public static string DelimiterFor(string path) =>
         FromPath(path) == DataFileFormat.Tsv ? "\t" : ",";

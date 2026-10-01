@@ -92,6 +92,55 @@ public class DataPipeline
     }
 
     /// <summary>
+    /// Create pipeline from a folder of data files in one format — the shape of exports that write a
+    /// file per record or per day. The files are those <see cref="DataFileFormats.FilesIn"/> lists
+    /// (readable ones, by file name), each read exactly as <see cref="FromFileAsync"/> reads it alone,
+    /// and their rows follow one another in that order. Columns are matched by name and keep the first
+    /// file's order.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The folder holds no data file, files of more than one
+    /// format, or a file whose columns are not the first file's.</exception>
+    public static async Task<DataPipeline> FromDirectoryAsync(string directory, string? jsonRecordPath = null)
+    {
+        if (!Directory.Exists(directory))
+            throw new DirectoryNotFoundException($"Folder not found: {directory}");
+
+        var files = DataFileFormats.FilesIn(directory);
+        if (files.Count == 0)
+            throw new InvalidDataException(
+                $"No data file in {directory}; FilePrepper reads {string.Join(", ", DataFileFormats.ReadableExtensions)}.");
+
+        var format = DataFileFormats.FromPath(files[0]);
+        var other = files.FirstOrDefault(f => DataFileFormats.FromPath(f) != format);
+        if (other is not null)
+            throw new InvalidDataException(
+                $"A folder is read as one table only when its files share a format: {Path.GetFileName(files[0])} is " +
+                $"{format}, {Path.GetFileName(other)} is {DataFileFormats.FromPath(other)}.");
+
+        var rows = new List<Dictionary<string, string>>();
+        List<string>? headers = null;
+        foreach (var file in files)
+        {
+            var part = await FromFileAsync(file, jsonRecordPath);
+            if (headers is null)
+            {
+                headers = part._columnNames.ToList();
+            }
+            else if (!part._columnNames.ToHashSet(StringComparer.Ordinal).SetEquals(headers))
+            {
+                var missing = headers.Except(part._columnNames, StringComparer.Ordinal);
+                var extra = part._columnNames.Except(headers, StringComparer.Ordinal);
+                throw new InvalidDataException(
+                    $"{Path.GetFileName(file)} does not have the columns of {Path.GetFileName(files[0])}: " +
+                    $"missing [{string.Join(", ", missing)}], extra [{string.Join(", ", extra)}].");
+            }
+            rows.AddRange(part._rows);
+        }
+
+        return new DataPipeline(rows, headers!);
+    }
+
+    /// <summary>
     /// Create pipeline from an SVMlight / libsvm file — <c>label</c>, <c>qid</c> when grouped, and one
     /// <c>f&lt;index&gt;</c> column per feature index (<see cref="SvmLightUtils.ReadSvmLightFileAsync"/>).
     /// </summary>
@@ -182,7 +231,7 @@ public class DataPipeline
 
         // Find all matching files and sort alphabetically for predictable order
         var files = Directory.GetFiles(targetDir, pattern)
-            .OrderBy(f => f)
+            .OrderBy(Path.GetFileName, StringComparer.Ordinal)
             .ToList();
 
         if (!files.Any())
@@ -289,7 +338,7 @@ public class DataPipeline
     {
         var targetDir = string.IsNullOrEmpty(directory) ? Directory.GetCurrentDirectory() : directory;
         var files = Directory.GetFiles(targetDir, pattern)
-            .OrderBy(f => f)
+            .OrderBy(Path.GetFileName, StringComparer.Ordinal)
             .ToList();
 
         if (!files.Any())

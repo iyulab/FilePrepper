@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `.svm`, `.svmlight` and `.libsvm` extensions name the format. A file whose extension names no
   format is recognized by its lines (`rank.train`): before, it was read as CSV — one column, headed by
   its first data row.
+- **A folder of data files is one table.** `DataPipeline.FromDirectoryAsync(directory, jsonRecordPath)`
+  reads every data file directly inside a folder — the shape of exports that write a file per record
+  or per day — each as it would be read alone, their rows in file-name order. Files of more than one
+  format, or a file whose columns are not the first file's, are refused by name; files FilePrepper
+  does not read (`.done` markers, notes) are left out. `DataFileFormats.FilesIn(directory)` lists the
+  files and their order.
+
+### Fixed
+
+- `ConcatCsvAsync` orders files by name ordinally. It used a culture-aware comparison, which can
+  ignore characters such as `-`, so `a_1.csv` could come before `a-2.csv` — and the rows with it.
 
 ## [0.10.0]
 

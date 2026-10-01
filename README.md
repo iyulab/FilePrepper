@@ -85,6 +85,8 @@ Process data in multiple formats:
   `f<index>` column per feature index that occurs (an absent pair is `0`). Groups may also come from a
   group-size file beside the data (`rank.train.query` or `rank.train.group`). Recognized by the
   `.svm`/`.svmlight`/`.libsvm` extensions, or by its lines when the extension names no format
+- **A folder** of files in one format — `DataPipeline.FromDirectoryAsync("readings/")` reads every data
+  file in it as one table, rows in file-name order (an export that writes a file per record)
 
 ## 🛠️ Feature Matrix (30 Tasks)
 
