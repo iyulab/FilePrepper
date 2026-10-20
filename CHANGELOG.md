@@ -5,6 +5,20 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1]
+
+### Security
+
+- The package now resolves `System.Security.Cryptography.Pkcs` and `System.Security.Cryptography.Xml`
+  at 10.0.13, the first versions outside GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7, GHSA-7hqp-7c5m-4vq6
+  and GHSA-r955-8q5j-3h83. 0.11.0 handed every consumer 10.0.10 through EPPlus. EPPlus 8.7.2 declares
+  the fixed floors itself, so the direct `System.Security.Cryptography.Xml` reference that 0.7.x added
+  as a stopgap is gone: the floor now comes from the dependency that needs it.
+
+### Changed
+
+- EPPlus 8.6.1 → 8.7.2; `Microsoft.Extensions.*` 10.0.10 → 10.0.13.
+
 ## [0.11.0]
 
 ### Added
