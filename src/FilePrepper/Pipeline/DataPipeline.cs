@@ -1429,6 +1429,25 @@ public class DataPipeline
 
     #endregion
 
+    #region Explode Operations
+
+    /// <summary>
+    /// One row per element of list columns — cells holding a list as JSON text, as a Parquet or JSON
+    /// list is read. The lists of one row are paired by position and must have the same length; the
+    /// other columns are repeated on each row. An empty cell or empty list gives one row with the
+    /// listed columns empty.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// // query=7, labels=[2,0], docs=["a","b"]  →  (7, 2, a) and (7, 0, b)
+    /// pipeline.Explode("labels", "docs");
+    /// </code>
+    /// </example>
+    public DataPipeline Explode(params string[] columns) =>
+        new(ListColumns.Explode(_rows, _columnNames, columns), _columnNames);
+
+    #endregion
+
     #region Unpivot Operations
 
     /// <summary>

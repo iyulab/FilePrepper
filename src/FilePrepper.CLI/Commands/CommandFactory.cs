@@ -22,6 +22,7 @@ public static class CommandFactory
             new RenameColumnsCommand(loggerFactory),
             new ReorderColumnsCommand(loggerFactory),
             new UnpivotCommand(loggerFactory),
+            new ExplodeCommand(loggerFactory),
 
             // Data Quality
             new CSVCleanerCommand(loggerFactory),

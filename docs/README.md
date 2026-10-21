@@ -15,7 +15,6 @@ Complete documentation for FilePrepper - ML Data Preprocessing Tool.
 - **[Publishing Guide](Publishing.md)** - NuGet publishing instructions
 
 ### Project Management
-- **[TASKS](TASKS.md)** - Project roadmap and development tasks
 
 ## 📦 Installation
 
@@ -84,7 +83,6 @@ docs/
 ├── Common-Scenarios.md         # Real-world examples
 ├── API-Reference.md            # Programmatic usage
 ├── Publishing.md               # Publishing guide
-├── TASKS.md                    # Project roadmap
 └── archive/                    # Historical documentation
     ├── RELEASE_NOTES_v0.4.0.md
     ├── RELEASE_CHECKLIST_v0.4.0.md

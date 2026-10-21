@@ -5,6 +5,29 @@ All notable changes to FilePrepper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `explode` (command, `ExplodeTask`, `DataPipeline.Explode`): list columns — a list per cell as JSON text, the way
+  a Parquet or JSON list is read — become one row per element. Several columns explode together, their lists
+  paired by position, and a row whose lists differ in length is refused with the lengths. The other columns are
+  repeated on each row; an empty cell or empty list keeps the row with the listed columns empty; an element that is
+  itself a list stays JSON text.
+
+### Fixed
+
+- Strings inside a Parquet list or map were written as arrays of one-letter strings (`["ab"]` came out as
+  `[["a","b"]]`).
+- A task that checks its columns before running (`unpivot`, `one-hot-encoding`, `fill-missing`,
+  `create-lag-features`) read every input as comma-separated text for that check, so a TSV, JSON, Excel or
+  Parquet input was refused for lacking columns it had. The check now reads the input by its format, and the file
+  is read once.
+
+### Removed
+
+- `docs/TASKS.md`, a development-progress note last updated at 0.4.9.
+
 ## [0.11.1]
 
 ### Security

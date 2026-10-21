@@ -116,6 +116,7 @@ Process data in multiple formats:
 | | `data-sampling` | DataSampling | Random, Stratified, Systematic sampling |
 | | `convert-format` | FileFormatConvert | CSV ↔ TSV ↔ JSON ↔ XML ↔ Excel; Parquet in |
 | | `unpivot` | Unpivot | Wide → Long format reshape |
+| | `explode` | Explode | List columns (a JSON list per cell) → one row per element, parallel lists paired |
 | | `filter-rows` | FilterRows | Row filtering by conditions |
 | **Data Analysis** | `stats` | BasicStatistics | Mean, Median, StdDev, ZScore |
 | | `aggregate` | Aggregate | Group-by aggregations |
