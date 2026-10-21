@@ -29,6 +29,7 @@ public class ParquetInputTests : IDisposable
         public string? Sentence2 { get; set; }
         public Labels Labels { get; set; } = new();
         public List<int> Tags { get; set; } = [];
+        public List<string> Words { get; set; } = [];
     }
 
     private async Task<string> WriteAsync(IEnumerable<Pair> rows)
@@ -40,7 +41,7 @@ public class ParquetInputTests : IDisposable
 
     private static Pair[] Sample() =>
     [
-        new() { Sentence1 = "숙소가 깨끗합니다.", Sentence2 = "숙소는 청결했습니다.", Labels = new() { Label = 3.7, BinaryLabel = 1 }, Tags = [1, 2] },
+        new() { Sentence1 = "숙소가 깨끗합니다.", Sentence2 = "숙소는 청결했습니다.", Labels = new() { Label = 3.7, BinaryLabel = 1 }, Tags = [1, 2], Words = ["ab", "c d"] },
         new() { Sentence1 = "위치가 좋아요.", Sentence2 = null, Labels = new() { Label = 0.25, BinaryLabel = 0 }, Tags = [] }
     ];
 
@@ -49,7 +50,7 @@ public class ParquetInputTests : IDisposable
     {
         var (records, headers) = await ParquetUtils.ReadParquetFileAsync(await WriteAsync(Sample()));
 
-        headers.Should().Equal("Sentence1", "Sentence2", "Labels.Label", "Labels.BinaryLabel", "Tags");
+        headers.Should().Equal("Sentence1", "Sentence2", "Labels.Label", "Labels.BinaryLabel", "Tags", "Words");
         records.Should().HaveCount(2);
         records[0]["Labels.Label"].Should().Be("3.7");
         records[0]["Labels.BinaryLabel"].Should().Be("1");
@@ -63,6 +64,8 @@ public class ParquetInputTests : IDisposable
 
         records[0]["Tags"].Should().Be("[1,2]");
         records[1]["Tags"].Should().Be("[]");
+        // Strings inside a list stay strings (the untyped reader hands them back as character memory).
+        records[0]["Words"].Should().Be("[\"ab\",\"c d\"]");
         records[1]["Sentence2"].Should().BeEmpty();
     }
 
@@ -92,7 +95,7 @@ public class ParquetInputTests : IDisposable
         await pipeline.ToCsvAsync(csv);
 
         var lines = await File.ReadAllLinesAsync(csv);
-        lines[0].Should().Be("Sentence1,Sentence2,Labels.Label,Labels.BinaryLabel,Tags");
+        lines[0].Should().Be("Sentence1,Sentence2,Labels.Label,Labels.BinaryLabel,Tags,Words");
         lines.Should().HaveCount(3);
     }
 

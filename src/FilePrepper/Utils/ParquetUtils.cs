@@ -85,8 +85,9 @@ public static class ParquetUtils
     {
         null => string.Empty,
         string s => s,
+        ReadOnlyMemory<char> chars => chars.ToString(),
         // A list or map has no fixed width to spread over columns; JSON keeps it recoverable.
-        IDictionary or IList when value is not byte[] => JsonSerializer.Serialize(value),
+        IDictionary or IList when value is not byte[] => JsonSerializer.Serialize(Plain(value)),
         byte[] bytes => Convert.ToBase64String(bytes),
         DateTime dt => dt.ToString("O", CultureInfo.InvariantCulture),
         DateTimeOffset dto => dto.ToString("O", CultureInfo.InvariantCulture),
@@ -94,5 +95,19 @@ public static class ParquetUtils
         float f => f.ToString("R", CultureInfo.InvariantCulture),
         IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
         _ => value.ToString() ?? string.Empty
+    };
+
+    /// <summary>
+    /// A list or map as plain values for JSON. The untyped reader hands strings back as
+    /// <see cref="ReadOnlyMemory{T}"/> of <see cref="char"/>, which JSON writes as an array of
+    /// one-letter strings — <c>["ab"]</c> came out as <c>[["a","b"]]</c>.
+    /// </summary>
+    private static object? Plain(object? value) => value switch
+    {
+        ReadOnlyMemory<char> chars => chars.ToString(),
+        byte[] bytes => Convert.ToBase64String(bytes),
+        IDictionary map => map.Keys.Cast<object>().ToDictionary(k => Plain(k)?.ToString() ?? string.Empty, k => Plain(map[k])),
+        IList list => list.Cast<object?>().Select(Plain).ToList(),
+        _ => value
     };
 }
