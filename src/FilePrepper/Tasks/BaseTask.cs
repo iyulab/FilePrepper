@@ -87,6 +87,13 @@ public abstract class BaseTask<TOption> : ITask
 
     protected List<string> GetFileHeaders(string inputPath)
     {
+        if (DataFileFormats.FromPath(inputPath) != DataFileFormat.Csv)
+        {
+            // Only CSV has a header line to read on its own; every other format is read whole once,
+            // here, and the read is kept for ReadAndPreProcessAsync.
+            return [.. ReadInputAsync(inputPath).GetAwaiter().GetResult().headers];
+        }
+
         using var reader = CsvUtils.CreateReader(inputPath, Options.Encoding);
         using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration());
 
@@ -119,17 +126,33 @@ public abstract class BaseTask<TOption> : ITask
     {
         _logger.LogInformation("Reading input file: {InputPath}", context.InputPath);
 
-        var (records, headers) = DataFileFormats.FromPath(context.InputPath) switch
-        {
-            DataFileFormat.Excel => await ReadExcelFileAsync(context.InputPath),
-            DataFileFormat.Parquet => await ParquetUtils.ReadParquetFileAsync(context.InputPath),
-            DataFileFormat.Json => await JsonUtils.ReadJsonFileAsync(context.InputPath, Options.JsonRecordPath),
-            DataFileFormat.SvmLight => await SvmLightUtils.ReadSvmLightFileAsync(context.InputPath),
-            _ => await ReadCsvFileAsync(context.InputPath)
-        };
+        var (records, headers) = await ReadInputAsync(context.InputPath);
 
         _originalHeaders = headers;
         return await PreProcessRecordsAsync(records);
+    }
+
+    private (string Path, Task<(List<Dictionary<string, string>> records, List<string> headers)> Read)? _input;
+
+    /// <summary>
+    /// The input file read by its format — the one place a task decides how to read its input, so
+    /// validation and processing see the same columns. A path is read at most once per task.
+    /// </summary>
+    private Task<(List<Dictionary<string, string>> records, List<string> headers)> ReadInputAsync(string path)
+    {
+        if (_input is { } input && input.Path == path)
+            return input.Read;
+
+        var read = DataFileFormats.FromPath(path) switch
+        {
+            DataFileFormat.Excel => ReadExcelFileAsync(path),
+            DataFileFormat.Parquet => ParquetUtils.ReadParquetFileAsync(path),
+            DataFileFormat.Json => JsonUtils.ReadJsonFileAsync(path, Options.JsonRecordPath),
+            DataFileFormat.SvmLight => SvmLightUtils.ReadSvmLightFileAsync(path),
+            _ => ReadCsvFileAsync(path)
+        };
+        _input = (path, read);
+        return read;
     }
 
     protected abstract Task<List<Dictionary<string, string>>> ProcessRecordsAsync(

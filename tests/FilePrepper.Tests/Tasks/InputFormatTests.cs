@@ -1,5 +1,6 @@
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.FileFormatConvert;
+using FilePrepper.Tasks.Unpivot;
 using FilePrepper.Utils;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -86,5 +87,31 @@ public class InputFormatTests : IDisposable
 
         Assert.Contains("array of objects", ex.Message);
         Assert.Contains("'annotation' (1 items)", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("in.tsv", "id\ta1\ta2\n1\tx\ty\n")]
+    [InlineData("in.json", """[{"id":1,"a1":"x","a2":"y"}]""")]
+    public void Column_checks_see_the_columns_of_a_file_that_is_not_csv(string inputName, string content)
+    {
+        // A task that checks its columns before running read every input as comma-separated text
+        // for that check, so a TSV or JSON file was refused for lacking columns it had.
+        var input = Path.Combine(_dir, inputName);
+        var output = Path.Combine(_dir, "out.csv");
+        File.WriteAllText(input, content);
+
+        var task = new UnpivotTask(new Mock<ILogger<UnpivotTask>>().Object);
+        var ok = task.Execute(new TaskContext(new UnpivotOption
+        {
+            InputPath = input,
+            OutputPath = output,
+            BaseColumns = ["id"],
+            ColumnGroups = [new() { Columns = ["a1"] }, new() { Columns = ["a2"] }],
+            IndexColumnName = "n",
+            ValueColumnNames = ["a"],
+        }));
+
+        Assert.True(ok);
+        Assert.Equal(["id,n,a", "1,1,x", "1,2,y"], File.ReadAllLines(output).Select(l => l.TrimStart('\uFEFF')));
     }
 }
