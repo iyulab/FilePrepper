@@ -23,6 +23,7 @@ public static class CommandFactory
             new ReorderColumnsCommand(loggerFactory),
             new UnpivotCommand(loggerFactory),
             new ExplodeCommand(loggerFactory),
+            new SplitListCommand(loggerFactory),
 
             // Data Quality
             new CSVCleanerCommand(loggerFactory),

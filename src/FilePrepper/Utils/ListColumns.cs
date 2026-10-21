@@ -66,6 +66,85 @@ public static class ListColumns
         return result;
     }
 
+    /// <summary>
+    /// Each of <paramref name="columns"/> replaced, in place, by one column per position of its lists —
+    /// <c>features</c> holding <c>[0.5,1]</c> becomes <c>features.0</c> and <c>features.1</c>, named by
+    /// path as a Parquet struct's fields are. Every list of a column must have the same length; an
+    /// empty cell leaves all its columns empty. An element that is itself a list stays JSON text.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// A column is not in the data, a cell is not a JSON list, a column's lists differ in length, or a
+    /// new column's name is already taken.
+    /// </exception>
+    public static (List<Dictionary<string, string>> Rows, List<string> Headers) SplitToColumns(
+        IReadOnlyList<Dictionary<string, string>> rows,
+        IReadOnlyList<string> headers,
+        IReadOnlyList<string> columns)
+    {
+        if (columns.Count == 0)
+            throw new ArgumentException("At least one list column must be given.", nameof(columns));
+        foreach (var column in columns)
+        {
+            if (!headers.Contains(column))
+                throw new ArgumentException($"Column '{column}' not found in data.", nameof(columns));
+        }
+
+        var lists = columns.ToDictionary(
+            c => c,
+            c => rows.Select((row, r) => Elements(row.GetValueOrDefault(c, string.Empty), c, r)).ToList());
+
+        var widths = new Dictionary<string, int>();
+        foreach (var column in columns)
+        {
+            int? width = null;
+            for (var r = 0; r < rows.Count; r++)
+            {
+                if (string.IsNullOrWhiteSpace(rows[r].GetValueOrDefault(column)))
+                    continue;
+                var count = lists[column][r].Count;
+                if (width is null)
+                    width = count;
+                else if (count != width)
+                    throw new ArgumentException(
+                        $"Row {r + 1}, column '{column}': a list of {count} where earlier rows have {width}; " +
+                        "only lists of one length split into columns.", nameof(columns));
+            }
+            widths[column] = width ?? 0;
+        }
+
+        var newHeaders = new List<string>();
+        foreach (var header in headers)
+        {
+            if (widths.TryGetValue(header, out var width))
+                newHeaders.AddRange(Enumerable.Range(0, width).Select(i => $"{header}.{i}"));
+            else
+                newHeaders.Add(header);
+        }
+        var clash = newHeaders.GroupBy(h => h, StringComparer.Ordinal).FirstOrDefault(g => g.Count() > 1);
+        if (clash is not null)
+            throw new ArgumentException($"Splitting would make a second column named '{clash.Key}'.", nameof(columns));
+
+        var result = new List<Dictionary<string, string>>(rows.Count);
+        for (var r = 0; r < rows.Count; r++)
+        {
+            var row = new Dictionary<string, string>(newHeaders.Count);
+            foreach (var header in headers)
+            {
+                if (!widths.TryGetValue(header, out var width))
+                {
+                    row[header] = rows[r].GetValueOrDefault(header, string.Empty);
+                    continue;
+                }
+                var elements = lists[header][r];
+                for (var i = 0; i < width; i++)
+                    row[$"{header}.{i}"] = i < elements.Count ? elements[i] : string.Empty;
+            }
+            result.Add(row);
+        }
+
+        return (result, newHeaders);
+    }
+
     private static List<string> Elements(string cell, string column, int rowIndex)
     {
         if (string.IsNullOrWhiteSpace(cell))

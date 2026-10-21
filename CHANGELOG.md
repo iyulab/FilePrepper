@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   paired by position, and a row whose lists differ in length is refused with the lengths. The other columns are
   repeated on each row; an empty cell or empty list keeps the row with the listed columns empty; an element that is
   itself a list stays JSON text.
+- `split-list` (command, `SplitListTask`, `DataPipeline.SplitList`): a list column whose lists all have one length
+  becomes one column per position, in place — `features` holding `[0.5,1]` becomes `features.0` and `features.1`,
+  named by path as a Parquet struct's fields are. A list of another length is refused with its row; an empty cell
+  leaves the columns empty. With `explode`, a file holding a group per row (a query and its documents' grades and
+  feature vectors) becomes one row per document with one column per feature.
 
 ### Fixed
 

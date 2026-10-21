@@ -1446,6 +1446,17 @@ public class DataPipeline
     public DataPipeline Explode(params string[] columns) =>
         new(ListColumns.Explode(_rows, _columnNames, columns), _columnNames);
 
+    /// <summary>
+    /// List columns of one length split into one column per position, in place: <c>features</c>
+    /// holding <c>[0.5,1]</c> becomes <c>features.0</c> and <c>features.1</c>. An empty cell leaves
+    /// its columns empty; a list of another length is refused.
+    /// </summary>
+    public DataPipeline SplitList(params string[] columns)
+    {
+        var (rows, headers) = ListColumns.SplitToColumns(_rows, _columnNames, columns);
+        return new(rows, headers);
+    }
+
     #endregion
 
     #region Unpivot Operations
