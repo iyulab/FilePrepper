@@ -1,6 +1,3 @@
-﻿using CsvHelper;
-using FilePrepper.Utils;
-
 namespace FilePrepper.Tasks.Merge;
 
 public enum MergeType
@@ -57,72 +54,29 @@ public class MergeOption : MultipleInputOption
 
     public bool StrictColumnCount { get; set; }
 
-    // 컬럼 매핑 정보를 저장하기 위한 속성 추가
-    public Dictionary<string, List<string>> ColumnMappings { get; private set; } = new();
+    /// <summary>Whether a join names its columns, which needs a header row in every file.</summary>
+    internal bool JoinsByName =>
+        MergeType == MergeType.Horizontal &&
+        (JoinKeyColumns.Any(k => k.Name != null) ||
+         JoinMappings.Any(m => m.LeftColumn.Name != null || m.RightColumn.Name != null));
 
+    /// <summary>
+    /// The option's own values. What the files hold — their columns and rows — is checked by
+    /// <see cref="MergeTask"/>, which reads each file by its format.
+    /// </summary>
     protected override string[] ValidateInternal()
     {
         var errors = new List<string>();
 
-        // 1) 기본 입력 파일 검증
         if (!ValidateBasicInputs(errors))
             return errors.ToArray();
 
-        // 2) 파일 구조 검증 (행/열 수) - 헤더 검증보다 먼저 수행
-        ValidateFileStructure(errors);
-
-        // 파일 구조에 문제가 있다면 추가 검증 중단
-        if (errors.Any())
-            return errors.ToArray();
-
-        // 3) Join Key 검증
         ValidateJoinKeys(errors);
 
-        // 4) Header 검증 - 파일 구조 검증 후 수행
-        if (!ValidateHeaders(errors))
-            return errors.ToArray();
+        if (JoinsByName && !HasHeader)
+            errors.Add("Header is required when joining by column names.");
 
         return errors.ToArray();
-    }
-
-    private void ValidateFileStructure(List<string> errors)
-    {
-        try
-        {
-            var (primaryColCount, primaryRowCount) = GetFileStats(InputPaths.First());
-
-            // 세로 병합의 경우, 열 개수 검증을 먼저 수행
-            if (MergeType == MergeType.Vertical)
-            {
-                foreach (var file in InputPaths.Skip(1))
-                {
-                    var (colCount, _) = GetFileStats(file);
-                    if (colCount != primaryColCount)
-                    {
-                        errors.Add($"Column count mismatch for vertical merge. Primary file has {primaryColCount} columns, but {Path.GetFileName(file)} has {colCount} columns.");
-                    }
-                }
-            }
-            else if (MergeType == MergeType.Horizontal)
-            {
-                foreach (var file in InputPaths.Skip(1))
-                {
-                    var (_, rowCount) = GetFileStats(file);
-                    // Simple horizontal merge without join keys or mappings: row counts must match
-                    bool isSimpleMerge = !JoinKeyColumns.Any() && !JoinMappings.Any();
-
-                    // Simple horizontal merge (키 없음): 행 수가 같아야 함
-                    if (isSimpleMerge && rowCount != primaryRowCount)
-                    {
-                        errors.Add($"Row count mismatch for horizontal merge. Primary file has {primaryRowCount} rows, but {Path.GetFileName(file)} has {rowCount} rows.");
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            errors.Add($"Error validating file structure: {ex.Message}");
-        }
     }
 
     private bool ValidateBasicInputs(List<string> errors)
@@ -210,151 +164,5 @@ public class MergeOption : MultipleInputOption
                 }
             }
         }
-    }
-
-    private bool ValidateHeaders(List<string> errors)
-    {
-        // 컬럼명으로 join하는 경우에만 헤더 필수
-        bool requiresHeader = MergeType == MergeType.Horizontal &&
-                            (JoinKeyColumns.Any(k => k.Name != null) ||
-                             JoinMappings.Any(m => m.LeftColumn.Name != null || m.RightColumn.Name != null));
-
-        if (requiresHeader && !HasHeader)
-        {
-            errors.Add("Header is required when joining by column names.");
-            return false;
-        }
-
-        // 헤더가 없는 경우는 추가 검증 불필요
-        if (!HasHeader)
-            return true;
-
-        try
-        {
-            // 첫 번째 파일의 헤더 읽기
-            var primaryHeaders = GetFileHeaders(InputPaths.First());
-
-            // 중복된 헤더 검사
-            var duplicateHeaders = primaryHeaders
-                .GroupBy(h => h)
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key)
-                .ToList();
-
-            if (duplicateHeaders.Any())
-            {
-                errors.Add($"Duplicate headers found in primary file: {string.Join(", ", duplicateHeaders)}");
-                return false;
-            }
-
-            // 각 파일별 헤더 검증 및 매핑 생성
-            foreach (var file in InputPaths.Skip(1))
-            {
-                var currentHeaders = GetFileHeaders(file);
-
-                // 현재 파일의 중복 헤더 검사
-                duplicateHeaders = currentHeaders
-                    .GroupBy(h => h)
-                    .Where(g => g.Count() > 1)
-                    .Select(g => g.Key)
-                    .ToList();
-
-                if (duplicateHeaders.Any())
-                {
-                    errors.Add($"Duplicate headers found in file {Path.GetFileName(file)}: {string.Join(", ", duplicateHeaders)}");
-                    continue;
-                }
-
-                // Vertical merge의 경우 헤더가 동일해야 함
-                if (MergeType == MergeType.Vertical)
-                {
-                    var missingHeaders = primaryHeaders.Except(currentHeaders).ToList();
-                    var extraHeaders = currentHeaders.Except(primaryHeaders).ToList();
-
-                    if (missingHeaders.Any() || extraHeaders.Any())
-                    {
-                        errors.Add($"Headers mismatch in file {Path.GetFileName(file)}. " +
-                                 $"Missing headers: {string.Join(", ", missingHeaders)}. " +
-                                 $"Extra headers: {string.Join(", ", extraHeaders)}");
-                    }
-                }
-                // Horizontal merge의 경우 join key 검증
-                else if (MergeType == MergeType.Horizontal)
-                {
-                    // Validate JoinMappings
-                    if (JoinMappings?.Count > 0)
-                    {
-                        foreach (var mapping in JoinMappings)
-                        {
-                            // Validate left column (primary file)
-                            if (mapping.LeftColumn.Name != null && !primaryHeaders.Contains(mapping.LeftColumn.Name))
-                            {
-                                errors.Add($"Left join column '{mapping.LeftColumn.Name}' not found in primary file");
-                            }
-
-                            // Validate right column (current file)
-                            if (mapping.RightColumn.Name != null && !currentHeaders.Contains(mapping.RightColumn.Name))
-                            {
-                                errors.Add($"Right join column '{mapping.RightColumn.Name}' not found in file {Path.GetFileName(file)}");
-                            }
-                        }
-                    }
-
-                    // Validate JoinKeyColumns (legacy)
-                    foreach (var key in JoinKeyColumns.Where(k => k.Name != null))
-                    {
-                        if (!primaryHeaders.Contains(key.Name!))
-                            errors.Add($"Join key column '{key.Name}' not found in primary file");
-                        if (!currentHeaders.Contains(key.Name!))
-                            errors.Add($"Join key column '{key.Name}' not found in file {Path.GetFileName(file)}");
-                    }
-                }
-
-                // 헤더 매핑 정보 저장
-                ColumnMappings[file] = currentHeaders;
-            }
-        }
-        catch (Exception ex)
-        {
-            errors.Add($"Error validating headers: {ex.Message}");
-            return false;
-        }
-
-        return !errors.Any();
-    }
-
-    private List<string> GetFileHeaders(string filePath)
-    {
-        using var reader = CsvUtils.CreateReader(filePath, Encoding);
-        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-
-        for (int i = 0; i < SkipRows; i++)
-            csv.Parser.Read();
-
-        csv.Read();
-        csv.ReadHeader();
-        return csv.HeaderRecord?.ToList() ?? new List<string>();
-    }
-
-    private (int ColumnCount, int RowCount) GetFileStats(string filePath)
-    {
-        using var reader = CsvUtils.CreateReader(filePath, Encoding);
-        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-
-        for (int i = 0; i < SkipRows; i++)
-            csv.Parser.Read();
-
-        // Get column count from first row
-        csv.Read();
-        var columnCount = csv.Parser.Count;
-
-        // Count remaining rows
-        var rowCount = HasHeader ? 0 : 1; // If has header, start from 0, else count first row
-        while (csv.Read())
-        {
-            rowCount++;
-        }
-
-        return (columnCount, rowCount);
     }
 }

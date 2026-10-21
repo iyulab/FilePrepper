@@ -132,16 +132,17 @@ public abstract class BaseTask<TOption> : ITask
         return await PreProcessRecordsAsync(records);
     }
 
-    private (string Path, Task<(List<Dictionary<string, string>> records, List<string> headers)> Read)? _input;
+    private readonly Dictionary<string, Task<(List<Dictionary<string, string>> records, List<string> headers)>> _reads =
+        new(StringComparer.Ordinal);
 
     /// <summary>
-    /// The input file read by its format — the one place a task decides how to read its input, so
-    /// validation and processing see the same columns. A path is read at most once per task.
+    /// A file read by its format — the one place a task decides how to read an input, so validation
+    /// and processing see the same columns. Each path is read at most once per task.
     /// </summary>
-    private Task<(List<Dictionary<string, string>> records, List<string> headers)> ReadInputAsync(string path)
+    protected Task<(List<Dictionary<string, string>> records, List<string> headers)> ReadInputAsync(string path)
     {
-        if (_input is { } input && input.Path == path)
-            return input.Read;
+        if (_reads.TryGetValue(path, out var cached))
+            return cached;
 
         var read = DataFileFormats.FromPath(path) switch
         {
@@ -151,7 +152,7 @@ public abstract class BaseTask<TOption> : ITask
             DataFileFormat.SvmLight => SvmLightUtils.ReadSvmLightFileAsync(path),
             _ => ReadCsvFileAsync(path)
         };
-        _input = (path, read);
+        _reads[path] = read;
         return read;
     }
 

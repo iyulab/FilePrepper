@@ -21,7 +21,7 @@ public class MergeTask : BaseTask<MergeOption>
         // 나머지 파일들을 읽어서 저장
         for (int i = 1; i < Options.InputPaths.Count; i++)
         {
-            var (otherRecords, headers) = await ReadCsvFileAsync(Options.InputPaths[i]);
+            var (otherRecords, headers) = await ReadInputAsync(Options.InputPaths[i]);
             _allFilesData.Add((otherRecords, headers));
         }
 
@@ -488,23 +488,83 @@ public class MergeTask : BaseTask<MergeOption>
         return result;
     }
 
+    /// <summary>
+    /// What the files hold, each read by its format: a vertical merge needs the same columns
+    /// everywhere, a simple horizontal merge (no keys) the same number of rows, and a join by name
+    /// its key columns in the files it joins.
+    /// </summary>
     protected override string[] ValidateTaskSpecific(TaskContext context)
     {
         var errors = new List<string>();
 
-        // Merge 특화 검증 로직
-        if (Options.MergeType == MergeType.Horizontal &&
-            Options.JoinKeyColumns?.Count > 0)
+        if (Options.MergeType == MergeType.Horizontal && Options.JoinKeyColumns?.Count > 0)
         {
             foreach (var keyCol in Options.JoinKeyColumns)
             {
                 if (!keyCol.IsValid)
+                    errors.Add("Invalid join key column configuration");
+            }
+        }
+
+        var files = Options.InputPaths
+            .Select(path => (Path: path, Read: ReadInputAsync(path).GetAwaiter().GetResult()))
+            .ToList();
+        var (primaryPath, (primaryRecords, primaryHeaders)) = files[0];
+
+        foreach (var (path, headers) in files.Select(f => (f.Path, f.Read.headers)))
+        {
+            var duplicates = headers.GroupBy(h => h).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            if (duplicates.Count > 0)
+                errors.Add($"Duplicate headers found in {(path == primaryPath ? "primary file" : $"file {Path.GetFileName(path)}")}: {string.Join(", ", duplicates)}");
+        }
+        if (errors.Count > 0)
+            return [.. errors];
+
+        var keys = Options.JoinKeyColumns ?? [];
+        var mappings = Options.JoinMappings ?? [];
+        var simpleHorizontal = keys.Count == 0 && mappings.Count == 0;
+        foreach (var (path, (records, headers)) in files.Skip(1))
+        {
+            var name = Path.GetFileName(path);
+            if (Options.MergeType == MergeType.Vertical)
+            {
+                if (headers.Count != primaryHeaders.Count)
                 {
-                    errors.Add($"Invalid join key column configuration");
+                    errors.Add($"Column count mismatch for vertical merge. Primary file has {primaryHeaders.Count} columns, but {name} has {headers.Count} columns.");
+                    continue;
+                }
+                if (Options.HasHeader)
+                {
+                    var missing = primaryHeaders.Except(headers).ToList();
+                    var extra = headers.Except(primaryHeaders).ToList();
+                    if (missing.Count > 0 || extra.Count > 0)
+                        errors.Add($"Headers mismatch in file {name}. Missing headers: {string.Join(", ", missing)}. Extra headers: {string.Join(", ", extra)}");
+                }
+            }
+            else if (simpleHorizontal)
+            {
+                if (records.Count != primaryRecords.Count)
+                    errors.Add($"Row count mismatch for horizontal merge. Primary file has {primaryRecords.Count} rows, but {name} has {records.Count} rows.");
+            }
+            else
+            {
+                foreach (var mapping in mappings)
+                {
+                    if (mapping.LeftColumn.Name != null && !primaryHeaders.Contains(mapping.LeftColumn.Name))
+                        errors.Add($"Left join column '{mapping.LeftColumn.Name}' not found in primary file");
+                    if (mapping.RightColumn.Name != null && !headers.Contains(mapping.RightColumn.Name))
+                        errors.Add($"Right join column '{mapping.RightColumn.Name}' not found in file {name}");
+                }
+                foreach (var key in keys.Where(k => k.Name != null))
+                {
+                    if (!primaryHeaders.Contains(key.Name!))
+                        errors.Add($"Join key column '{key.Name}' not found in primary file");
+                    if (!headers.Contains(key.Name!))
+                        errors.Add($"Join key column '{key.Name}' not found in file {name}");
                 }
             }
         }
 
-        return [.. errors];
+        return [.. errors.Distinct()];
     }
 }

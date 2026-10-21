@@ -350,3 +350,77 @@ public class MergeTests : TaskBaseTest<MergeTask>
     }
 
 }
+/// <summary>A merge reads every input by its format, for its checks and for its rows.</summary>
+public class MergeInputFormatTests : IDisposable
+{
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), $"fp-merge-{Guid.NewGuid():N}");
+
+    public MergeInputFormatTests() => Directory.CreateDirectory(_dir);
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_dir))
+            Directory.Delete(_dir, true);
+    }
+
+    private string Write(string name, string content)
+    {
+        var path = Path.Combine(_dir, name);
+        File.WriteAllText(path, content);
+        return path;
+    }
+
+    private bool Merge(MergeOption option) =>
+        new MergeTask(new Moq.Mock<Microsoft.Extensions.Logging.ILogger<MergeTask>>().Object).Execute(new TaskContext(option));
+
+    [Fact]
+    public void A_csv_and_a_json_file_merge_vertically()
+    {
+        var output = Path.Combine(_dir, "out.csv");
+
+        var ok = Merge(new MergeOption
+        {
+            InputPaths = [Write("a.csv", "id,name\n1,x\n"), Write("b.json", """[{"id":2,"name":"y"}]""")],
+            OutputPath = output,
+            MergeType = MergeType.Vertical,
+        });
+
+        Assert.True(ok);
+        Assert.Equal(["id,name", "1,x", "2,y"], File.ReadAllLines(output).Select(l => l.TrimStart('﻿')));
+    }
+
+    [Fact]
+    public void A_tsv_file_joins_by_a_named_key()
+    {
+        var output = Path.Combine(_dir, "out.csv");
+
+        var ok = Merge(new MergeOption
+        {
+            InputPaths = [Write("a.csv", "id,name\n1,x\n2,y\n"), Write("b.tsv", "id\tscore\n2\t9\n1\t5\n")],
+            OutputPath = output,
+            MergeType = MergeType.Horizontal,
+            JoinKeyColumns = [ColumnIdentifier.ByName("id")],
+        });
+
+        Assert.True(ok);
+        var lines = File.ReadAllLines(output).Select(l => l.TrimStart('﻿')).ToList();
+        Assert.Equal("id,name,score", lines[0]);
+        Assert.Contains("1,x,5", lines);
+        Assert.Contains("2,y,9", lines);
+    }
+
+    [Fact]
+    public void A_missing_key_column_in_a_json_file_is_named()
+    {
+        Action act = () => Merge(new MergeOption
+        {
+            InputPaths = [Write("a.csv", "id,name\n1,x\n"), Write("b.json", """[{"key":1,"score":5}]""")],
+            OutputPath = Path.Combine(_dir, "out.csv"),
+            MergeType = MergeType.Horizontal,
+            JoinKeyColumns = [ColumnIdentifier.ByName("id")],
+        });
+
+        var ex = Assert.Throws<ValidationException>(act);
+        Assert.Contains("Join key column 'id' not found in file b.json", ex.Message);
+    }
+}

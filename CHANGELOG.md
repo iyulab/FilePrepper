@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `create-lag-features`) read every input as comma-separated text for that check, so a TSV, JSON, Excel or
   Parquet input was refused for lacking columns it had. The check now reads the input by its format, and the file
   is read once.
+- `merge` read every file after the first as comma-separated text, and checked the columns and rows of all of them
+  the same way, so a JSON, TSV, Excel or Parquet input was misread or refused. Each input is now read by its format,
+  once, for the checks and for the merge; the checks of what the files hold moved from `MergeOption` into
+  `MergeTask`, and the unused `MergeOption.ColumnMappings` is gone.
 
 ### Removed
 
