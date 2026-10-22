@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-23
+
 ### Added
 
 - `explode` (command, `ExplodeTask`, `DataPipeline.Explode`): list columns — a list per cell as JSON text, the way
