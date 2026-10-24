@@ -15,19 +15,18 @@
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.13" />
     <PackageVersion Include="Parquet.Net" Version="6.1.0" />
     <PackageVersion Include="Scrutor" Version="7.0.0" />
-    <!-- Spectre.Console pinned to 0.55.x to stay paired with Spectre.Console.Cli 0.55.0
-         (latest stable .Cli); pre-1.0 minor bump of the core ahead of .Cli risks API skew. -->
-    <PackageVersion Include="Spectre.Console" Version="0.55.2" />
-    <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />
-    <PackageVersion Include="System.CommandLine" Version="2.0.10" />
+    <!-- Spectre.Console moves with Spectre.Console.Cli: a pre-1.0 minor of the core ahead of .Cli risks API skew. -->
+    <PackageVersion Include="Spectre.Console" Version="0.57.2" />
+    <PackageVersion Include="Spectre.Console.Cli" Version="0.57.2" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.13" />
 
     <!-- Test Dependencies -->
-    <PackageVersion Include="coverlet.collector" Version="10.0.0" />
-    <PackageVersion Include="FluentAssertions" Version="8.9.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+    <PackageVersion Include="FluentAssertions" Version="8.11.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
-    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageVersion Include="Moq" Version="4.21.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
   </ItemGroup>
 </Project>

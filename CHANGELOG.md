@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Dependencies: Spectre.Console and Spectre.Console.Cli 0.57.2, System.CommandLine 2.0.13.
 - **Breaking:** `DataFrame` holds its values by column, and `DataFrame.Rows` is
   `IReadOnlyList<IReadOnlyDictionary<string, string>>` — views over the columns, read in place. A frame was a
   dictionary per row and `Rows` copied all of them on every read: a 22 MB, million-row CSV held about 450 MB per copy,
