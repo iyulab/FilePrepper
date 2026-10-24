@@ -1,6 +1,4 @@
-﻿using Xunit.Abstractions;
-
-namespace FilePrepper.Tests;
+﻿namespace FilePrepper.Tests;
 
 public abstract class BaseTests : IDisposable
 {

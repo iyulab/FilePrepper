@@ -1,6 +1,5 @@
 ﻿using FilePrepper.Tasks;
 using FilePrepper.Tasks.Merge;
-using Xunit.Abstractions;
 
 namespace FilePrepper.Tests.Tasks;
 

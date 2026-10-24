@@ -1,6 +1,5 @@
 ﻿using FilePrepper.Tasks.ScaleData;
 using FilePrepper.Tasks;
-using Xunit.Abstractions;
 
 namespace FilePrepper.Tests.Tasks;
 

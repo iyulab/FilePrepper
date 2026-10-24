@@ -1,6 +1,5 @@
 ﻿using FilePrepper.Tasks;
 using FilePrepper.Tasks.OneHotEncoding;
-using Xunit.Abstractions;
 
 namespace FilePrepper.Tests.Tasks;
 
