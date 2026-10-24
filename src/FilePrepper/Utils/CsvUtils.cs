@@ -142,7 +142,7 @@ public static class CsvUtils
             {
                 if (ignoreErrors && defaultValue != null)
                 {
-                    if (double.TryParse(defaultValue, out var defaultNum))
+                    if (NumberText.TryParse(defaultValue, out var defaultNum))
                     {
                         numericValues[column] = defaultNum;
                         continue;
@@ -155,7 +155,7 @@ public static class CsvUtils
             {
                 if (ignoreErrors && defaultValue != null)
                 {
-                    if (double.TryParse(defaultValue, out var defaultNum))
+                    if (NumberText.TryParse(defaultValue, out var defaultNum))
                     {
                         numericValues[column] = defaultNum;
                         continue;

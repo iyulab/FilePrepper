@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 ﻿namespace FilePrepper.Tasks.DataTypeConvert;
 
 public enum DataType
@@ -70,7 +71,7 @@ public class DataTypeConvertOption : SingleInputOption, IDefaultValueOption
             return targetType switch
             {
                 DataType.Integer => int.TryParse(value, out _),
-                DataType.Decimal => decimal.TryParse(value, out _),
+                DataType.Decimal => NumberText.TryParseDecimal(value, out _),
                 DataType.DateTime => DateTime.TryParse(value, out _),
                 DataType.Boolean => IsValidBooleanValue(value),
                 DataType.String => true,

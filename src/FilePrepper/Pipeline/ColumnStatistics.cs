@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 namespace FilePrepper.Pipeline;
 
 /// <summary>
@@ -71,8 +72,8 @@ public record ColumnStatistics
         var allValues = columnValues as IReadOnlyCollection<string> ?? columnValues.ToList();
         var values = allValues
             .Where(v => !string.IsNullOrWhiteSpace(v))
-            .Where(v => double.TryParse(v, out _))
-            .Select(double.Parse)
+            .Where(v => NumberText.TryParse(v, out _))
+            .Select(NumberText.Parse)
             .OrderBy(v => v) // Sort for percentile calculation
             .ToList();
 

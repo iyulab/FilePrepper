@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 ﻿using System.Data;
 
 namespace FilePrepper.Tasks.ColumnInteraction;
@@ -123,7 +124,7 @@ public class ColumnInteractionTask : BaseTask<ColumnInteractionOption>
             }
             else if (Options.IgnoreErrors && !string.IsNullOrWhiteSpace(Options.DefaultValue))
             {
-                if (double.TryParse(Options.DefaultValue, out var defaultNum))
+                if (NumberText.TryParse(Options.DefaultValue, out var defaultNum))
                 {
                     numbers.Add(defaultNum);
                 }
@@ -152,7 +153,7 @@ public class ColumnInteractionTask : BaseTask<ColumnInteractionOption>
 
         if (Options.IgnoreErrors && !string.IsNullOrWhiteSpace(Options.DefaultValue))
         {
-            if (double.TryParse(Options.DefaultValue, out _))
+            if (NumberText.TryParse(Options.DefaultValue, out _))
             {
                 return Options.DefaultValue;
             }

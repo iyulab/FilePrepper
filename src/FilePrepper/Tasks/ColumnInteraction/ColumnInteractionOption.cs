@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 ﻿namespace FilePrepper.Tasks.ColumnInteraction;
 
 public enum OperationType
@@ -49,7 +50,7 @@ public class ColumnInteractionOption : SingleInputOption, IDefaultValueOption
 
         if (!string.IsNullOrWhiteSpace(DefaultValue))
         {
-            if (Operation != OperationType.Concat && !double.TryParse(DefaultValue, out _))
+            if (Operation != OperationType.Concat && !NumberText.TryParse(DefaultValue, out _))
             {
                 errors.Add("Default value must be a valid number for numeric operations");
             }

@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 using FilePrepper.Tasks;
 
 namespace FilePrepper.Tasks.Conditional;
@@ -178,22 +179,22 @@ public class ConditionalExpression
                 return !string.Equals(value, CompareValue, StringComparison.OrdinalIgnoreCase);
 
             case ConditionalOperator.GreaterThan:
-                if (double.TryParse(value, out var v1) && double.TryParse(CompareValue, out var c1))
+                if (NumberText.TryParse(value, out var v1) && NumberText.TryParse(CompareValue, out var c1))
                     return v1 > c1;
                 return string.Compare(value, CompareValue, StringComparison.OrdinalIgnoreCase) > 0;
 
             case ConditionalOperator.LessThan:
-                if (double.TryParse(value, out var v2) && double.TryParse(CompareValue, out var c2))
+                if (NumberText.TryParse(value, out var v2) && NumberText.TryParse(CompareValue, out var c2))
                     return v2 < c2;
                 return string.Compare(value, CompareValue, StringComparison.OrdinalIgnoreCase) < 0;
 
             case ConditionalOperator.GreaterThanOrEqual:
-                if (double.TryParse(value, out var v3) && double.TryParse(CompareValue, out var c3))
+                if (NumberText.TryParse(value, out var v3) && NumberText.TryParse(CompareValue, out var c3))
                     return v3 >= c3;
                 return string.Compare(value, CompareValue, StringComparison.OrdinalIgnoreCase) >= 0;
 
             case ConditionalOperator.LessThanOrEqual:
-                if (double.TryParse(value, out var v4) && double.TryParse(CompareValue, out var c4))
+                if (NumberText.TryParse(value, out var v4) && NumberText.TryParse(CompareValue, out var c4))
                     return v4 <= c4;
                 return string.Compare(value, CompareValue, StringComparison.OrdinalIgnoreCase) <= 0;
 

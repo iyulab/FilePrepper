@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 ﻿namespace FilePrepper.Tasks.NormalizeData;
 
 /// <summary>
@@ -116,7 +117,7 @@ public class NormalizeDataTask : BaseTask<NormalizeDataOption>
                     }
 
                     // Convert to string
-                    rec[col] = newVal.ToString("G");
+                    rec[col] = NumberText.Format(newVal);
                 }
             }
         }

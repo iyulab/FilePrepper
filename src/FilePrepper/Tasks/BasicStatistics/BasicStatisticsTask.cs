@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 ﻿namespace FilePrepper.Tasks.BasicStatistics;
 
 public class BasicStatisticsTask : BaseTask<BasicStatisticsOption>
@@ -44,7 +45,7 @@ public class BasicStatisticsTask : BaseTask<BasicStatisticsOption>
                         else if (Options.IgnoreErrors &&
                                 Options.DefaultValue != null)
                         {
-                            if (double.TryParse(Options.DefaultValue, out var defaultValue))
+                            if (NumberText.TryParse(Options.DefaultValue, out var defaultValue))
                             {
                                 columnData[column].Add(defaultValue);
                             }

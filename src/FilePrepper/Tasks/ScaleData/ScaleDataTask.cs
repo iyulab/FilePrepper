@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 ﻿namespace FilePrepper.Tasks.ScaleData;
 
 public class ScaleDataTask : BaseTask<ScaleDataOption>
@@ -23,8 +24,8 @@ public class ScaleDataTask : BaseTask<ScaleDataOption>
         // 유효한 수치형 값 추출
         var numericValues = records
             .Select(r => r.GetValueOrDefault(colOption.ColumnName))
-            .Where(v => double.TryParse(v, out _))
-            .Select(v => double.Parse(v!))
+            .Where(v => NumberText.TryParse(v, out _))
+            .Select(v => NumberText.Parse(v!))
             .ToList();
 
         if (numericValues.Count == 0)
@@ -39,7 +40,7 @@ public class ScaleDataTask : BaseTask<ScaleDataOption>
 
             foreach (var record in records)
             {
-                if (double.TryParse(record.GetValueOrDefault(colOption.ColumnName), out double value))
+                if (NumberText.TryParse(record.GetValueOrDefault(colOption.ColumnName), out double value))
                 {
                     double scaled = (max - min == 0) ? 0 : (value - min) / (max - min);
                     record[colOption.ColumnName] = scaled.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -54,7 +55,7 @@ public class ScaleDataTask : BaseTask<ScaleDataOption>
 
             foreach (var record in records)
             {
-                if (double.TryParse(record.GetValueOrDefault(colOption.ColumnName), out double value))
+                if (NumberText.TryParse(record.GetValueOrDefault(colOption.ColumnName), out double value))
                 {
                     double scaled = (std == 0) ? 0 : (value - mean) / std;
                     record[colOption.ColumnName] = scaled.ToString(System.Globalization.CultureInfo.InvariantCulture);

@@ -25,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it — and a row still holds only the columns it was given. Code that changed `Rows` in place builds a new frame or a
   pipeline instead; `DataPipeline.FromData` takes a frame's `IReadOnlyDictionary` rows and works on copies of them.
 
+### Fixed
+
+- Numbers are read from and written into cells in the invariant culture (`NumberText`), whatever the machine's
+  culture. On a comma-decimal machine (de-DE) the cells `1.5` and `2.5` were read as 15 and 25 — statistics, scaling,
+  filters, fills and aggregations all computed on them — and a computed 0.5 was written back as `0,5`, which splits
+  into two fields in a comma-separated file. A source guard keeps every number read and write on that path.
+
 ## [0.12.0] - 2026-10-23
 
 ### Added

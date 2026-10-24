@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 using FilePrepper.Tasks.WindowOps;
 
 namespace FilePrepper.Pipeline;
@@ -96,14 +97,14 @@ public class GroupedDataPipeline
                 var values = group
                     .Select(row => row.TryGetValue(column, out var v) ? v : string.Empty)
                     .Where(v => !string.IsNullOrWhiteSpace(v))
-                    .Where(v => double.TryParse(v, out _))
-                    .Select(double.Parse)
+                    .Where(v => NumberText.TryParse(v, out _))
+                    .Select(NumberText.Parse)
                     .ToList();
 
                 if (values.Any())
                 {
                     var aggregatedValue = CalculateAggregation(values, method);
-                    resultRow[outputColumn] = aggregatedValue.ToString("G");
+                    resultRow[outputColumn] = NumberText.Format(aggregatedValue);
                 }
                 else
                 {

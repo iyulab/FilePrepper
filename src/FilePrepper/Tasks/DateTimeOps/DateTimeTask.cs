@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 using System.Globalization;
 using FilePrepper.Pipeline;
 
@@ -82,7 +83,7 @@ public class DateTimeTask : BaseTask<DateTimeOption>
         {
             if (record.TryGetValue(Options.Column, out var value) && !string.IsNullOrEmpty(value))
             {
-                if (double.TryParse(value, out var excelDate))
+                if (NumberText.TryParse(value, out var excelDate))
                 {
                     try
                     {

@@ -750,7 +750,7 @@ public class DataPipeline
         {
             foreach (var col in columns)
             {
-                if (!row.TryGetValue(col, out var valueStr) || !double.TryParse(valueStr, out var value))
+                if (!row.TryGetValue(col, out var valueStr) || !NumberText.TryParse(valueStr, out var value))
                 {
                     continue;
                 }
@@ -772,7 +772,7 @@ public class DataPipeline
                         : (value - mean) / stdDev;
                 }
 
-                row[col] = normalized.ToString("G");
+                row[col] = NumberText.Format(normalized);
             }
         }
 
@@ -788,8 +788,8 @@ public class DataPipeline
         {
             var validValues = _rows
                 .Select(row => row.TryGetValue(col, out var v) ? v : string.Empty)
-                .Where(v => !string.IsNullOrWhiteSpace(v) && double.TryParse(v, out _))
-                .Select(double.Parse)
+                .Where(v => !string.IsNullOrWhiteSpace(v) && NumberText.TryParse(v, out _))
+                .Select(NumberText.Parse)
                 .ToList();
 
             if (!validValues.Any())
@@ -799,8 +799,8 @@ public class DataPipeline
 
             string fillValue = method switch
             {
-                FillMethod.Mean => validValues.Average().ToString("G"),
-                FillMethod.Median => CalculateMedian(validValues).ToString("G"),
+                FillMethod.Mean => NumberText.Format(validValues.Average()),
+                FillMethod.Median => NumberText.Format(CalculateMedian(validValues)),
                 FillMethod.Constant when constantValue != null => constantValue,
                 _ => "0"
             };
@@ -954,7 +954,7 @@ public class DataPipeline
 
         foreach (var row in _rows)
         {
-            if (row.TryGetValue(columnName, out var valueStr) && double.TryParse(valueStr, out var excelDate))
+            if (row.TryGetValue(columnName, out var valueStr) && NumberText.TryParse(valueStr, out var excelDate))
             {
                 var dt = excelEpoch.AddDays(excelDate);
                 row[columnName] = dt.ToString(outputFormat);
@@ -1330,7 +1330,7 @@ public class DataPipeline
 
             if (row.TryGetValue(column, out var valueStr) &&
                 !string.IsNullOrWhiteSpace(valueStr) &&
-                double.TryParse(valueStr, out var value))
+                NumberText.TryParse(valueStr, out var value))
             {
                 var normalized = method switch
                 {
@@ -1340,7 +1340,7 @@ public class DataPipeline
                     _ => throw new NotImplementedException($"Normalization method {method} is not implemented")
                 };
 
-                newRow[outCol] = normalized.ToString("G");
+                newRow[outCol] = NumberText.Format(normalized);
             }
             else
             {
@@ -1629,13 +1629,13 @@ public class DataPipeline
             {
                 var values = groupRows
                     .Select(row => row.TryGetValue(col, out var v) ? v : string.Empty)
-                    .Where(v => !string.IsNullOrWhiteSpace(v) && double.TryParse(v, out _))
-                    .Select(double.Parse)
+                    .Where(v => !string.IsNullOrWhiteSpace(v) && NumberText.TryParse(v, out _))
+                    .Select(NumberText.Parse)
                     .ToList();
 
                 if (values.Any())
                 {
-                    aggregatedRow[col] = CalculateAggregation(values, method).ToString("G");
+                    aggregatedRow[col] = NumberText.Format(CalculateAggregation(values, method));
                 }
             }
 
@@ -1690,13 +1690,13 @@ public class DataPipeline
                     .Skip(windowStart)
                     .Take(windowEnd - windowStart)
                     .Select(r => r.TryGetValue(col, out var v) ? v : string.Empty)
-                    .Where(v => !string.IsNullOrWhiteSpace(v) && double.TryParse(v, out _))
-                    .Select(double.Parse)
+                    .Where(v => !string.IsNullOrWhiteSpace(v) && NumberText.TryParse(v, out _))
+                    .Select(NumberText.Parse)
                     .ToList();
 
                 if (values.Any())
                 {
-                    row[$"{col}{outputSuffix}"] = CalculateAggregation(values, method).ToString("G");
+                    row[$"{col}{outputSuffix}"] = NumberText.Format(CalculateAggregation(values, method));
                 }
                 else
                 {
@@ -1827,8 +1827,8 @@ public class DataPipeline
         {
             var values = _rows
                 .Select(row => row.TryGetValue(col, out var v) ? v : string.Empty)
-                .Where(v => double.TryParse(v, out _))
-                .Select(double.Parse)
+                .Where(v => NumberText.TryParse(v, out _))
+                .Select(NumberText.Parse)
                 .ToList();
 
             if (!values.Any())

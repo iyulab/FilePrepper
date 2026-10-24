@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 ﻿namespace FilePrepper.Tasks.FilterRows;
 
 public class FilterRowsTask : BaseTask<FilterRowsOption>
@@ -37,25 +38,25 @@ public class FilterRowsTask : BaseTask<FilterRowsOption>
             case FilterOperator.NotEquals:
                 return cellValue != cond.Value;
             case FilterOperator.GreaterThan:
-                if (double.TryParse(cellValue, out var cVal1) && double.TryParse(cond.Value, out var cVal2))
+                if (NumberText.TryParse(cellValue, out var cVal1) && NumberText.TryParse(cond.Value, out var cVal2))
                 {
                     return cVal1 > cVal2;
                 }
                 return false;
             case FilterOperator.GreaterOrEqual:
-                if (double.TryParse(cellValue, out var cVal3) && double.TryParse(cond.Value, out var cVal4))
+                if (NumberText.TryParse(cellValue, out var cVal3) && NumberText.TryParse(cond.Value, out var cVal4))
                 {
                     return cVal3 >= cVal4;
                 }
                 return false;
             case FilterOperator.LessThan:
-                if (double.TryParse(cellValue, out var cVal5) && double.TryParse(cond.Value, out var cVal6))
+                if (NumberText.TryParse(cellValue, out var cVal5) && NumberText.TryParse(cond.Value, out var cVal6))
                 {
                     return cVal5 < cVal6;
                 }
                 return false;
             case FilterOperator.LessOrEqual:
-                if (double.TryParse(cellValue, out var cVal7) && double.TryParse(cond.Value, out var cVal8))
+                if (NumberText.TryParse(cellValue, out var cVal7) && NumberText.TryParse(cond.Value, out var cVal8))
                 {
                     return cVal7 <= cVal8;
                 }

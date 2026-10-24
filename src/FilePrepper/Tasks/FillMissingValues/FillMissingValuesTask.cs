@@ -1,3 +1,4 @@
+using FilePrepper.Utils;
 ﻿namespace FilePrepper.Tasks.FillMissingValues;
 
 public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
@@ -30,7 +31,7 @@ public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
                 return true;
 
             // 정수/실수로 파싱 안 되면 => 결측치로 간주
-            return !double.TryParse(value, out _);
+            return !NumberText.TryParse(value, out _);
         });
 
         if (!hasMissing)
@@ -88,7 +89,7 @@ public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
         var validValues = records
             .Select(r => r.GetValueOrDefault(fillMethod.ColumnName))
             .Where(v => !string.IsNullOrWhiteSpace(v))
-            .Select(v => double.TryParse(v, out var d) ? (double?)d : null)
+            .Select(v => NumberText.TryParse(v, out var d) ? (double?)d : null)
             .Where(v => v.HasValue)
             .Select(v => v!.Value)
             .ToList();
@@ -106,7 +107,7 @@ public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
         {
             var currentValue = record.GetValueOrDefault(fillMethod.ColumnName);
             if (string.IsNullOrWhiteSpace(currentValue) ||
-                !double.TryParse(currentValue, out _))
+                !NumberText.TryParse(currentValue, out _))
             {
                 record[fillMethod.ColumnName] = meanStr;
             }
@@ -120,7 +121,7 @@ public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
         var validValues = records
             .Select(r => r.GetValueOrDefault(fillMethod.ColumnName))
             .Where(v => !string.IsNullOrWhiteSpace(v))
-            .Select(v => double.TryParse(v, out var d) ? d : double.NaN)
+            .Select(v => NumberText.TryParse(v, out var d) ? d : double.NaN)
             .Where(v => !double.IsNaN(v))
             .ToList();
 
@@ -136,7 +137,7 @@ public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
         foreach (var record in records)
         {
             if (string.IsNullOrWhiteSpace(record.GetValueOrDefault(fillMethod.ColumnName)) ||
-                !double.TryParse(record[fillMethod.ColumnName], out _))
+                !NumberText.TryParse(record[fillMethod.ColumnName], out _))
             {
                 record[fillMethod.ColumnName] = medianStr;
             }
@@ -222,7 +223,7 @@ public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
         for (int i = 0; i < records.Count; i++)
         {
             var value = records[i].GetValueOrDefault(fillMethod.ColumnName);
-            if (!string.IsNullOrWhiteSpace(value) && double.TryParse(value, out var numValue))
+            if (!string.IsNullOrWhiteSpace(value) && NumberText.TryParse(value, out var numValue))
             {
                 numericValues.Add((i, numValue));
             }
@@ -232,7 +233,7 @@ public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
         for (int i = 0; i < records.Count; i++)
         {
             var currentValue = records[i].GetValueOrDefault(fillMethod.ColumnName);
-            if (!string.IsNullOrWhiteSpace(currentValue) && double.TryParse(currentValue, out _))
+            if (!string.IsNullOrWhiteSpace(currentValue) && NumberText.TryParse(currentValue, out _))
             {
                 continue;
             }
@@ -266,7 +267,7 @@ public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
         for (int i = currentIndex - 1; i >= 0; i--)
         {
             var value = records[i].GetValueOrDefault(columnName);
-            if (!string.IsNullOrWhiteSpace(value) && double.TryParse(value, out _))
+            if (!string.IsNullOrWhiteSpace(value) && NumberText.TryParse(value, out _))
             {
                 return i;
             }
@@ -282,7 +283,7 @@ public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
         for (int i = currentIndex + 1; i < records.Count; i++)
         {
             var value = records[i].GetValueOrDefault(columnName);
-            if (!string.IsNullOrWhiteSpace(value) && double.TryParse(value, out _))
+            if (!string.IsNullOrWhiteSpace(value) && NumberText.TryParse(value, out _))
             {
                 return i;
             }
