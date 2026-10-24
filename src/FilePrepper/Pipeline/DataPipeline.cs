@@ -73,6 +73,13 @@ public class DataPipeline
     }
 
     /// <summary>
+    /// Create pipeline from rows it may not change — a <see cref="DataFrame"/>'s, for one. A pipeline changes its
+    /// rows in place, so it works on copies of these.
+    /// </summary>
+    public static DataPipeline FromData(IEnumerable<IReadOnlyDictionary<string, string>> data)
+        => FromData(data.Select(row => new Dictionary<string, string>(row)));
+
+    /// <summary>
     /// Create pipeline from Excel file (.xls, .xlsx)
     /// </summary>
     public static async Task<DataPipeline> FromExcelAsync(string path, bool hasHeader = true, string? sheetName = null, int sheetIndex = 0)
@@ -1268,41 +1275,7 @@ public class DataPipeline
                 nameof(column));
         }
 
-        // Extract and parse numeric values
-        var allValues = GetColumnValues(column);
-        var values = allValues
-            .Where(v => !string.IsNullOrWhiteSpace(v))
-            .Where(v => double.TryParse(v, out _))
-            .Select(double.Parse)
-            .OrderBy(v => v) // Sort for percentile calculation
-            .ToList();
-
-        if (!values.Any())
-        {
-            throw new InvalidOperationException(
-                $"Column '{column}' has no valid numeric values. Total rows: {allValues.Count()}, " +
-                $"Null/Non-numeric: {allValues.Count()}");
-        }
-
-        // Calculate basic statistics
-        var mean = values.Average();
-        var variance = values.Count > 1
-            ? values.Sum(v => Math.Pow(v - mean, 2)) / (values.Count - 1)
-            : 0;
-        var std = Math.Sqrt(variance);
-
-        return new ColumnStatistics
-        {
-            Mean = mean,
-            Std = std,
-            Min = values.First(),  // Already sorted
-            Max = values.Last(),   // Already sorted
-            Median = CalculatePercentile(values, 0.5),
-            Q1 = CalculatePercentile(values, 0.25),
-            Q3 = CalculatePercentile(values, 0.75),
-            Count = values.Count,
-            NullCount = allValues.Count() - values.Count
-        };
+        return ColumnStatistics.Of(column, GetColumnValues(column));
     }
 
     /// <summary>
@@ -1396,36 +1369,6 @@ public class DataPipeline
     /// Calculate percentile from sorted values
     /// Uses linear interpolation between nearest ranks
     /// </summary>
-    private static double CalculatePercentile(List<double> sortedValues, double percentile)
-    {
-        if (sortedValues.Count == 0)
-        {
-            throw new ArgumentException("Cannot calculate percentile of empty list");
-        }
-
-        if (sortedValues.Count == 1)
-        {
-            return sortedValues[0];
-        }
-
-        // Calculate position (0-based index)
-        var position = percentile * (sortedValues.Count - 1);
-        var lowerIndex = (int)Math.Floor(position);
-        var upperIndex = (int)Math.Ceiling(position);
-
-        // If position is exactly on an index, return that value
-        if (lowerIndex == upperIndex)
-        {
-            return sortedValues[lowerIndex];
-        }
-
-        // Linear interpolation between lower and upper values
-        var lowerValue = sortedValues[lowerIndex];
-        var upperValue = sortedValues[upperIndex];
-        var fraction = position - lowerIndex;
-
-        return lowerValue + fraction * (upperValue - lowerValue);
-    }
 
     #endregion
 

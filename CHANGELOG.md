@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `DataFrame.FromCsvAsync(path, encoding)` reads a CSV or TSV file straight into a frame, with the encoding and delimiter
+  `DataPipeline.FromCsvAsync` detects — the frame it gives equals that pipeline's `ToDataFrame()`, without a row
+  dictionary per row on the way.
+- `ColumnStatistics.Of(column, values)`: a column's statistics from its values wherever they are held — what
+  `DataPipeline.GetStatistics` computes (it now calls this), without making a pipeline of the table first.
+
+### Changed
+
+- **Breaking:** `DataFrame` holds its values by column, and `DataFrame.Rows` is
+  `IReadOnlyList<IReadOnlyDictionary<string, string>>` — views over the columns, read in place. A frame was a
+  dictionary per row and `Rows` copied all of them on every read: a 22 MB, million-row CSV held about 450 MB per copy,
+  and a reader that took `Rows` once per column held a copy per column. `DataFrame.Where` takes an
+  `IReadOnlyDictionary` predicate. A frame still owns its values — changing the rows it was made from does not change
+  it — and a row still holds only the columns it was given. Code that changed `Rows` in place builds a new frame or a
+  pipeline instead; `DataPipeline.FromData` takes a frame's `IReadOnlyDictionary` rows and works on copies of them.
+
 ## [0.12.0] - 2026-10-23
 
 ### Added

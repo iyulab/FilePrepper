@@ -38,12 +38,59 @@ public class DataFrameTests
         };
         var df = new DataFrame(rows, new[] { "Name" });
 
-        // Act
-        var rowsCopy = df.Rows;
+        // Act — the source rows change after the frame was made
+        rows[0]["Name"] = "Mallory";
+        rows.Add(new() { ["Name"] = "Eve" });
 
-        // Assert
-        rowsCopy.Should().BeOfType<List<Dictionary<string, string>>>();
-        // DataFrame should return a defensive copy to prevent external modification
+        // Assert — the frame kept its own rows
+        df.Rows.Should().HaveCount(1);
+        df.Rows[0]["Name"].Should().Be("Alice");
+    }
+
+    [Fact]
+    public void Rows_AreNotCopiedOnRead()
+    {
+        // A reader that takes Rows once per column must not hold a copy of the table per column.
+        var df = new DataFrame(new List<Dictionary<string, string>> { new() { ["Name"] = "Alice" } }, new[] { "Name" });
+
+        df.Rows.Should().NotBeAssignableTo<List<Dictionary<string, string>>>("rows are views over the columns, not copies");
+        df.Rows[0]["Name"].Should().Be("Alice");
+        df.Rows[0].Should().BeEquivalentTo(new Dictionary<string, string> { ["Name"] = "Alice" });
+    }
+
+    [Fact]
+    public void A_row_holds_only_the_columns_it_was_given()
+    {
+        var df = new DataFrame(new List<Dictionary<string, string>>
+        {
+            new() { ["A"] = "1", ["B"] = "x" },
+            new() { ["A"] = "2" },
+        }, new[] { "A", "B" });
+
+        df.Rows[1].ContainsKey("B").Should().BeFalse();
+        df.Rows[1].Count.Should().Be(1);
+        df.GetColumn("B").Should().Equal("x", "");
+    }
+
+    [Fact]
+    public async Task FromCsvAsync_reads_the_frame_the_pipeline_reads()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"fp_frame_{Guid.NewGuid():N}.csv");
+        await File.WriteAllTextAsync(path, "Name,Score,City\nAlice,90,\"Seoul, KR\"\nBob,,Busan\n");
+        try
+        {
+            var direct = await DataFrame.FromCsvAsync(path);
+            var viaPipeline = (await DataPipeline.FromCsvAsync(path)).ToDataFrame();
+
+            direct.ColumnNames.Should().Equal(viaPipeline.ColumnNames);
+            direct.RowCount.Should().Be(2);
+            direct.Rows.Should().BeEquivalentTo(viaPipeline.Rows, options => options.WithStrictOrdering());
+            direct.GetColumn("City").Should().Equal("Seoul, KR", "Busan");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]

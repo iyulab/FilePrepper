@@ -29,7 +29,7 @@ public class WindowTask : BaseTask<WindowOption>
 
         // Convert back to records
         var dataFrame = result.ToDataFrame();
-        var processedRecords = dataFrame.Rows.ToList();
+        var processedRecords = dataFrame.Rows.Select(row => new Dictionary<string, string>(row)).ToList();
 
         _logger.LogInformation("✓ Processed {InputCount} rows → {OutputCount} rows",
             records.Count, processedRecords.Count);
