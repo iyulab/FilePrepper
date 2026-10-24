@@ -22,10 +22,11 @@ public abstract class TaskBaseTest<TTask> : BaseTests
                 (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()))
             .Callback(new InvocationAction(invocation =>
             {
-                var logLevel = (LogLevel)invocation.Arguments[0];
-                var eventId = (EventId)invocation.Arguments[1];
+                // ILogger.Log(LogLevel, EventId, TState, Exception?, Func<…>): the first two are value types, never null.
+                var logLevel = (LogLevel)invocation.Arguments[0]!;
+                var eventId = (EventId)invocation.Arguments[1]!;
                 var state = invocation.Arguments[2];
-                var exception = (Exception)invocation.Arguments[3];
+                var exception = (Exception?)invocation.Arguments[3];
                 var formatter = invocation.Arguments[4];
 
                 if (state != null && formatter != null)
