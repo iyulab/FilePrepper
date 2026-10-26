@@ -46,6 +46,9 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore ${{ env.SOLUTION_PATH }}
 
+    - name: Check formatting
+      run: dotnet format ${{ env.SOLUTION_PATH }} --verify-no-changes --no-restore
+
     - name: Check for vulnerable dependencies (warn-only)
       run: |
         echo "Scanning for vulnerable transitive packages..."
