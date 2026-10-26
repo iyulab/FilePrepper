@@ -1,5 +1,5 @@
 using FilePrepper.Utils;
-﻿namespace FilePrepper.Tasks.FillMissingValues;
+namespace FilePrepper.Tasks.FillMissingValues;
 
 public class FillMissingValuesTask : BaseTask<FillMissingValuesOption>
 {

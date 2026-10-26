@@ -1,5 +1,5 @@
 using FilePrepper.Utils;
-﻿namespace FilePrepper.Tasks.NormalizeData;
+namespace FilePrepper.Tasks.NormalizeData;
 
 /// <summary>
 /// A task that normalizes numeric columns using either Min-Max or Z-score

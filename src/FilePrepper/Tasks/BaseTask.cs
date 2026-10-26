@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace FilePrepper.Tasks;
 
-public abstract class BaseTask<TOption> : ITask 
+public abstract class BaseTask<TOption> : ITask
     where TOption : class, ITaskOption
 {
     protected readonly ILogger _logger;

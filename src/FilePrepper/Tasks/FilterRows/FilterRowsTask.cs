@@ -1,5 +1,5 @@
 using FilePrepper.Utils;
-﻿namespace FilePrepper.Tasks.FilterRows;
+namespace FilePrepper.Tasks.FilterRows;
 
 public class FilterRowsTask : BaseTask<FilterRowsOption>
 {

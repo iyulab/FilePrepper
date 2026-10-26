@@ -104,7 +104,7 @@ public class CreateLagFeaturesCommand : BaseCommand
         {
             // Validation with rich output
             var inputValid = ValidateInputFile(inputPath, out var inputError);
-            
+
             var validationResults = new List<(string Name, bool IsValid, string? Error)>
             {
                 ("Input file", inputValid, inputError),
@@ -163,7 +163,7 @@ public class CreateLagFeaturesCommand : BaseCommand
                 .StartAsync("Processing time series data...", async ctx =>
                 {
                     ctx.Status($"Reading input from {Path.GetFileName(inputPath)}...");
-                    
+
                     var taskLogger = LoggerFactory.CreateLogger<CreateLagFeaturesTask>();
                     var task = new CreateLagFeaturesTask(taskLogger);
                     var taskContext = new TaskContext(options);
@@ -178,7 +178,7 @@ public class CreateLagFeaturesCommand : BaseCommand
                     if (success)
                     {
                         DisplaySuccess($"Lag features created successfully: {outputPath}");
-                        
+
                         if (verbose)
                         {
                             var panel = new Panel(
@@ -198,7 +198,7 @@ public class CreateLagFeaturesCommand : BaseCommand
                             };
                             AnsiConsole.Write(panel);
                         }
-                        
+
                         return ExitCodes.Success;
                     }
 

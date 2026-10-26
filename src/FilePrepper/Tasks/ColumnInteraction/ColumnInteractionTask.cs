@@ -1,5 +1,5 @@
 using FilePrepper.Utils;
-﻿using System.Data;
+using System.Data;
 
 namespace FilePrepper.Tasks.ColumnInteraction;
 

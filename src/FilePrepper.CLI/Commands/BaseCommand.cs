@@ -69,9 +69,9 @@ public abstract class BaseCommand : Command
     protected int HandleError(Exception ex)
     {
         Logger.LogError(ex, "Error executing command");
-        
+
         DisplayError($"Error: {ex.Message}");
-        
+
         return ex switch
         {
             ArgumentException => ExitCodes.InvalidArguments,

@@ -1,5 +1,5 @@
 using FilePrepper.Utils;
-﻿namespace FilePrepper.Tasks.DataTypeConvert;
+namespace FilePrepper.Tasks.DataTypeConvert;
 
 public enum DataType
 {

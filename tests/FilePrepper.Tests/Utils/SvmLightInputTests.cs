@@ -42,7 +42,11 @@ public class SvmLightInputTests : IDisposable
         records.Should().HaveCount(3);
         records[0].Should().Contain(new Dictionary<string, string>
         {
-            ["label"] = "2", ["qid"] = "7", ["f1"] = "0.5", ["f2"] = "0", ["f3"] = "1.25"
+            ["label"] = "2",
+            ["qid"] = "7",
+            ["f1"] = "0.5",
+            ["f2"] = "0",
+            ["f3"] = "1.25"
         });
         records[2]["f3"].Should().Be("2e-3");
     }

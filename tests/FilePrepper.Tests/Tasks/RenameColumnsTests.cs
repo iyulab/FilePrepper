@@ -11,11 +11,11 @@ public class RenameColumnsTests : TaskBaseTest<RenameColumnsTask>
     public void Validate_NoMappings_ShouldReturnError()
     {
         // Arrange
-        var option = new RenameColumnsOption 
+        var option = new RenameColumnsOption
         {
             InputPath = _testInputPath,
             OutputPath = _testOutputPath,
-            RenameMap = new Dictionary<string, string>() 
+            RenameMap = new Dictionary<string, string>()
         };
 
         // Act

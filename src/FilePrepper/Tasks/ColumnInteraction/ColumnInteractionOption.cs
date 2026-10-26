@@ -1,5 +1,5 @@
 using FilePrepper.Utils;
-﻿namespace FilePrepper.Tasks.ColumnInteraction;
+namespace FilePrepper.Tasks.ColumnInteraction;
 
 public enum OperationType
 {

@@ -131,7 +131,7 @@ public static class CommandFactory
         foreach (var category in metadata)
         {
             AnsiConsole.MarkupLine($"\n[bold yellow]{category.Key}:[/]");
-            
+
             var table = new Table()
                 .Border(TableBorder.None)
                 .HideHeaders()

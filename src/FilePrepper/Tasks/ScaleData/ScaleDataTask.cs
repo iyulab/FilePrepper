@@ -1,5 +1,5 @@
 using FilePrepper.Utils;
-﻿namespace FilePrepper.Tasks.ScaleData;
+namespace FilePrepper.Tasks.ScaleData;
 
 public class ScaleDataTask : BaseTask<ScaleDataOption>
 {

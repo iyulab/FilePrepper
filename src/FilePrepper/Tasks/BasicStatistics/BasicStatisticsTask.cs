@@ -1,5 +1,5 @@
 using FilePrepper.Utils;
-﻿namespace FilePrepper.Tasks.BasicStatistics;
+namespace FilePrepper.Tasks.BasicStatistics;
 
 public class BasicStatisticsTask : BaseTask<BasicStatisticsOption>
 {
