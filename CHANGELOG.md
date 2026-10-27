@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Depends on `Microsoft.Extensions.*` 10.0.14 (was 10.0.13) and, for the CLI, `System.CommandLine` 2.0.14.
+
 ## [0.13.0] - 2026-10-26
 
 ### Added
