@@ -9,7 +9,6 @@ on:
       - 'Directory.Build.props'
       - '**/*.md'
       - 'docs/**'
-      - 'claudedocs/**'
       - '.gitignore'
       - 'LICENSE'
   pull_request:
@@ -17,7 +16,6 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - 'claudedocs/**'
       - '.gitignore'
       - 'LICENSE'
 
