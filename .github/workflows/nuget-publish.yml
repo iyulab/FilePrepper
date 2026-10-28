@@ -24,6 +24,10 @@ env:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
     steps:
     - uses: actions/checkout@v6
 
@@ -75,15 +79,31 @@ jobs:
           unzip -p "$pkg" "*.nuspec" | grep -E "<(id|version|packageTypes)>" || true
         done
 
+    # Trusted publishing: a short-lived key from the repository's OIDC token. The long-lived
+    # NUGET_API_KEY stays as the fallback until one release has gone through the login step.
+    - name: NuGet login (trusted publishing)
+      id: login
+      if: ${{ !inputs.skip_publish }}
+      continue-on-error: true
+      uses: NuGet/login@v1
+      with:
+        user: ${{ secrets.NUGET_USER }}
+
+    - name: Warn when falling back to the long-lived key
+      if: ${{ !inputs.skip_publish && steps.login.outcome != 'success' }}
+      run: echo "::warning::NuGet trusted-publishing login failed; pushing with NUGET_API_KEY"
+
     - name: Push to NuGet
       if: ${{ !inputs.skip_publish }}
+      env:
+        NUGET_KEY: ${{ steps.login.outputs.NUGET_API_KEY || secrets.NUGET_API_KEY }}
       run: |
         if [ "${{ inputs.force_publish }}" = "true" ]; then
           echo "Force publishing packages..."
-          dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+          dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "$NUGET_KEY"
         else
           echo "Publishing packages with skip-duplicate..."
-          dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+          dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "$NUGET_KEY" --skip-duplicate
         fi
 
     - name: Upload artifacts
