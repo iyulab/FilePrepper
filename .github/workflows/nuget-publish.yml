@@ -79,24 +79,18 @@ jobs:
           unzip -p "$pkg" "*.nuspec" | grep -E "<(id|version|packageTypes)>" || true
         done
 
-    # Trusted publishing: a short-lived key from the repository's OIDC token. The long-lived
-    # NUGET_API_KEY stays as the fallback until one release has gone through the login step.
+    # Trusted publishing: a short-lived key from the repository's OIDC token. A failed login fails the job.
     - name: NuGet login (trusted publishing)
       id: login
       if: ${{ !inputs.skip_publish }}
-      continue-on-error: true
       uses: NuGet/login@v1
       with:
         user: ${{ secrets.NUGET_USER }}
 
-    - name: Warn when falling back to the long-lived key
-      if: ${{ !inputs.skip_publish && steps.login.outcome != 'success' }}
-      run: echo "::warning::NuGet trusted-publishing login failed; pushing with NUGET_API_KEY"
-
     - name: Push to NuGet
       if: ${{ !inputs.skip_publish }}
       env:
-        NUGET_KEY: ${{ steps.login.outputs.NUGET_API_KEY || secrets.NUGET_API_KEY }}
+        NUGET_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
       run: |
         if [ "${{ inputs.force_publish }}" = "true" ]; then
           echo "Force publishing packages..."
