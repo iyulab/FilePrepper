@@ -1365,11 +1365,6 @@ public class DataPipeline
         }
     }
 
-    /// <summary>
-    /// Calculate percentile from sorted values
-    /// Uses linear interpolation between nearest ranks
-    /// </summary>
-
     #endregion
 
     #region Explode Operations

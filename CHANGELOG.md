@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `--keep` on the commands that take `--size`, `--stratify`, `--aggregates`, `--type` with `--key-columns`, and `--keep-first`. The README and
   `docs/README.md`, the quick start and the scenarios guide now show invocations that run, the CLI guide is written from each command's `--help`, and a test checks every `fileprepper <command> ...` in the documents against the real command tree. A progress write-up (`FILEPREPPER_PHASE2_COMPLETE.md`) is removed from `docs/`.
 
+- **The package ships its XML documentation.** The library carried doc comments in the source but never generated the `.xml` file, so IntelliSense and any reader of the
+  package saw none of them. The file is generated now. A public member without a summary is still allowed (about 490 have none), but a comment the compiler
+  reports as malformed fails the build: two were fixed (an unescaped `<=`, and a summary left over from a method that no longer exists).
+
 ## [0.13.1] - 2026-10-29
 
 ### Changed

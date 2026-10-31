@@ -103,7 +103,7 @@ public class MergeAsOfOption : MultipleInputOption
 public enum AsOfDirection
 {
     /// <summary>
-    /// Match with the most recent value in right file that is <= left value (default)
+    /// Match with the most recent value in right file that is &lt;= left value (default)
     /// </summary>
     Backward,
 

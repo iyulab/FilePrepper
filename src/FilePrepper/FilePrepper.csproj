@@ -4,6 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <NoWarn>IDE0290</NoWarn>
+    <!-- Ship the XML documentation. A public member without a summary is not an error (CS1591 stays off); the
+         malformed comments that the build reports are. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
 
     <!-- Package-Specific Metadata -->
     <PackageId>FilePrepper</PackageId>
