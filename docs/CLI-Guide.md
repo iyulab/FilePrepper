@@ -1,6 +1,6 @@
 # CLI Reference Guide
 
-Complete command-line reference for FilePrepper v0.4.9
+Every command and option below is read from the tool itself (`fileprepper <command> --help`); the tests check the documents against the same command tree.
 
 ## General Syntax
 
@@ -14,17 +14,18 @@ fileprepper <command> --help
 
 ## Common Options
 
-Available for all commands:
+Every command takes these:
 
 | Option | Aliases | Description | Default |
 |--------|---------|-------------|---------|
-| `--input` | `-i` | Input file path | Required |
-| `--output` | `-o` | Output file path | Required |
-| `--has-header` | `--header` | Input has header row | true |
-| `--ignore-errors` | - | Continue on errors | false |
+| `--has-header` | `--header` | Whether input files have headers | true |
+| `--ignore-errors` | - | Whether to ignore errors during processing | false |
 | `--verbose` | `-v` | Enable verbose output | false |
 | `--encoding` | - | File encoding (auto, utf-8, cp949, euc-kr) | auto |
 | `--skip-rows` | - | Number of rows to skip before header | 0 |
+| `--quiet` | `-q` | Suppress non-error output | false |
+
+Input and output are `-i, --input` and `-o, --output` on every command (`merge` and `merge-asof` take several input files).
 
 ## Supported File Formats
 
@@ -33,604 +34,471 @@ Available for all commands:
 - **JSON** (.json) - JavaScript Object Notation
 - **XML** (.xml) - Extensible Markup Language
 - **Excel** (.xlsx, .xls) - Microsoft Excel Spreadsheet
+- **Parquet** (.parquet) - read
 
 ---
 
 ## Commands
 
-### Data Manipulation
-
-#### add-columns
-Add new columns with constant or calculated values.
-
-**Syntax:**
-```bash
-fileprepper add-columns -i INPUT -o OUTPUT --columns DEFINITIONS [OPTIONS]
-```
-
-**Example:**
-```bash
-# Add Status and Priority columns with fixed values
-fileprepper add-columns -i data.csv -o output.csv \
-  --columns "Status:Active,Priority:High" --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `--columns` - Column definitions in format `Name:Value` (comma-separated, required)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
-
-#### remove-columns
-Remove specified columns from the dataset.
-
-**Syntax:**
-```bash
-fileprepper remove-columns -i INPUT -o OUTPUT -c COLUMNS [OPTIONS]
-```
-
-**Example:**
-```bash
-# Remove temporary and debug columns
-fileprepper remove-columns -i data.csv -o cleaned.csv \
-  -c "Temporary,Notes,DebugInfo" --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-c, --columns` - Columns to remove (comma-separated, required)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
-
-#### rename-columns
-Rename columns using name mappings.
-
-**Syntax:**
-```bash
-fileprepper rename-columns -i INPUT -o OUTPUT --map MAPPINGS [OPTIONS]
-```
-
-**Example:**
-```bash
-# Rename columns for clarity
-fileprepper rename-columns -i data.csv -o renamed.csv \
-  --map "OldName:NewName,user_age:Age,dept:Department" --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `--map` - Rename mappings in format `OldName:NewName` (comma-separated, required)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
-
-#### reorder-columns
-Change the order of columns in the output.
-
-**Syntax:**
-```bash
-fileprepper reorder-columns -i INPUT -o OUTPUT -c COLUMN_ORDER [OPTIONS]
-```
-
-**Example:**
-```bash
-# Reorder columns to put ID first
-fileprepper reorder-columns -i data.csv -o reordered.csv \
-  -c "ID,Name,Email,Age,Department" --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-c, --columns` - Desired column order (comma-separated, required)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
-
-#### column-interaction
-Perform mathematical or string operations between columns.
-
-**Syntax:**
-```bash
-fileprepper column-interaction -i INPUT -o OUTPUT --source COLUMNS --operation OP --output NAME [OPTIONS]
-```
-
-**Example:**
-```bash
-# Calculate total from price and quantity
-fileprepper column-interaction -i sales.csv -o calculated.csv \
-  --source "Price,Quantity" --operation Multiply --output "Total" --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `--source` - Source columns (comma-separated, required)
-- `--operation` - Operation: Add, Subtract, Multiply, Divide, Concatenate (required)
-- `--output` - Output column name (required)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
-
 ### Data Transformation
 
-#### convert-type
-Convert column data types with optional format specifications.
-
-**Syntax:**
-```bash
-fileprepper convert-type -i INPUT -o OUTPUT -c CONVERSIONS [OPTIONS]
-```
-
-**Example:**
-```bash
-# Convert multiple column types
-fileprepper convert-type -i data.csv -o typed.csv \
-  -c "Date:DateTime:yyyy-MM-dd,Age:Integer,Price:Decimal,Active:Boolean" \
-  --culture "en-US" --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-c, --conversions` - Conversions in format `Column:Type[:Format]` (comma-separated, required)
-- `--culture` - Culture for parsing (default: en-US)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
-**Supported Types:** String, Integer, Decimal, DateTime, Boolean
-
----
-
-#### extract-date
-Extract date components (year, month, day, etc.) from date columns.
-
-**Syntax:**
-```bash
-fileprepper extract-date -i INPUT -o OUTPUT --column COLUMN --components PARTS [OPTIONS]
-```
-
-**Example:**
-```bash
-# Extract year, month, and day of week from order date
-fileprepper extract-date -i orders.csv -o extracted.csv \
-  --column "OrderDate" --components "Year,Month,Day,DayOfWeek" \
-  --format "yyyy-MM-dd" --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `--column` - Source date column (required)
-- `--components` - Components to extract: Year, Month, Day, Hour, Minute, Second, DayOfWeek (comma-separated, required)
-- `--format` - Custom date format (optional)
-- `--culture` - Culture for parsing (default: en-US)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
-
-#### fill-missing
-Fill missing or empty values in columns using various strategies.
-
-**Syntax:**
-```bash
-fileprepper fill-missing -i INPUT -o OUTPUT --methods METHODS [OPTIONS]
-```
-
-**Example:**
-```bash
-# Fill Age with mean and City with fixed value
-fileprepper fill-missing -i data.csv -o filled.csv \
-  --methods "Age:Mean,City:FixedValue:Unknown" --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `--methods`, `-m` - Fill methods in format `Column:Method[:Value]` (comma-separated, required)
-- `--append-to-source` - Append result to source file (default: false)
-- `--output-column` - Output column template (optional)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
-**Fill Methods:** Mean, Median, Mode, ForwardFill, BackwardFill, FixedValue
-
----
-
 #### normalize
-Normalize numeric columns to a specific range.
 
-**Syntax:**
+Normalize numeric columns
+
 ```bash
-fileprepper normalize -i INPUT -o OUTPUT -c COLUMNS -m METHOD [OPTIONS]
+fileprepper normalize --input <input> --output <output> --columns <columns> --method <method> [options]
 ```
 
-**Example:**
-```bash
-# Normalize age and salary to 0-1 range
-fileprepper normalize -i data.csv -o normalized.csv \
-  -c "Age,Salary,Score" -m MinMax --min 0 --max 1 --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-c, --columns` - Columns to normalize (comma-separated, required)
-- `-m, --method` - Normalization method: MinMax, ZScore (required)
-- `--min` - Min value for MinMax (default: 0)
-- `--max` - Max value for MinMax (default: 1)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
+| Option | Description |
+|--------|-------------|
+| `-c`, `--columns` `<columns>` | Columns to normalize (required) |
+| `-m`, `--method` `<method>` | Normalization method (MinMax/ZScore) (required) |
+| `--min` `<min>` | Min value for MinMax scaling [default: 0] |
+| `--max` `<max>` | Max value for MinMax scaling [default: 1] |
 
 #### scale
-Scale numeric columns using statistical methods.
 
-**Syntax:**
+Scale numeric columns using specified methods
+
 ```bash
-fileprepper scale -i INPUT -o OUTPUT -c COLUMNS -m METHOD [OPTIONS]
+fileprepper scale --input <input> --output <output> --scaling <scaling> [options]
 ```
 
-**Example:**
-```bash
-# Standardize height and weight
-fileprepper scale -i data.csv -o scaled.csv \
-  -c "Height,Weight,BMI" -m Standardization --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-c, --columns` - Columns to scale (comma-separated, required)
-- `-m, --method` - Scaling method: MinMax, Standardization (required)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
+| Option | Description |
+|--------|-------------|
+| `-s`, `--scaling` `<scaling>` | Scaling methods in format column:method (e.g. Price:MinMax,Score:Standardization) (required) |
 
 #### one-hot-encoding
-Convert categorical variables to binary (0/1) columns.
 
-**Syntax:**
+Perform one-hot encoding on categorical columns
+
 ```bash
-fileprepper one-hot-encoding -i INPUT -o OUTPUT -c COLUMNS [OPTIONS]
+fileprepper one-hot-encoding --input <input> --output <output> --columns <columns> [options]
 ```
 
-**Example:**
+| Option | Description |
+|--------|-------------|
+| `-c`, `--columns` `<columns>` | Columns to encode (required) |
+| `--drop-first` | Drop first category |
+| `--keep-original` | Keep original columns |
+
+#### convert-type
+
+Convert data types of columns
+
 ```bash
-# One-hot encode category and type columns
-fileprepper one-hot-encoding -i data.csv -o encoded.csv \
-  -c "Category,Type" --prefix "Cat_,Type_" --verbose
+fileprepper convert-type --input <input> --output <output> --conversions <conversions> [options]
 ```
 
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-c, --columns` - Categorical columns to encode (comma-separated, required)
-- `--prefix` - Prefixes for encoded columns (comma-separated, optional)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
+| Option | Description |
+|--------|-------------|
+| `-c`, `--conversions` `<conversions>` | Type conversions in format column:type[:format] (e.g. Date:DateTime:yyyy-MM-dd) (required) |
+| `--culture` `<culture>` | Culture for parsing (e.g. en-US, ko-KR) [default: en-US] |
 
----
+#### extract-date
+
+Extract components from date columns
+
+```bash
+fileprepper extract-date --input <input> --output <output> --extractions <extractions> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-e`, `--extractions` `<extractions>` | Date extractions in format column:component1,component2[:format]; separate several extractions with ';' (e.g. OrderDate:Year,Month;ShipDate:Year) (required) |
+| `--culture` `<culture>` | Culture for parsing dates [default: en-US] |
+| `--append-to-source` | Append to source file |
+| `--output-column` `<output-column>` | Output column template |
+
+#### datetime
+
+Parse DateTime and extract features
+
+```bash
+fileprepper datetime --input <input> --output <output> --column <column> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-c`, `--column` `<column>` | Column to parse/transform (required) |
+| `-m`, `--mode` `<mode>` | Operation mode: parse, excel, features [default: parse] |
+| `-f`, `--format` `<format>` | Input format for parse mode (e.g., 'yyyy-MM-dd HH:mm', 'yyyyMMddHHmm') |
+| `-of`, `--output-format` `<output-format>` | Output format [default: yyyy-MM-dd HH:mm:ss] |
+| `-ft`, `--features` `<features>` | Features to extract (comma-separated): Year,Month,Day,Hour,Minute,DayOfWeek,DayOfYear,WeekOfYear,Quarter |
+| `--remove-original` | Remove original column after feature extraction |
+
+#### string
+
+String operations (substring, concat, replace, trim, upper, lower)
+
+```bash
+fileprepper string --input <input> --output <output> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-m`, `--mode` `<mode>` | Operation mode: substring, concat, replace, trim, upper, lower [default: trim] |
+| `-c`, `--column` `<column>` | Column to operate on |
+| `-oc`, `--output-column` `<output-column>` | Output column name (default: same as input or auto-generated) |
+| `-s`, `--start-index` `<start-index>` | Start index for substring (0-based) [default: 0] |
+| `-l`, `--length` `<length>` | Length for substring (default: to end) |
+| `-cols`, `--columns` `<columns>` | Columns to concatenate (comma-separated) |
+| `-sep`, `--separator` `<separator>` | Separator for concat |
+| `-old`, `--old-value` `<old-value>` | Value to replace |
+| `-new`, `--new-value` `<new-value>` | Replacement value |
+| `-tm`, `--trim-mode` `<trim-mode>` | Trim mode: both, start, end [default: both] |
+
+#### conditional
+
+Create a new column based on conditional logic (if-then-else)
+
+```bash
+fileprepper conditional --input <input> --output <output> --output-column <output-column> --conditions <conditions> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-oc`, `--output-column` `<output-column>` | Name of the new column to create (required) |
+| `-c`, `--conditions` `<conditions>` | Condition-value pairs (format: 'Column operator Value : ResultValue'). Example: 'Price > 100 : High'. Multiple conditions evaluated in order (first match wins). (required) |
+| `-e`, `--else` `<else>` | Default value if no conditions match (else value) |
+
+#### expression
+
+Create computed columns from arithmetic expressions
+
+```bash
+fileprepper expression --input <input> --output <output> --expressions <expressions> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-e`, `--expressions` `<expressions>` | Column expressions (format: 'output=expression' or 'output=expression@position', space-separated) (required) |
+| `-r`, `--remove-source` | Remove source columns used in expressions |
+
+### Data Cleaning
+
+#### fill-missing
+
+Fill missing values in columns
+
+```bash
+fileprepper fill-missing --input <input> --output <output> --methods <methods> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-m`, `--methods` `<methods>` | Fill methods in format column:method[:value] (e.g. Age:Mean or Score:FixedValue:0) (required) |
+| `--append-to-source` | Append to source |
+| `--output-column` `<output-column>` | Output column template |
+
+#### drop-duplicates
+
+Remove duplicate rows
+
+```bash
+fileprepper drop-duplicates --input <input> --output <output> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--keep-first` | Keep first occurrence of duplicates |
+| `--subset-only` | Check duplicates only on specified columns |
+| `-c`, `--columns` `<columns>` | Columns to check for duplicates |
 
 #### replace
-Replace specific values in columns.
 
-**Syntax:**
+Replace values in specified columns
+
 ```bash
-fileprepper replace -i INPUT -o OUTPUT --column COLUMN --old VALUES --new VALUE [OPTIONS]
+fileprepper replace --input <input> --output <output> --replacements <replacements> [options]
 ```
 
-**Example:**
+| Option | Description |
+|--------|-------------|
+| `-r`, `--replacements` `<replacements>` | Replacement rules in format column:oldValue=newValue[;oldValue2=newValue2] (required) |
+
+#### remove-constants
+
+Remove constant or near-constant columns from the input file
+
 ```bash
-# Replace N/A and Unknown with Pending
-fileprepper replace -i data.csv -o replaced.csv \
-  --column "Status" --old "N/A,Unknown,null" --new "Pending" --verbose
+fileprepper remove-constants --input <input> --output <output> [options]
 ```
 
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `--column` - Target column (required)
-- `--old` - Values to replace (comma-separated, required)
-- `--new` - Replacement value (required)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
+| Option | Description |
+|--------|-------------|
+| `-t`, `--threshold` `<threshold>` | Unique ratio threshold (0.0 = exact constants only, 0.01 = below 1% unique ratio) [default: 0] |
+| `--report-only` | Only report constant columns without removing them |
 
----
+#### clean
 
-### Data Analysis
+Clean CSV numeric data (remove thousand separators)
 
-#### aggregate
-Group data and perform aggregations.
-
-**Syntax:**
 ```bash
-fileprepper aggregate -i INPUT -o OUTPUT --group COLUMNS --aggregations FUNCS [OPTIONS]
+fileprepper clean --input <input> --output <output> [options]
 ```
 
-**Example:**
+| Option | Description |
+|--------|-------------|
+| `-c`, `--columns` `<columns>` | Target columns to clean (if empty, all columns are cleaned, space-separated) |
+| `-s`, `--separator` `<separator>` | Thousand separator character to remove [default: ,] |
+| `-val`, `--validate` | Validate that cleaned values are valid numbers |
+| `--strip-cr` | Strip carriage return (\r) characters from field values |
+
+### Column Operations
+
+#### add-columns
+
+Add new columns to the CSV file with specified values
+
 ```bash
-# Group by category and region, calculate sum and average
-fileprepper aggregate -i sales.csv -o aggregated.csv \
-  --group "Category,Region" \
-  --aggregations "Sales:Sum,Quantity:Avg,Orders:Count" --verbose
+fileprepper add-columns --input <input> --output <output> --columns <columns> [options]
 ```
 
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `--group` - Grouping columns (comma-separated, required)
-- `--aggregations` - Aggregations in format `Column:Function` (Sum/Avg/Min/Max/Count, comma-separated, required)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
+| Option | Description |
+|--------|-------------|
+| `-c`, `--columns` `<columns>` | Columns to add in format name=value (e.g. Age=30,City=Seoul) (required) |
 
----
+#### remove-columns
 
-#### stats
-Calculate comprehensive statistics on numeric columns.
+Remove specified columns from the input file
 
-**Syntax:**
 ```bash
-fileprepper stats -i INPUT -o OUTPUT -c COLUMNS --stats STATISTICS [OPTIONS]
+fileprepper remove-columns --input <input> --output <output> --columns <columns> [options]
 ```
 
-**Example:**
+| Option | Description |
+|--------|-------------|
+| `-c`, `--columns` `<columns>` | Columns to remove (required) |
+
+#### rename-columns
+
+Rename columns in the input file
+
 ```bash
-# Calculate mean, min, max for age and salary
-fileprepper stats -i employees.csv -o stats.csv \
-  -c "Age,Salary,Score" --stats "Mean,Min,Max,Median,StandardDeviation" \
-  --suffix "_stat" --verbose
+fileprepper rename-columns --input <input> --output <output> --mappings <mappings> [options]
 ```
 
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-c, --columns` - Columns to analyze (comma-separated, required)
-- `-s, --stats` - Statistics to calculate (comma-separated, required)
-- `--suffix` - Suffix for output column names (default: "_stat")
-- `--default-value` - Default value for calculation errors (optional)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
+| Option | Description |
+|--------|-------------|
+| `-m`, `--mappings` `<mappings>` | Column rename mappings in format oldName:newName (required) |
 
-**Available Statistics:** Mean, StandardDeviation, Min, Max, Median, Q1, Q3, ZScore, RobustZScore, PercentRank, MAD
+#### reorder-columns
 
----
+Reorder columns in the specified order
 
-#### create-lag-features
-Create lag features from time series data for machine learning.
-
-**Syntax:**
 ```bash
-fileprepper create-lag-features -i INPUT -o OUTPUT -g GROUP -t TIME -l COLUMNS -p PERIODS [OPTIONS]
+fileprepper reorder-columns --input <input> --output <output> --order <order> [options]
 ```
 
-**Example:**
+| Option | Description |
+|--------|-------------|
+| `--order` `<order>` | Desired column order (required) |
+
+#### column-interaction
+
+Perform operations between columns
+
 ```bash
-# Create lag features for predictive modeling
-fileprepper create-lag-features -i timeseries.csv -o features.csv \
-  --group-by "PartNumber" --time-column "Date" \
-  --lag-columns "Value,Temperature" --lag-periods "1,2,3" \
-  --target "FailureStatus" --drop-nulls --verbose
+fileprepper column-interaction --input <input> --output <output> --source <source> --type <type> --column <column> [options]
 ```
 
-**Options:**
-- `-i, --input` - Input CSV file path (required)
-- `-o, --output` - Output file path (required)
-- `-g, --group-by` - Column to group by (e.g., Part Number, Entity ID) (required)
-- `-t, --time-column` - Column representing time/sequence for sorting (required)
-- `-l, --lag-columns` - Columns to create lag features from (comma-separated, required)
-- `-p, --lag-periods` - Lag periods (e.g., 1,2,3) (comma-separated, required)
-- `--target` - Target column to predict (optional, kept in output)
-- `--drop-nulls` - Drop rows with null lag values (default: true)
-- `-k, --keep-columns` - Additional columns to keep in output (comma-separated, optional)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
-**Use Case:** Time series forecasting, predictive maintenance, sequential pattern analysis
-
----
+| Option | Description |
+|--------|-------------|
+| `-s`, `--source` `<source>` | Source columns (required) |
+| `-t`, `--type` `<type>` | Operation type (Add/Subtract/Multiply/Divide/Concat/Custom) (required) |
+| `-c`, `--column` `<column>` | Output column name (required) |
+| `-e`, `--expression` `<expression>` | Custom expression (use $1, $2, etc.) |
+| `--default-value` `<default-value>` | Default value for errors |
 
 ### Data Organization
 
-#### drop-duplicates
-Remove duplicate rows based on specified columns.
-
-**Syntax:**
-```bash
-fileprepper drop-duplicates -i INPUT -o OUTPUT -c COLUMNS [OPTIONS]
-```
-
-**Example:**
-```bash
-# Remove duplicates based on email
-fileprepper drop-duplicates -i contacts.csv -o unique.csv \
-  -c "Email" --keep First --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-c, --columns` - Columns to check for duplicates (comma-separated, required)
-- `--keep` - Which duplicate to keep: First or Last (default: First)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
-
-#### filter-rows
-Filter rows based on column conditions.
-
-**Syntax:**
-```bash
-fileprepper filter-rows -i INPUT -o OUTPUT -c CONDITIONS [OPTIONS]
-```
-
-**Example:**
-```bash
-# Filter rows where Age > 30 AND Status is Active
-fileprepper filter-rows -i data.csv -o filtered.csv \
-  -c "Age:GreaterThan:30,Status:Equals:Active" --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-c, --conditions` - Filter conditions in format `Column:Operator:Value` (comma-separated, required)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
-**Operators:** Equals, NotEquals, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Contains, NotContains, StartsWith, EndsWith
-
----
-
 #### merge
-Merge multiple files vertically (concatenate) or horizontally (join).
 
-**Syntax:**
+Merge multiple files vertically (concatenate) or horizontally (join)
+
 ```bash
-fileprepper merge -i FILE1 FILE2 [FILE3...] -o OUTPUT -t TYPE [OPTIONS]
-fileprepper merge -p "data/*.csv" -o OUTPUT -t TYPE [OPTIONS]
+fileprepper merge --output <output> --type <type> [options]
 ```
 
-**Examples:**
+| Option | Description |
+|--------|-------------|
+| `-p`, `--input-pattern` `<input-pattern>` | Glob pattern for input files (e.g., 'data/*.csv') |
+| `-t`, `--type` `<type>` | Merge type: Vertical (concatenate rows) or Horizontal (join columns) (required) |
+| `-j`, `--join-type` `<join-type>` | Join type for horizontal merge: Inner, Left, Right, Full [default: Inner] |
+| `-k`, `--key-columns` `<key-columns>` | Key columns for horizontal merge (comma-separated) |
+| `-m`, `--join-mappings` `<join-mappings>` | Join column mappings for heterogeneous column names (format: 'left:right' or 'left:right:output', space-separated) |
+
+#### merge-asof
+
+Merge two files based on nearest time matching (merge_asof)
+
 ```bash
-# Vertical merge (stack rows from multiple files)
-fileprepper merge -i file1.csv file2.csv file3.csv -o merged.csv \
-  --type Vertical --verbose
-
-# Horizontal merge (join on ID column)
-fileprepper merge -i users.csv salaries.csv -o combined.csv \
-  --type Horizontal --join-type Inner --key-columns "ID" --verbose
-
-# Merge all CSV files matching a glob pattern
-fileprepper merge -p "sensor-data/*.csv" -o merged.csv \
-  --type Vertical --verbose
+fileprepper merge-asof --input <input> --output <output> --left-on <left-on> --right-on <right-on> [options]
 ```
 
-**Options:**
-- `-i, --input` - Input file paths (space-separated, minimum 2 files)
-- `-p, --input-pattern` - Glob pattern for input files (e.g., `data/*.csv`)
-- `-o, --output` - Output file path (required)
-- `-t, --type` - Merge type: Vertical (concatenate rows) or Horizontal (join columns) (required)
-- `-j, --join-type` - Join type for horizontal merge: Inner, Left, Right, Full (default: Inner)
-- `-k, --key-columns` - Key columns for horizontal merge (comma-separated, required for horizontal)
-- `--has-header` - Input files have headers (default: true)
-- `--verbose` - Show detailed progress
-
-> **Note:** Use either `--input` or `--input-pattern`, not both.
-
----
-
-#### remove-constants
-Remove constant or near-constant columns from the dataset.
-
-**Syntax:**
-```bash
-fileprepper remove-constants -i INPUT -o OUTPUT [OPTIONS]
-```
-
-**Examples:**
-```bash
-# Remove columns where all values are identical
-fileprepper remove-constants -i data.csv -o cleaned.csv --verbose
-
-# Remove columns with less than 1% unique values
-fileprepper remove-constants -i data.csv -o cleaned.csv \
-  --threshold 0.01 --verbose
-
-# Report-only mode (list constant columns without removing)
-fileprepper remove-constants -i data.csv -o data.csv \
-  --report-only --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `--threshold` - Unique ratio threshold (0.0 = exact constants only, 0.01 = below 1% unique ratio) (default: 0.0)
-- `--report-only` - List constant columns without removing them (default: false)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
+| Option | Description |
+|--------|-------------|
+| `-l`, `--left-on` `<left-on>` | Column name in left file to use for matching (typically datetime) (required) |
+| `-r`, `--right-on` `<right-on>` | Column name in right file to use for matching (typically datetime) (required) |
+| `-d`, `--direction` `<direction>` | Matching direction: Backward (most recent <=), Forward (nearest >=), or Nearest (closest) [default: Backward] |
+| `-t`, `--tolerance` `<tolerance>` | Maximum time difference allowed for matching (in seconds). If not specified, no tolerance limit is applied. |
+| `-s`, `--suffix` `<suffix>` | Suffix to add to right file columns to avoid name conflicts [default: _right] |
 
 #### data-sampling
-Sample data using various sampling methods.
 
-**Syntax:**
+Sample data from the input file
+
 ```bash
-fileprepper data-sampling -i INPUT -o OUTPUT -m METHOD [OPTIONS]
+fileprepper data-sampling --input <input> --output <output> --method <method> --size <size> [options]
 ```
 
-**Example:**
-```bash
-# Random sample 1000 rows
-fileprepper data-sampling -i large.csv -o sample.csv \
-  -m Random --size 1000 --verbose
-
-# Stratified sampling by category
-fileprepper data-sampling -i data.csv -o stratified.csv \
-  -m Stratified --column "Category" --ratio 0.3 --verbose
-```
-
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-m, --method` - Sampling method: Random, Systematic, Stratified (required)
-- `--size` - Sample size (number of rows, optional)
-- `--ratio` - Sample ratio 0.0-1.0 (optional)
-- `--column` - Stratification column (required for Stratified method)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
-
----
-
-### File Format
+| Option | Description |
+|--------|-------------|
+| `-m`, `--method` `<method>` | Sampling method (Random/Systematic/Stratified) (required) |
+| `-s`, `--size` `<size>` | Sample size (ratio 0-1 or absolute count) (required) |
+| `--seed` `<seed>` | Random seed for reproducibility |
+| `--stratify` `<stratify>` | Column for stratified sampling |
+| `--interval` `<interval>` | Interval for systematic sampling |
 
 #### convert-format
-Convert between different file formats.
 
-**Syntax:**
+Convert file format
+
 ```bash
-fileprepper convert-format -i INPUT -o OUTPUT -f FORMAT [OPTIONS]
+fileprepper convert-format --input <input> --output <output> --target <target> [options]
 ```
 
-**Examples:**
+| Option | Description |
+|--------|-------------|
+| `-t`, `--target` `<target>` | Target format (CSV/TSV/PSV/JSON/XML) (required) |
+| `-e`, `--output-encoding` `<output-encoding>` | Output file encoding [default: utf-8] |
+| `--pretty` | Pretty print for JSON/XML |
+| `--root` `<root>` | Root element name for XML [default: root] |
+| `--item` `<item>` | Item element name for XML [default: item] |
+
+#### unpivot
+
+Transform wide format data to long format (unpivot)
+
 ```bash
-# Convert CSV to JSON
-fileprepper convert-format -i data.csv -o data.json \
-  -f JSON --pretty --verbose
-
-# Convert CSV to XML
-fileprepper convert-format -i data.csv -o data.xml \
-  -f XML --pretty --verbose
-
-# Convert Excel to CSV
-fileprepper convert-format -i data.xlsx -o data.csv \
-  -f CSV --verbose
+fileprepper unpivot --input <input> --output <output> --column-groups <column-groups> --value-columns <value-columns> [options]
 ```
 
-**Options:**
-- `-i, --input` - Input file path (required)
-- `-o, --output` - Output file path (required)
-- `-f, --format` - Target format: CSV, TSV, PSV, JSON, XML (required)
-- `--pretty` - Pretty-print JSON/XML (default: false)
-- `--has-header` - Input has headers (default: true)
-- `--verbose` - Show detailed progress
+| Option | Description |
+|--------|-------------|
+| `-b`, `--base-columns` `<base-columns>` | Base columns to keep in every output row (space-separated) |
+| `-g`, `--column-groups` `<column-groups>` | Column groups to unpivot (space-separated) (required) |
+| `-idx`, `--index-column` `<index-column>` | Name for the index column in output [default: Index] |
+| `-vc`, `--value-columns` `<value-columns>` | Names for value columns in output (space-separated) (required) |
+| `-se`, `--skip-empty` | Skip rows where all value columns are empty |
 
----
+#### explode
+
+Turn list columns (a JSON list per cell) into one row per element
+
+```bash
+fileprepper explode --input <input> --output <output> --columns <columns> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-c`, `--columns` `<columns>` | List columns to explode together (comma-separated); in each row their lists must have the same length (required) |
+
+#### split-list
+
+Split list columns of one length (a JSON list per cell) into one column per position: name.0, name.1, …
+
+```bash
+fileprepper split-list --input <input> --output <output> --columns <columns> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-c`, `--columns` `<columns>` | List columns to split (comma-separated); every list of a column must have the same length (required) |
+
+#### filter-rows
+
+Filter rows based on column conditions (e.g., Age:GreaterThan:30)
+
+```bash
+fileprepper filter-rows --input <input> --output <output> --conditions <conditions> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-c`, `--conditions` `<conditions>` | Filter conditions in format column:operator:value (e.g., Age:GreaterThan:30). Operators: Equals, NotEquals, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Contains, NotContains, StartsWith, EndsWith (required) |
+
+### Data Analysis
+
+#### stats
+
+Calculate basic statistics on numeric columns
+
+```bash
+fileprepper stats --input <input> --output <output> --columns <columns> --stats <stats> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-c`, `--columns` `<columns>` | Target columns (required) |
+| `-s`, `--stats` `<stats>` | Statistics to calculate (Mean/StandardDeviation/Min/Max/Median/Q1/Q3/ZScore/RobustZScore/PercentRank/MAD) (required) |
+| `--suffix` `<suffix>` | Suffix for output column names [default: _stat] |
+| `--default-value` `<default-value>` | Default value for errors |
+
+#### aggregate
+
+Aggregate data based on group by columns
+
+```bash
+fileprepper aggregate --input <input> --output <output> --group-by <group-by> --aggregates <aggregates> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-g`, `--group-by` `<group-by>` | Columns to group by (required) |
+| `-a`, `--aggregates` `<aggregates>` | Aggregate functions in format column:function:output (e.g. Sales:Sum:TotalSales). Functions: Sum, Average, Count, Min, Max (required) |
+| `--append-to-source` | Append result to source file |
+| `--output-column` `<output-column>` | Output column name template when appending |
+
+### Feature Engineering
+
+#### create-lag-features
+
+Create lag features from time series data for machine learning
+
+```bash
+fileprepper create-lag-features --input <input> --output <output> --group-by <group-by> --time-column <time-column> --lag-columns <lag-columns> --lag-periods <lag-periods> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-g`, `--group-by` `<group-by>` | Column to group by (e.g., Part Number, Entity ID) (required) |
+| `-t`, `--time-column` `<time-column>` | Column representing time/sequence for sorting within groups (required) |
+| `-l`, `--lag-columns` `<lag-columns>` | Comma-separated list of columns to create lag features from (required) |
+| `-p`, `--lag-periods` `<lag-periods>` | Comma-separated list of lag periods (e.g., 1,2,3) (required) |
+| `--target` `<target>` | Target column to predict (optional, will be kept in output) |
+| `--drop-nulls` | Drop rows with null lag values |
+| `-k`, `--keep-columns` `<keep-columns>` | Comma-separated list of additional columns to keep in output |
+
+#### window
+
+Apply window operations (resample or rolling aggregations)
+
+```bash
+fileprepper window --input <input> --output <output> --type <type> --columns <columns> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-t`, `--type` `<type>` | Window type: resample (time-based) or rolling (row-based) (required) |
+| `-m`, `--method` `<method>` | Aggregation method: mean, min, max, sum, count, std [default: mean] |
+| `-c`, `--columns` `<columns>` | Target columns to aggregate (comma-separated) (required) |
+| `-tc`, `--time-column` `<time-column>` | Time column for resample (required for resample type) |
+| `-w`, `--window` `<window>` | Window size for resample: e.g., '5T' (5 minutes), '1H' (1 hour), '1D' (1 day) |
+| `-ws`, `--window-size` `<window-size>` | Window size in rows for rolling aggregation [default: 3] |
+| `-s`, `--suffix` `<suffix>` | Suffix for rolling aggregation output columns [default: _rolling] |
 
 ## Advanced Usage
 
@@ -689,7 +557,7 @@ fileprepper create-lag-features -i step3.csv -o step4.csv \
 
 # Step 5: Convert to JSON format
 fileprepper convert-format -i step4.csv -o final.json \
-  -f JSON --pretty --verbose
+  --target JSON --pretty --verbose
 
 # Cleanup intermediate files
 rm step1.csv step2.csv step3.csv step4.csv
@@ -809,26 +677,3 @@ dotnet run -- <command> [options]
 - **Examples**: See `docs/Common-Scenarios.md` for real-world examples
 
 ---
-
-## Version History
-
-### v0.4.9 (Latest)
-- Auto encoding detection (CP949/EUC-KR) with `--encoding` option
-- Skip metadata rows with `--skip-rows` option
-- Remove constant/near-constant columns with `remove-constants` command
-- Merge glob pattern support with `--input-pattern` option
-- Unpivot (wide-to-long) transformation
-- Filename metadata extraction during CSV concatenation
-- System.CommandLine 2.0.0 stable migration
-- 29 commands total, 359 tests passing
-
-### v0.4.0
-- System.CommandLine integration for robust CLI framework
-- Spectre.Console rich terminal UI with colors and progress
-- Phase 2: datetime, merge-asof, string, conditional, window commands
-- 26 commands with consistent syntax
-
-### v0.3.x
-- Initial CLI implementation
-- Core data processing commands
-- Basic file format support

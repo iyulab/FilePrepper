@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The README's command-line examples named commands and options the tool does not have.** The first example, `fileprepper normalize-data`, failed
   (the command is `normalize`), as did `fill-missing-values`, `basic-statistics`, and `--sample-size`, `--stratify-column`, `--agg-columns`, `--direction`
   and `--keep` on the commands that take `--size`, `--stratify`, `--aggregates`, `--type` with `--key-columns`, and `--keep-first`. The README and
-  `docs/README.md` now show invocations that run; a test checks every `fileprepper <command> ...` in the documents against the real command tree.
+  `docs/README.md`, the quick start and the scenarios guide now show invocations that run, the CLI guide is written from each command's `--help`, and a test checks every `fileprepper <command> ...` in the documents against the real command tree. A progress write-up (`FILEPREPPER_PHASE2_COMPLETE.md`) is removed from `docs/`.
 
 ## [0.13.1] - 2026-10-29
 

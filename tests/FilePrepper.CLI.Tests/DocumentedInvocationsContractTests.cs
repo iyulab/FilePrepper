@@ -22,10 +22,6 @@ public class DocumentedInvocationsContractTests
     /// </summary>
     private static readonly HashSet<string> Debt = new(StringComparer.Ordinal)
     {
-        "docs/CLI-Guide.md",
-        "docs/Common-Scenarios.md",
-        "docs/Quick-Start.md",
-        "docs/FILEPREPPER_PHASE2_COMPLETE.md",
     };
 
     private static readonly string[] Documents = ["README.md", "INSTALL.md", .. Directory.GetFiles(Path.Combine(Root, "docs"), "*.md").Select(f => "docs/" + Path.GetFileName(f)).Order()];
@@ -77,7 +73,7 @@ public class DocumentedInvocationsContractTests
             var given = Regex.Matches(unquoted, @"(?<![\w-])(--?[A-Za-z][\w-]*)").Select(m => m.Groups[1].Value).ToList();
             foreach (var option in given.Where(o => !options.Contains(o) && !Global.Contains(o)))
                 problems.Add($"line {first + 1}: '{command}' has no option {option}");
-            if (required is not null && required.TryGetValue(command, out var must))
+            if (required is not null && !given.Contains("--help") && !given.Contains("-h") && required.TryGetValue(command, out var must))
                 foreach (var names in must.Where(names => !names.Overlaps(given)))
                     problems.Add($"line {first + 1}: '{command}' is missing {names.OrderByDescending(n => n.Length).First()}");
         }
@@ -123,6 +119,7 @@ public class DocumentedInvocationsContractTests
         problems.Should().Equal("line 2: 'normalize-data' is not a command", "line 3: 'normalize' has no option --method");
         Problems("fileprepper normalize --columns A", tree, new() { ["normalize"] = [new() { "--input", "-i" }] })
             .Should().Equal("line 1: 'normalize' is missing --input");
+        Problems("fileprepper normalize --help", tree, new() { ["normalize"] = [new() { "--input", "-i" }] }).Should().BeEmpty();
     }
 
     [Fact]

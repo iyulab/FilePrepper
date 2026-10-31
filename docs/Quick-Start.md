@@ -77,7 +77,7 @@ Eve,0.7,0.8,Marketing
 ### 3. Fill Missing Values
 
 ```bash
-fileprepper fill-missing -i sample.csv -o output.csv -c "Salary" -m Mean
+fileprepper fill-missing -i sample.csv -o output.csv -m "Salary:Mean"
 ```
 
 ## Common Tasks
@@ -92,7 +92,7 @@ fileprepper remove-columns -i data.csv -o clean.csv -c "TempCol,Debug,Notes"
 fileprepper drop-duplicates -i data.csv -o unique.csv -c "Email"
 
 # Fill missing values
-fileprepper fill-missing -i data.csv -o filled.csv -c "Age,Salary" -m Mean
+fileprepper fill-missing -i data.csv -o filled.csv -m "Age:Mean,Salary:Mean"
 ```
 
 ### Data Transformation
@@ -107,29 +107,29 @@ fileprepper normalize -i data.csv -o norm.csv -c "Price,Quantity" -m MinMax
 
 # Extract date components
 fileprepper extract-date -i data.csv -o dated.csv \
-  --column "OrderDate" --components "Year,Month,Day"
+  --extractions "OrderDate:Year,Month,Day"
 ```
 
 ### Data Analysis
 
 ```bash
 # Calculate statistics
-fileprepper stats -i data.csv -o stats.csv -c "Age,Salary,Score"
+fileprepper stats -i data.csv -o stats.csv -c "Age,Salary,Score" -s Mean,Median,StandardDeviation
 
 # Group and aggregate
 fileprepper aggregate -i sales.csv -o summary.csv \
-  --group "Region,Product" \
-  --aggregations "Sales:Sum,Quantity:Avg"
+  --group-by "Region,Product" \
+  --aggregates "Sales:Sum:TotalSales,Quantity:Average:AvgQuantity"
 ```
 
 ### File Operations
 
 ```bash
 # Merge files vertically
-fileprepper merge file1.csv file2.csv file3.csv -o merged.csv -t Vertical
+fileprepper merge -i file1.csv file2.csv file3.csv -o merged.csv -t Vertical
 
 # Convert format
-fileprepper convert-format -i data.csv -o data.json -f JSON
+fileprepper convert-format -i data.csv -o data.json -t JSON
 ```
 
 ## Multi-Column Processing
@@ -147,7 +147,7 @@ fileprepper convert-type -i data.csv -o output.csv \
 
 # Fill missing in multiple columns
 fileprepper fill-missing -i data.csv -o output.csv \
-  -c "Age,Salary,Score" -m Median
+  -m "Age:Median,Salary:Median,Score:Median"
 ```
 
 ## Building a Pipeline
@@ -158,17 +158,17 @@ Combine commands for complex workflows:
 
 ```bash
 # Step 1: Clean data
-fileprepper fill-missing -i raw.csv -o step1.csv -c "Age,Salary" -m Mean
+fileprepper fill-missing -i raw.csv -o step1.csv -m "Age:Mean,Salary:Mean"
 
 # Step 2: Remove outliers
 fileprepper filter-rows -i step1.csv -o step2.csv \
-  --column "Age" --operator LessThan --value "100"
+  --conditions "Age:LessThan:100"
 
 # Step 3: Normalize
 fileprepper normalize -i step2.csv -o step3.csv -c "Age,Salary" -m MinMax
 
 # Step 4: Convert to JSON
-fileprepper convert-format -i step3.csv -o final.json -f JSON
+fileprepper convert-format -i step3.csv -o final.json -t JSON
 # Total: 8 file I/O operations (4 reads + 4 writes)
 ```
 
@@ -234,10 +234,10 @@ foreach (var row in processed.Rows)
 Handle dirty data gracefully:
 
 ```bash
-# Ignore errors and use defaults
+# Skip rows that cannot be parsed instead of stopping
 fileprepper normalize -i messy.csv -o clean.csv \
   -c "Age,Salary" -m MinMax \
-  --ignore-errors --default-value "0"
+  --ignore-errors
 ```
 
 ## Getting Help
