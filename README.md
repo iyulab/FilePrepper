@@ -55,12 +55,12 @@ await DataPipeline
 
 ```bash
 # Normalize numeric columns
-fileprepper normalize-data --input data.csv --output normalized.csv \
+fileprepper normalize --input data.csv --output normalized.csv \
   --columns "Age,Salary,Score" --method MinMax
 
-# Fill missing values
-fileprepper fill-missing-values --input data.csv --output filled.csv \
-  --columns "Age,Salary" --method Mean
+# Fill missing values (column:method pairs)
+fileprepper fill-missing --input data.csv --output filled.csv \
+  --methods "Age:Mean,Salary:Mean"
 
 # Get help
 fileprepper --help
@@ -135,11 +135,11 @@ Common scenarios for machine learning data preparation:
 ```bash
 # Random sampling with fixed seed for reproducibility
 fileprepper data-sampling -i large_dataset.csv -o sampled.csv \
-  --method Random --sample-size 10000 --seed 42
+  --method Random --size 10000 --seed 42
 
 # Stratified sampling (preserve label distribution)
 fileprepper data-sampling -i large_dataset.csv -o sampled.csv \
-  --method Stratified --sample-size 10000 --stratify-column "label"
+  --method Stratified --size 10000 --stratify label
 ```
 
 ```csharp
@@ -153,8 +153,8 @@ await DataPipeline
 ### Merging X/Y Split Files (Features + Labels)
 
 ```bash
-# Horizontal merge: combine X_train.csv (features) + Y_train.csv (labels) by row index
-fileprepper merge -i X_train.csv Y_train.csv -o merged_train.csv --direction Horizontal
+# Horizontal merge: join X_train.csv (features) and Y_train.csv (labels) on a key column
+fileprepper merge -i X_train.csv Y_train.csv -o merged_train.csv --type Horizontal --key-columns id
 ```
 
 ```csharp
@@ -203,14 +203,14 @@ fileprepper remove-columns --input raw.csv --output step1.csv \
 
 # 2. Drop duplicates
 fileprepper drop-duplicates --input step1.csv --output step2.csv \
-  --columns "Email" --keep First
+  --columns "Email" --subset-only --keep-first
 
 # 3. Fill missing values
-fileprepper fill-missing-values --input step2.csv --output step3.csv \
-  --columns "Age,Salary" --method Mean
+fileprepper fill-missing --input step2.csv --output step3.csv \
+  --methods "Age:Mean,Salary:Mean"
 
 # 4. Normalize numeric columns
-fileprepper normalize-data --input step3.csv --output clean.csv \
+fileprepper normalize --input step3.csv --output clean.csv \
   --columns "Age,Salary,Score" --method MinMax
 ```
 
@@ -218,10 +218,16 @@ fileprepper normalize-data --input step3.csv --output clean.csv \
 
 ```bash
 # 5-minute window aggregation for sensor data
-fileprepper window --input sensor_current.csv --output aggregated.csv \n  --type resample --method mean \n  --columns "RMS[A]" --time-column "Time_s[s]" \n  --window 5T --header
+fileprepper window --input sensor_current.csv --output aggregated.csv \
+  --type resample --method mean \
+  --columns "RMS[A]" --time-column "Time_s[s]" \
+  --window 5T --header
 
 # Rolling window for smoothing
-fileprepper window --input noisy_data.csv --output smoothed.csv \n  --type rolling --method mean \n  --columns temperature,humidity --window-size 3 \n  --suffix "_smooth" --header
+fileprepper window --input noisy_data.csv --output smoothed.csv \
+  --type rolling --method mean \
+  --columns temperature,humidity --window-size 3 \
+  --suffix "_smooth" --header
 ```
 
 ### ML Feature Engineering (SDK - Efficient!)
@@ -265,16 +271,16 @@ fileprepper convert-format -i data.csv -o data.xml -t XML
 
 ```bash
 # Calculate statistics
-fileprepper basic-statistics --input data.csv --output stats.csv \
-  --columns "Age,Salary,Score" --statistics Mean,Median,StdDev,ZScore
+fileprepper stats --input data.csv --output stats.csv \
+  --columns "Age,Salary,Score" --stats Mean,Median,StandardDeviation,ZScore
 
 # Aggregate by group
 fileprepper aggregate --input sales.csv --output summary.csv \
-  --group-by "Region,Category" --agg-columns "Revenue:Sum,Quantity:Mean"
+  --group-by "Region,Category" --aggregates "Revenue:Sum:TotalRevenue,Quantity:Average:AvgQuantity"
 
 # Sample data
 fileprepper data-sampling --input large.csv --output sample.csv \
-  --method Random --sample-size 1000
+  --method Random --size 1000
 ```
 
 ## 🔧 Programmatic Usage (SDK)

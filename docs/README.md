@@ -33,12 +33,12 @@ See [Installation Guide](../INSTALL.md) for detailed instructions.
 ### Basic Commands
 ```bash
 # Normalize data
-fileprepper normalize-data --input data.csv --output normalized.csv \
+fileprepper normalize --input data.csv --output normalized.csv \
   --columns "Age,Salary" --method MinMax
 
 # Fill missing values
-fileprepper fill-missing-values --input data.csv --output filled.csv \
-  --columns "Age,Salary" --method Mean
+fileprepper fill-missing --input data.csv --output filled.csv \
+  --methods "Age:Mean,Salary:Mean"
 
 # Filter rows
 fileprepper filter-rows --input sales.csv --output filtered.csv \
