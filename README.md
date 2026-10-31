@@ -170,7 +170,7 @@ await features
 
 ```bash
 # Skip first row (category header), use second row as actual column names
-fileprepper filter-rows -i messy_data.csv -o clean_data.csv --skip-rows 1
+fileprepper convert-format -i messy_data.csv -o clean_data.csv --target CSV --skip-rows 1
 
 # No header in file — use numeric column indices
 fileprepper normalize -i raw.csv -o normalized.csv \

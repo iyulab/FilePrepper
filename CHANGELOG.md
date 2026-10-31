@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`scale`, `replace` and `extract-date` failed on any input from the command line.** `scale` and `replace` built their task options without the list of
+  columns the task validates ("At least one columns must be specified"); `extract-date` split `--extractions` on the comma that separates a column's
+  components, so a column could be given one component only, and without `--append-to-source` it asked for an output column template the command never
+  passed on. They now run: `--extractions` separates several extractions with `;` (`OrderDate:Year,Month;ShipDate:Year`; a list that used a comma between
+  one-component extractions needs the `;`), and the output columns default to `{column}_{component}` (`--output-column` changes it).
+
 - **The README's command-line examples named commands and options the tool does not have.** The first example, `fileprepper normalize-data`, failed
   (the command is `normalize`), as did `fill-missing-values`, `basic-statistics`, and `--sample-size`, `--stratify-column`, `--agg-columns`, `--direction`
   and `--keep` on the commands that take `--size`, `--stratify`, `--aggregates`, `--type` with `--key-columns`, and `--keep-first`. The README and

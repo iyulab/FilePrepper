@@ -21,10 +21,10 @@ public class DateExtractionCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _extractionsOption = new Option<string[]>("--extractions", new[] { "-e" }) { Description = "Date extractions in format column:component1,component2[:format]", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _extractionsOption = new Option<string[]>("--extractions", new[] { "-e" }) { Description = "Date extractions in format column:component1,component2[:format]; separate several extractions with ';' (e.g. OrderDate:Year,Month;ShipDate:Year)", CustomParser = result => result.Tokens[0].Value.Split(';', StringSplitOptions.RemoveEmptyEntries), Required = true };
         _cultureOption = new Option<string>("--culture") { Description = "Culture for parsing dates", DefaultValueFactory = _ => "en-US" };
         _appendOption = new Option<bool>("--append-to-source") { Description = "Append to source file", DefaultValueFactory = _ => false };
-        _templateOption = new Option<string?>("--output-column") { Description = "Output column template" };
+        _templateOption = new Option<string?>("--output-column") { Description = "Output column template; {column} and {component} are replaced [default: {column}_{component}]" };
 
         Add(_inputOption);
         Add(_outputOption);
@@ -60,6 +60,7 @@ public class DateExtractionCommand : BaseCommand
         try
         {
             var extractions = new List<DateColumnExtraction>();
+            var columnTemplate = string.IsNullOrWhiteSpace(template) ? "{column}_{component}" : template;
             var culture = CultureInfo.GetCultureInfo(cultureStr);
 
             foreach (var extStr in extractionStrings)
@@ -87,6 +88,7 @@ public class DateExtractionCommand : BaseCommand
                     SourceColumn = parts[0],
                     Components = components,
                     DateFormat = parts.Length > 2 ? parts[2] : null,
+                    OutputColumnTemplate = columnTemplate,
                     Culture = culture
                 });
             }
@@ -97,7 +99,7 @@ public class DateExtractionCommand : BaseCommand
                 OutputPath = outputPath,
                 Extractions = extractions,
                 AppendToSource = append,
-                OutputColumnTemplate = template,
+                OutputColumnTemplate = columnTemplate,
                 HasHeader = hasHeader,
                 IgnoreErrors = ignoreErrors,
                 Encoding = encoding,

@@ -44,11 +44,18 @@ public class DocumentedInvocationsContractTests
             c => c.Options.SelectMany(o => o.Aliases.Prepend(o.Name)).ToHashSet(StringComparer.Ordinal),
             StringComparer.Ordinal);
 
+    /// <summary>For each command, the options it cannot run without, one set of names (name and aliases) per option.</summary>
+    private static Dictionary<string, List<HashSet<string>>> Required() =>
+        CommandFactory.CreateAllCommands(NullLoggerFactory.Instance).ToDictionary(
+            c => c.Name,
+            c => c.Options.Where(o => o.Required).Select(o => o.Aliases.Prepend(o.Name).ToHashSet(StringComparer.Ordinal)).ToList(),
+            StringComparer.Ordinal);
+
     /// <summary>Global options the root command adds to every command.</summary>
     private static readonly string[] Global = ["--quiet", "-q", "-v", "--help", "-h", "-?"];
 
     /// <summary>The problems in the invocations <paramref name="document"/> shows, as "line: text".</summary>
-    internal static List<string> Problems(string document, Dictionary<string, HashSet<string>> tree)
+    internal static List<string> Problems(string document, Dictionary<string, HashSet<string>> tree, Dictionary<string, List<HashSet<string>>>? required = null)
     {
         var problems = new List<string>();
         var lines = document.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
@@ -67,9 +74,12 @@ public class DocumentedInvocationsContractTests
                 continue;
             }
             var unquoted = Regex.Replace(text, "\"[^\"]*\"|'[^']*'", " ");
-            foreach (Match o in Regex.Matches(unquoted, @"(?<![\w-])(--?[A-Za-z][\w-]*)"))
-                if (!options.Contains(o.Groups[1].Value) && !Global.Contains(o.Groups[1].Value))
-                    problems.Add($"line {first + 1}: '{command}' has no option {o.Groups[1].Value}");
+            var given = Regex.Matches(unquoted, @"(?<![\w-])(--?[A-Za-z][\w-]*)").Select(m => m.Groups[1].Value).ToList();
+            foreach (var option in given.Where(o => !options.Contains(o) && !Global.Contains(o)))
+                problems.Add($"line {first + 1}: '{command}' has no option {option}");
+            if (required is not null && required.TryGetValue(command, out var must))
+                foreach (var names in must.Where(names => !names.Overlaps(given)))
+                    problems.Add($"line {first + 1}: '{command}' is missing {names.OrderByDescending(n => n.Length).First()}");
         }
         return problems;
     }
@@ -78,12 +88,13 @@ public class DocumentedInvocationsContractTests
     public void TheDocumentsShowOnlyRealCommandsAndOptions()
     {
         var tree = Tree();
+        var required = Required();
         tree.Should().ContainKey("normalize");
         Documents.Should().Contain("README.md");
 
         var failing = Documents
             .Where(d => !Debt.Contains(d))
-            .Select(d => (Document: d, Problems: Problems(File.ReadAllText(Path.Combine(Root, d)), tree)))
+            .Select(d => (Document: d, Problems: Problems(File.ReadAllText(Path.Combine(Root, d)), tree, required)))
             .Where(x => x.Problems.Count > 0)
             .Select(x => x.Document + ":\n  " + string.Join("\n  ", x.Problems))
             .ToList();
@@ -96,7 +107,7 @@ public class DocumentedInvocationsContractTests
     {
         var tree = Tree();
 
-        var rightAgain = Debt.Where(d => Problems(File.ReadAllText(Path.Combine(Root, d)), tree).Count == 0).ToList();
+        var rightAgain = Debt.Where(d => Problems(File.ReadAllText(Path.Combine(Root, d)), tree, Required()).Count == 0).ToList();
 
         rightAgain.Should().BeEmpty("these documents are right now - remove them from the debt list");
     }
@@ -110,6 +121,8 @@ public class DocumentedInvocationsContractTests
         var problems = Problems(doc, tree);
 
         problems.Should().Equal("line 2: 'normalize-data' is not a command", "line 3: 'normalize' has no option --method");
+        Problems("fileprepper normalize --columns A", tree, new() { ["normalize"] = [new() { "--input", "-i" }] })
+            .Should().Equal("line 1: 'normalize' is missing --input");
     }
 
     [Fact]

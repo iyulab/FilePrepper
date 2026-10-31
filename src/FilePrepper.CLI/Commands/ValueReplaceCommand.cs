@@ -83,6 +83,7 @@ public class ValueReplaceCommand : BaseCommand
                 InputPath = inputPath,
                 OutputPath = outputPath,
                 ReplaceMethods = replaceMethods,
+                TargetColumns = [.. replaceMethods.Select(m => m.ColumnName)],
                 HasHeader = hasHeader,
                 IgnoreErrors = ignoreErrors,
                 Encoding = encoding,

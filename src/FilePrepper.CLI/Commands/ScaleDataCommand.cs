@@ -74,6 +74,7 @@ public class ScaleDataCommand : BaseCommand
                 InputPath = inputPath,
                 OutputPath = outputPath,
                 ScaleColumns = scaleColumns,
+                TargetColumns = [.. scaleColumns.Select(c => c.ColumnName)],
                 HasHeader = hasHeader,
                 IgnoreErrors = ignoreErrors,
                 Encoding = encoding,
