@@ -188,6 +188,6 @@ public class BasicStatisticsTask : BaseTask<BasicStatisticsOption>
             _ => stats.TryGetValue(statType, out var val) ? val : 0
         };
 
-        return result.ToString("F4", CultureInfo.InvariantCulture);
+        return NumberText.Format(result);
     }
 }

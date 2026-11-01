@@ -76,7 +76,7 @@ public class ColumnInteractionTask : BaseTask<ColumnInteractionOption>
                 _ => throw new ValidationException($"Unsupported operation type: {Options.Operation}", ValidationExceptionErrorCode.General)
             };
 
-            return result.ToString(CultureInfo.InvariantCulture);
+            return NumberText.Format(result);
         }
         catch (Exception ex) when (ex is not ValidationException)
         {

@@ -26,9 +26,18 @@ public class AggregateTask : BaseTask<AggregateOption>
     {
         return await Task.Run(() =>
             records.GroupBy(record =>
-                string.Join("|", Options.GroupByColumns.Select(col => record[col])))
+                GroupKey(record))
                 .ToDictionary(g => g.Key, g => g.ToList()));
     }
+
+    /// <summary>
+    /// What joins the values of a row's group columns into one key. It was <c>|</c>, so a value that held one split into two group
+    /// columns' worth and ("a|b","c") became the group of ("a","b|c"); a unit separator is not in a data cell.
+    /// </summary>
+    private const char KeySeparator = '\u001F';
+
+    private string GroupKey(Dictionary<string, string> record) =>
+        string.Join(KeySeparator, Options.GroupByColumns.Select(col => record[col]));
 
     private async Task<Dictionary<string, Dictionary<string, string>>> CalculateAggregatesAsync(
         Dictionary<string, List<Dictionary<string, string>>> groups)
@@ -36,11 +45,12 @@ public class AggregateTask : BaseTask<AggregateOption>
         return await Task.Run(() =>
         {
             var results = new Dictionary<string, Dictionary<string, string>>();
+            var leftOut = new Dictionary<string, (int Count, string? Example)>(StringComparer.Ordinal);
 
             foreach (var group in groups)
             {
                 var result = new Dictionary<string, string>();
-                var keyValues = group.Key.Split('|');
+                var keyValues = group.Key.Split(KeySeparator);
 
                 // 그룹 키 설정
                 for (int i = 0; i < Options.GroupByColumns.Length; i++)
@@ -54,9 +64,15 @@ public class AggregateTask : BaseTask<AggregateOption>
                     var values = new List<double>();
                     foreach (var record in group.Value)
                     {
-                        if (CsvUtils.TryParseNumeric(record[aggCol.ColumnName], out var value))
+                        var cell = record[aggCol.ColumnName];
+                        if (CsvUtils.TryParseNumeric(cell, out var value))
                         {
                             values.Add(value);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(cell))
+                        {
+                            leftOut.TryGetValue(aggCol.ColumnName, out var seen);
+                            leftOut[aggCol.ColumnName] = (seen.Count + 1, seen.Example ?? cell);
                         }
                     }
 
@@ -64,11 +80,17 @@ public class AggregateTask : BaseTask<AggregateOption>
                     {
                         var aggregateValue = CalculateAggregate(values, aggCol.Function);
                         var outputColumnName = GetAggregateColumnName(aggCol);
-                        result[outputColumnName] = aggregateValue.ToString(CultureInfo.InvariantCulture);
+                        result[outputColumnName] = NumberText.Format(aggregateValue);
                     }
                 }
 
                 results[group.Key] = result;
+            }
+
+            foreach (var (column, (count, example)) in leftOut)
+            {
+                _logger.LogWarning("{Count} cell(s) of column '{Column}' are not numbers and were left out of the aggregate (first: '{Example}')",
+                    count, column, example);
             }
 
             return results;
@@ -83,7 +105,7 @@ public class AggregateTask : BaseTask<AggregateOption>
         {
             foreach (var record in records)
             {
-                var groupKey = string.Join("|", Options.GroupByColumns.Select(col => record[col]));
+                var groupKey = GroupKey(record);
                 if (groupResults.TryGetValue(groupKey, out var groupResult))
                 {
                     foreach (var (key, value) in groupResult.Where(kvp =>
