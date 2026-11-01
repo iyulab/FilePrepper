@@ -67,9 +67,7 @@ public class OneHotEncodingCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Performing one-hot encoding...", async ctx =>
+            return await RunWithStatusAsync("Performing one-hot encoding...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<OneHotEncodingTask>();
                     var task = new OneHotEncodingTask(taskLogger);

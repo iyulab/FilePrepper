@@ -98,9 +98,7 @@ public class FillMissingValuesCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Filling missing values...", async ctx =>
+            return await RunWithStatusAsync("Filling missing values...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<FillMissingValuesTask>();
                     var task = new FillMissingValuesTask(taskLogger);

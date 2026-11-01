@@ -56,9 +56,7 @@ public class ReorderColumnsCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Reordering columns...", async ctx =>
+            return await RunWithStatusAsync("Reordering columns...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<ReorderColumnsTask>();
                     var task = new ReorderColumnsTask(taskLogger);

@@ -83,9 +83,7 @@ public class DataSamplingCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Sampling data...", async ctx =>
+            return await RunWithStatusAsync("Sampling data...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<DataSamplingTask>();
                     var task = new DataSamplingTask(taskLogger);

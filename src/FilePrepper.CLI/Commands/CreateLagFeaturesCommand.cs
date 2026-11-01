@@ -114,30 +114,8 @@ public class CreateLagFeaturesCommand : BaseCommand
                 ("Lag periods", lagPeriods.Length > 0 && lagPeriods.All(p => p > 0), lagPeriods.All(p => p > 0) ? null : "All periods must be positive")
             };
 
-            var table = new Table()
-                .Border(TableBorder.Rounded)
-                .AddColumn("Parameter")
-                .AddColumn("Status");
-
-            foreach (var (name, isValid, error) in validationResults)
-            {
-                table.AddRow(
-                    name,
-                    isValid
-                        ? "[green]✓ Valid[/]"
-                        : $"[red]✗ {Markup.Escape(error ?? "Invalid")}[/]");
-            }
-
-            if (verbose || validationResults.Any(r => !r.IsValid))
-            {
-                AnsiConsole.Write(table);
-            }
-
-            if (validationResults.Any(r => !r.IsValid))
-            {
-                DisplayError("Validation failed. Please check your inputs.");
+            if (RefuseInvalidArguments(validationResults, verbose))
                 return ExitCodes.InvalidArguments;
-            }
 
             // Create options
             var options = new CreateLagFeaturesOption
@@ -158,9 +136,7 @@ public class CreateLagFeaturesCommand : BaseCommand
             };
 
             // Execute with progress display
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Processing time series data...", async ctx =>
+            return await RunWithStatusAsync("Processing time series data...", async ctx =>
                 {
                     ctx.Status($"Reading input from {Path.GetFileName(inputPath)}...");
 

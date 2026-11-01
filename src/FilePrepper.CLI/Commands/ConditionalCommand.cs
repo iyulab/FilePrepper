@@ -92,30 +92,8 @@ public class ConditionalCommand : BaseCommand
             }
 
             // Display validation table
-            var table = new Table()
-                .Border(TableBorder.Rounded)
-                .AddColumn("Parameter")
-                .AddColumn("Status");
-
-            foreach (var (name, isValid, error) in validationResults)
-            {
-                table.AddRow(
-                    name,
-                    isValid
-                        ? $"[green]✓ {Markup.Escape(error ?? "Valid")}[/]"
-                        : $"[red]✗ {Markup.Escape(error ?? "Invalid")}[/]");
-            }
-
-            if (verbose || validationResults.Any(r => !r.IsValid))
-            {
-                AnsiConsole.Write(table);
-            }
-
-            if (validationResults.Any(r => !r.IsValid))
-            {
-                DisplayError("Validation failed. Please check your inputs.");
+            if (RefuseInvalidArguments(validationResults, verbose))
                 return ExitCodes.InvalidArguments;
-            }
 
             // Create options
             var options = new ConditionalOption
@@ -132,9 +110,7 @@ public class ConditionalCommand : BaseCommand
             };
 
             // Execute with progress display
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Creating conditional column...", async ctx =>
+            return await RunWithStatusAsync("Creating conditional column...", async ctx =>
                 {
                     ctx.Status("Reading input file...");
 

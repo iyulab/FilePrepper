@@ -56,9 +56,7 @@ public class RemoveColumnsCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Removing columns...", async ctx =>
+            return await RunWithStatusAsync("Removing columns...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<RemoveColumnsTask>();
                     var task = new RemoveColumnsTask(taskLogger);

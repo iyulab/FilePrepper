@@ -60,9 +60,7 @@ public class ExplodeCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Exploding list columns...", async ctx =>
+            return await RunWithStatusAsync("Exploding list columns...", async ctx =>
                 {
                     var task = new ExplodeTask(LoggerFactory.CreateLogger<ExplodeTask>());
                     var success = await task.ExecuteAsync(new TaskContext(options));

@@ -102,30 +102,8 @@ public class AddColumnsCommand : BaseCommand
                 validationResults.Add(("Column parsing", true, $"{newColumns.Count} column(s) parsed"));
             }
 
-            var table = new Table()
-                .Border(TableBorder.Rounded)
-                .AddColumn("Parameter")
-                .AddColumn("Status");
-
-            foreach (var (name, isValid, error) in validationResults)
-            {
-                table.AddRow(
-                    name,
-                    isValid
-                        ? "[green]✓ Valid[/]"
-                        : $"[red]✗ {Markup.Escape(error ?? "Invalid")}[/]");
-            }
-
-            if (verbose || validationResults.Any(r => !r.IsValid))
-            {
-                AnsiConsole.Write(table);
-            }
-
-            if (validationResults.Any(r => !r.IsValid))
-            {
-                DisplayError("Validation failed. Please check your inputs.");
+            if (RefuseInvalidArguments(validationResults, verbose))
                 return ExitCodes.InvalidArguments;
-            }
 
             // Create options
             var options = new AddColumnsOption
@@ -140,9 +118,7 @@ public class AddColumnsCommand : BaseCommand
             };
 
             // Execute with progress display
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Adding columns...", async ctx =>
+            return await RunWithStatusAsync("Adding columns...", async ctx =>
                 {
                     ctx.Status($"Reading input from {Path.GetFileName(inputPath)}...");
 

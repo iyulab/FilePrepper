@@ -167,7 +167,7 @@ public class WindowCommand : BaseCommand
 
             if (success)
             {
-                AnsiConsole.MarkupLine("[green]✓ Window operation completed successfully[/]");
+                DisplaySuccess("Window operation completed successfully");
                 return 0;
             }
             else

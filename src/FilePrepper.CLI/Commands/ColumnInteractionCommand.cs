@@ -88,9 +88,7 @@ public class ColumnInteractionCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Performing column interaction...", async ctx =>
+            return await RunWithStatusAsync("Performing column interaction...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<ColumnInteractionTask>();
                     var task = new ColumnInteractionTask(taskLogger);

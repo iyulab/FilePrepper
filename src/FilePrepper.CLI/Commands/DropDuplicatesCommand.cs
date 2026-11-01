@@ -76,9 +76,7 @@ public class DropDuplicatesCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Dropping duplicates...", async ctx =>
+            return await RunWithStatusAsync("Dropping duplicates...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<DropDuplicatesTask>();
                     var task = new DropDuplicatesTask(taskLogger);

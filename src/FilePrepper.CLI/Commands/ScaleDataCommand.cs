@@ -81,9 +81,7 @@ public class ScaleDataCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Scaling data...", async ctx =>
+            return await RunWithStatusAsync("Scaling data...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<ScaleDataTask>();
                     var task = new ScaleDataTask(taskLogger);

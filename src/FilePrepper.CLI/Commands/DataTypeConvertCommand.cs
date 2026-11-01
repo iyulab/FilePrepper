@@ -88,9 +88,7 @@ public class DataTypeConvertCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Converting data types...", async ctx =>
+            return await RunWithStatusAsync("Converting data types...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<DataTypeConvertTask>();
                     var task = new DataTypeConvertTask(taskLogger);

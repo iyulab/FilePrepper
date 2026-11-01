@@ -106,9 +106,7 @@ public class DateExtractionCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Extracting date components...", async ctx =>
+            return await RunWithStatusAsync("Extracting date components...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<DateExtractionTask>();
                     var task = new DateExtractionTask(taskLogger);

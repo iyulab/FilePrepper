@@ -90,9 +90,7 @@ public class ValueReplaceCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Replacing values...", async ctx =>
+            return await RunWithStatusAsync("Replacing values...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<ValueReplaceTask>();
                     var task = new ValueReplaceTask(taskLogger);

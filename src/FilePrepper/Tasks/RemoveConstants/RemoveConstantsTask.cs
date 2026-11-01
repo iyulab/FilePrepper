@@ -27,6 +27,12 @@ public class RemoveConstantsTask : BaseTask<RemoveConstantsOption>
     {
     }
 
+    /// <summary>
+    /// The columns the last run found constant or low-variety, in file order: what a report-only run is for. The log says the same,
+    /// but a log is what <c>--quiet</c> turns off, and a report-only run that reports nothing has done nothing.
+    /// </summary>
+    public IReadOnlyList<string> FoundColumns { get; private set; } = [];
+
     protected override Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {
@@ -70,6 +76,7 @@ public class RemoveConstantsTask : BaseTask<RemoveConstantsOption>
             return Task.FromResult(records);
         }
 
+        FoundColumns = columnsToRemove;
         _logger.LogInformation("Found {Count} constant/low-variety column(s): {Columns}",
             columnsToRemove.Count, string.Join(", ", columnsToRemove));
 

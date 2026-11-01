@@ -85,9 +85,7 @@ public class RenameColumnsCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Renaming columns...", async ctx =>
+            return await RunWithStatusAsync("Renaming columns...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<RenameColumnsTask>();
                     var task = new RenameColumnsTask(taskLogger);

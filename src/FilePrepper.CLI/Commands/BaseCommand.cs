@@ -32,12 +32,70 @@ public abstract class BaseCommand : Command
     /// <summary>Whether <c>--quiet</c> was given: only errors are written, to the console and to the log.</summary>
     public static bool Quiet { get; set; }
 
+    /// <summary>What a command tells the status line while it works; with <c>--quiet</c> there is no status line and it tells nothing.</summary>
+    protected sealed class StatusReport(StatusContext? context)
+    {
+        public void Status(string text)
+        {
+            if (context is not null)
+                context.Status = text;
+        }
+    }
+
+    /// <summary>
+    /// Runs a command's work under a spinner with a line of text. <c>--quiet</c> promises to suppress non-error output, but the
+    /// spinner's text is written whether or not the terminal is interactive, so all thirty-one commands said "Adding columns..."
+    /// and the like under it; under <c>--quiet</c> the work runs with no spinner at all.
+    /// </summary>
+    protected static async Task<T> RunWithStatusAsync<T>(string text, Func<StatusReport, Task<T>> work)
+    {
+        if (Quiet)
+            return await work(new StatusReport(null));
+
+        return await AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .StartAsync(text, async context => await work(new StatusReport(context)));
+    }
+
     protected void DisplaySuccess(string message)
     {
         if (Quiet)
             return;
 
         AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(message)}");
+    }
+
+    /// <summary>
+    /// The checks a command made of its arguments, as a table of what each found; true when any failed, after saying which and why.
+    /// Thirteen commands each carried a copy of this table, and the copy in <c>stats</c> had lost the table: it said "Validation
+    /// failed" and not what was invalid, with the reason (an unknown statistic) already worked out and thrown away.
+    /// </summary>
+    protected bool RefuseInvalidArguments(IReadOnlyList<(string Name, bool IsValid, string? Error)> results, bool verbose)
+    {
+        var failed = results.Any(result => !result.IsValid);
+        if (verbose || failed)
+        {
+            var table = new Table()
+                .Border(TableBorder.Rounded)
+                .AddColumn("Parameter")
+                .AddColumn("Status");
+
+            foreach (var (name, isValid, error) in results)
+            {
+                table.AddRow(
+                    Markup.Escape(name),
+                    isValid
+                        ? $"[green]✓ {Markup.Escape(error ?? "Valid")}[/]"
+                        : $"[red]✗ {Markup.Escape(error ?? "Invalid")}[/]");
+            }
+
+            AnsiConsole.Write(table);
+        }
+
+        if (failed)
+            DisplayError("Validation failed. Please check your inputs.");
+
+        return failed;
     }
 
     protected void DisplayError(string message)

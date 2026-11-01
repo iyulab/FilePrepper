@@ -83,9 +83,7 @@ public class NormalizeDataCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Normalizing data...", async ctx =>
+            return await RunWithStatusAsync("Normalizing data...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<NormalizeDataTask>();
                     var task = new NormalizeDataTask(taskLogger);

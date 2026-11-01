@@ -86,9 +86,7 @@ public class FileFormatConvertCommand : BaseCommand
                 Encoding = commonEncoding
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Converting format...", async ctx =>
+            return await RunWithStatusAsync("Converting format...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<FileFormatConvertTask>();
                     var task = new FileFormatConvertTask(taskLogger);

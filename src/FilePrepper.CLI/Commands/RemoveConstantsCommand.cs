@@ -69,9 +69,7 @@ public class RemoveConstantsCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Analyzing columns...", async ctx =>
+            return await RunWithStatusAsync("Analyzing columns...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<RemoveConstantsTask>();
                     var task = new RemoveConstantsTask(taskLogger);
@@ -80,13 +78,20 @@ public class RemoveConstantsCommand : BaseCommand
                     var success = await task.ExecuteAsync(taskContext);
                     if (success)
                     {
+                        var found = task.FoundColumns;
                         if (reportOnly)
                         {
+                            // The report is what this run is for, so --quiet (which turns off the commentary) does not turn it off.
+                            AnsiConsole.MarkupLine(found.Count == 0
+                                ? "No constant or low-variety columns."
+                                : $"Constant or low-variety columns ({found.Count}): {Markup.Escape(string.Join(", ", found))}");
                             DisplaySuccess("Column analysis complete (report-only mode)");
                         }
                         else
                         {
-                            DisplaySuccess($"Constant columns removed: {outputPath}");
+                            DisplaySuccess(found.Count == 0
+                                ? $"No constant columns to remove: {outputPath}"
+                                : $"Constant columns removed ({found.Count}: {string.Join(", ", found)}): {outputPath}");
                         }
                         return ExitCodes.Success;
                     }

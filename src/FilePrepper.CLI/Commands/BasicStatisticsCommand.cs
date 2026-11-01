@@ -82,11 +82,8 @@ public class BasicStatisticsCommand : BaseCommand
                 validationResults.Add(("Stats parsing", true, $"{stats.Count} statistic(s)"));
             }
 
-            if (validationResults.Any(r => !r.IsValid))
-            {
-                DisplayError("Validation failed");
+            if (RefuseInvalidArguments(validationResults, verbose))
                 return ExitCodes.InvalidArguments;
-            }
 
             var options = new BasicStatisticsOption
             {
@@ -102,9 +99,7 @@ public class BasicStatisticsCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Calculating statistics...", async ctx =>
+            return await RunWithStatusAsync("Calculating statistics...", async ctx =>
                 {
                     var taskLogger = LoggerFactory.CreateLogger<BasicStatisticsTask>();
                     var task = new BasicStatisticsTask(taskLogger);

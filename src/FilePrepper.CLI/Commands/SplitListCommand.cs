@@ -60,9 +60,7 @@ public class SplitListCommand : BaseCommand
                 SkipRows = skipRows
             };
 
-            return await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync("Splitting list columns...", async ctx =>
+            return await RunWithStatusAsync("Splitting list columns...", async ctx =>
                 {
                     var task = new SplitListTask(LoggerFactory.CreateLogger<SplitListTask>());
                     var success = await task.ExecuteAsync(new TaskContext(options));
