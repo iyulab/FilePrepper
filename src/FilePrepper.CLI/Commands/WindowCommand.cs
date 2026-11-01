@@ -31,7 +31,7 @@ public class WindowCommand : BaseCommand
 
         _typeOption = new Option<string>("--type", new[] { "-t" }) { Description = "Window type: resample (time-based) or rolling (row-based)", Required = true };
 
-        _methodOption = new Option<string>("--method", new[] { "-m" }) { Description = "Aggregation method: mean, min, max, sum, count, std", DefaultValueFactory = _ => "mean" };
+        _methodOption = new Option<string>("--method", new[] { "-m" }) { Description = "Aggregation method: mean, min, max, sum, count, std, var, median, first, last", DefaultValueFactory = _ => "mean" };
 
         _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Target columns to aggregate (comma-separated)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
 
@@ -106,6 +106,10 @@ public class WindowCommand : BaseCommand
                 "sum" => AggregationMethod.Sum,
                 "count" => AggregationMethod.Count,
                 "std" => AggregationMethod.Std,
+                "var" => AggregationMethod.Var,
+                "median" => AggregationMethod.Median,
+                "first" => AggregationMethod.First,
+                "last" => AggregationMethod.Last,
                 _ => throw new ArgumentException($"Invalid aggregation method: {method}")
             };
 

@@ -1916,9 +1916,20 @@ public class DataPipeline
             AggregationMethod.Max => values.Max(),
             AggregationMethod.Sum => values.Sum(),
             AggregationMethod.Count => values.Count,
-            AggregationMethod.Std => Math.Sqrt(values.Average(v => Math.Pow(v - values.Average(), 2))),
+            AggregationMethod.Std => Math.Sqrt(PopulationVariance(values)),
+            AggregationMethod.Var => PopulationVariance(values),
+            AggregationMethod.Median => CalculateMedian(values),
+            AggregationMethod.First => values[0],
+            AggregationMethod.Last => values[^1],
             _ => throw new ArgumentException($"Unknown aggregation method: {method}")
         };
+    }
+
+    // Divides by n, as Std always has: a window is the whole population being described, not a sample of one.
+    private static double PopulationVariance(List<double> values)
+    {
+        var mean = values.Average();
+        return values.Average(v => (v - mean) * (v - mean));
     }
 
     #endregion

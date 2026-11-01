@@ -1,4 +1,5 @@
 using FilePrepper.Pipeline;
+using FilePrepper.Tasks.WindowOps;
 using FilePrepper.Tasks.NormalizeData;
 using FluentAssertions;
 using Xunit;
@@ -90,6 +91,22 @@ public class PipelineTransformationsTests
 
         var withoutValue = () => Column("1", "", "3").FillMissing(new[] { "V" }, FillMethod.Constant);
         withoutValue.Should().Throw<ArgumentException>().WithMessage("*constant*");
+    }
+
+    [Theory]
+    [InlineData(AggregationMethod.Var, 9.5555556)]
+    [InlineData(AggregationMethod.Std, 3.0912061)]
+    [InlineData(AggregationMethod.Median, 4.0)]
+    [InlineData(AggregationMethod.First, 3.0)]
+    [InlineData(AggregationMethod.Last, 10.0)]
+    public void Rolling_AggregatesWithEveryMethodTheEnumOffers(AggregationMethod method, double expected)
+    {
+        var pipeline = DataPipeline.FromData(new[] { "1", "2", "3", "4", "10" }.Select(v => new Dictionary<string, string> { ["V"] = v }));
+
+        var rows = pipeline.Rolling(3, method, new[] { "V" }).ToDataFrame().Rows;
+
+        // The last window holds 3, 4 and 10.
+        double.Parse(rows[4]["V_rolling"], System.Globalization.CultureInfo.InvariantCulture).Should().BeApproximately(expected, 1e-6);
     }
 
     [Fact]

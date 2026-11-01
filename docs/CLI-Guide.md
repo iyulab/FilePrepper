@@ -493,7 +493,7 @@ fileprepper window --input <input> --output <output> --type <type> --columns <co
 | Option | Description |
 |--------|-------------|
 | `-t`, `--type` `<type>` | Window type: resample (time-based) or rolling (row-based) (required) |
-| `-m`, `--method` `<method>` | Aggregation method: mean, min, max, sum, count, std [default: mean] |
+| `-m`, `--method` `<method>` | Aggregation method: mean, min, max, sum, count, std, var, median, first, last [default: mean] |
 | `-c`, `--columns` `<columns>` | Target columns to aggregate (comma-separated) (required) |
 | `-tc`, `--time-column` `<time-column>` | Time column for resample (required for resample type) |
 | `-w`, `--window` `<window>` | Window size for resample: e.g., '5T' (5 minutes), '1H' (1 hour), '1D' (1 day) |
