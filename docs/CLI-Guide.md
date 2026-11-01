@@ -344,7 +344,7 @@ fileprepper merge-asof --input <input> --output <output> --left-on <left-on> --r
 |--------|-------------|
 | `-l`, `--left-on` `<left-on>` | Column name in left file to use for matching (typically datetime) (required) |
 | `-r`, `--right-on` `<right-on>` | Column name in right file to use for matching (typically datetime) (required) |
-| `-d`, `--direction` `<direction>` | Matching direction: Backward (most recent <=), Forward (nearest >=), or Nearest (closest) [default: Backward] |
+| `-d`, `--direction` `<direction>` | Matching direction: Backward (most recent <=; among equal times the last row in the file), Forward (nearest >=; the first row), or Nearest (closest; the earlier when equally close) [default: Backward] |
 | `-t`, `--tolerance` `<tolerance>` | Maximum time difference allowed for matching (in seconds). If not specified, no tolerance limit is applied. |
 | `-s`, `--suffix` `<suffix>` | Suffix to add to right file columns to avoid name conflicts [default: _right] |
 

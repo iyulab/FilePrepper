@@ -30,12 +30,6 @@ public class MergeAsOfOption : MultipleInputOption
     /// </summary>
     public string Suffix { get; set; } = "_right";
 
-    /// <summary>
-    /// Allow multiple matches per left record
-    /// If false (default), only the best match is used
-    /// </summary>
-    public bool AllowMultipleMatches { get; set; } = false;
-
     protected override string[] ValidateInternal()
     {
         var errors = new List<string>();
@@ -103,17 +97,17 @@ public class MergeAsOfOption : MultipleInputOption
 public enum AsOfDirection
 {
     /// <summary>
-    /// Match with the most recent value in right file that is &lt;= left value (default)
+    /// Match with the most recent value in right file that is &lt;= left value (default); among equal times, the last row in the file
     /// </summary>
     Backward,
 
     /// <summary>
-    /// Match with the nearest future value in right file that is >= left value
+    /// Match with the nearest future value in right file that is >= left value; among equal times, the first row in the file
     /// </summary>
     Forward,
 
     /// <summary>
-    /// Match with the closest value in right file, regardless of direction
+    /// Match with the closest value in right file, regardless of direction; equally close, the earlier one
     /// </summary>
     Nearest
 }

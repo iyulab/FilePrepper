@@ -32,7 +32,7 @@ public class MergeAsOfCommand : BaseCommand
         _rightOnOption = new Option<string>("--right-on", new[] { "-r" }) { Description = "Column name in right file to use for matching (typically datetime)", Required = true };
 
         // Optional options
-        _directionOption = new Option<string>("--direction", new[] { "-d" }) { Description = "Matching direction: Backward (most recent <=), Forward (nearest >=), or Nearest (closest)", DefaultValueFactory = _ => "Backward" };
+        _directionOption = new Option<string>("--direction", new[] { "-d" }) { Description = "Matching direction: Backward (most recent <=; among equal times the last row in the file), Forward (nearest >=; the first row), or Nearest (closest; the earlier when equally close)", DefaultValueFactory = _ => "Backward" };
 
         _toleranceOption = new Option<double?>("--tolerance", new[] { "-t" }) { Description = "Maximum time difference allowed for matching (in seconds). If not specified, no tolerance limit is applied." };
 
