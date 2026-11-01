@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A semicolon-, tab- or pipe-delimited file named `.csv` was read as one column, and every command that named a column said it was not there.** Excel in many locales writes `;` under the name `.csv`, and a database export writes a tab or `|`: read as a comma table the file is a single column headed by its whole first line, so `filter-rows`, `normalize`, `datetime` … failed on "column not found" (the columns listed as one string) or, worse, read the one column. The delimiter of a file not named `.tsv` is now the one its own first lines prove: the header holds no comma outside quotes, holds `;`, a tab or `|` at least once, and the first 50 lines hold it exactly as often (blank lines are skipped). A comma table is untouched, whatever its cells hold (its header has commas), as are a one-column file and a file whose lines disagree on the count or fit two candidates (the comma stays). `DataFileFormats.DelimiterFor` returns it, so the task input, `DataPipeline.FromCsvAsync` and `DataFrame.FromCsvAsync` all read it; output is always comma-separated, so a command run on a semicolon file writes a comma file. A decimal comma stays text (`1,5` is not a number here: run `clean` first).
+
 ## [0.13.2] - 2026-11-02
 
 ### Fixed

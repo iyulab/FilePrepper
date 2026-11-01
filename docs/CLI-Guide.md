@@ -31,7 +31,7 @@ An option that takes a list (`--columns a,b`) may also be given more than once (
 
 ## Supported File Formats
 
-- **CSV** (.csv) - Comma-Separated Values
+- **CSV** (.csv) - Comma-Separated Values (a file named `.csv` whose header holds `;`, a tab or `|` and no comma, with the same count on every line, is read with that delimiter; output is always comma-separated)
 - **TSV** (.tsv) - Tab-Separated Values
 - **JSON** (.json) - JavaScript Object Notation
 - **XML** (.xml) - Extensible Markup Language
@@ -645,7 +645,7 @@ dotnet run -- <command> [options]
 ### File Format Issues
 
 - Check file encoding (UTF-8 recommended)
-- Verify CSV delimiter matches file (comma for CSV, tab for TSV)
+- Verify CSV delimiter matches file (a tab for `.tsv`; for any other name `;`, a tab or `|` is recognised when every line holds it the same number of times, otherwise a comma)
 - Look for malformed rows or inconsistent column counts
 - Use `--ignore-errors` to skip problematic rows
 

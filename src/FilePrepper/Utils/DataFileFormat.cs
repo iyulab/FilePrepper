@@ -60,7 +60,10 @@ public static class DataFileFormats
             .OrderBy(Path.GetFileName, StringComparer.Ordinal)
             .ToList();
 
-    /// <summary>The field delimiter for a delimited-text file at this path.</summary>
+    /// <summary>
+    /// The field delimiter for a delimited-text file at this path: a tab for <c>.tsv</c>; for any other name the delimiter
+    /// the file's own first lines prove (<c>;</c>, a tab or <c>|</c> — see <see cref="DelimiterSniffer"/>), else a comma.
+    /// </summary>
     public static string DelimiterFor(string path) =>
-        FromPath(path) == DataFileFormat.Tsv ? "\t" : ",";
+        FromPath(path) == DataFileFormat.Tsv ? "\t" : DelimiterSniffer.For(path);
 }
