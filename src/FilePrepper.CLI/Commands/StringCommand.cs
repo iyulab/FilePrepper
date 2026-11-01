@@ -115,7 +115,7 @@ public class StringCommand : BaseCommand
         try
         {
             // Parse mode
-            var stringMode = mode.ToLower() switch
+            var stringMode = mode.ToLowerInvariant() switch
             {
                 "substring" => StringMode.Substring,
                 "concat" => StringMode.Concat,
@@ -127,12 +127,12 @@ public class StringCommand : BaseCommand
             };
 
             // Parse trim mode
-            var trimModeEnum = trimMode.ToLower() switch
+            var trimModeEnum = trimMode.ToLowerInvariant() switch
             {
                 "both" => TrimMode.Both,
                 "start" => TrimMode.Start,
                 "end" => TrimMode.End,
-                _ => TrimMode.Both
+                _ => throw new ArgumentException($"Invalid trim mode: {trimMode}. Valid trim modes: both, start, end")
             };
 
             // Validation
@@ -157,7 +157,7 @@ public class StringCommand : BaseCommand
 
             if (stringMode == StringMode.Replace)
             {
-                validationResults.Add(("Old value", !string.IsNullOrWhiteSpace(oldValue), oldValue ?? "Required for replace"));
+                validationResults.Add(("Old value", !string.IsNullOrEmpty(oldValue), oldValue ?? "Required for replace"));
             }
 
             var table = new Table()
@@ -174,7 +174,7 @@ public class StringCommand : BaseCommand
                         : $"[red]✗ {Markup.Escape(error ?? "Invalid")}[/]");
             }
 
-            if (verbose)
+            if (verbose || validationResults.Any(r => !r.IsValid))
             {
                 AnsiConsole.Write(table);
             }

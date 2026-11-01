@@ -70,8 +70,8 @@ public class GroupedDataPipeline
         // Build result column names from aggregations
         foreach (var (column, method) in aggregations)
         {
-            var suffix = suffixFormat?.Replace("{method}", method.ToString().ToLower())
-                         ?? $"_{method.ToString().ToLower()}";
+            var suffix = suffixFormat?.Replace("{method}", method.ToString().ToLowerInvariant())
+                         ?? $"_{method.ToString().ToLowerInvariant()}";
             resultColumns.Add($"{column}{suffix}");
         }
 
@@ -89,8 +89,8 @@ public class GroupedDataPipeline
             // Apply each aggregation
             foreach (var (column, method) in aggregations)
             {
-                var suffix = suffixFormat?.Replace("{method}", method.ToString().ToLower())
-                             ?? $"_{method.ToString().ToLower()}";
+                var suffix = suffixFormat?.Replace("{method}", method.ToString().ToLowerInvariant())
+                             ?? $"_{method.ToString().ToLowerInvariant()}";
                 var outputColumn = $"{column}{suffix}";
 
                 // Extract numeric values from the group

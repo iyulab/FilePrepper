@@ -106,7 +106,7 @@ public class ConditionalCommand : BaseCommand
                         : $"[red]✗ {Markup.Escape(error ?? "Invalid")}[/]");
             }
 
-            if (verbose)
+            if (verbose || validationResults.Any(r => !r.IsValid))
             {
                 AnsiConsole.Write(table);
             }

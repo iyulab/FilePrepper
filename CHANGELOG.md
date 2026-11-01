@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`string` refused a space to replace, read a mistyped `--trim-mode` as `both`, wrote empty cells for a negative `--length`, and changed letters by the machine's culture.** `replace --old-value " "` failed validation because "required" meant "not blank" - only the empty text is refused now (it matches between every two characters). `--trim-mode tail` trimmed both ends without a word; a value other than `both`, `start` or `end` is now an error. A negative `substring` length silently produced an empty column; it is now a validation error. `upper` and `lower` used the current culture, so on a Turkish machine `title` became `TİTLE`; they are invariant now, as are the `--mode` parsing of `string` and `datetime` and the `{method}` suffix of grouped aggregations. Every command's validation summary was shown only with `--verbose`, so a failed check read "Validation failed. Please check your inputs." and nothing else; it is shown whenever a check fails.
+
 - **`DataPipeline.FillMissing` filled `0` for `Mode`, `Forward` and `Backward`, and for a `Constant` given no value.** Only `Mean`, `Median` and a given `Constant` were implemented; the other three fell through to the text `0`, so a text column filled with `Mode` came out as zeros, and a numeric-looking column lost its gaps' neighbours. They now do what their names say - `Mode` the most frequent non-blank value (text included, a tie takes the one met first), `Forward` and `Backward` the nearest earlier or later non-blank value (gaps before the first or after the last stay empty) - and `Constant` without a value throws instead of writing `0`. `Constant` also fills a column that holds no numbers. A column with nothing to read the fill from is left as it is.
 
 - **`window` and `DataPipeline.Rolling`/`Resample` can aggregate with `var`, `median`, `first` and `last`.** `AggregationMethod` listed ten methods, but the pipeline computed six and refused the rest with "Unknown aggregation method: Median", and the `window --method` option accepted six names. All ten work now; `var` is the population variance, the square of `std`, which already divided by n.
 
-- **The public documentation covers `DataPipeline`'s `FillMethod`, `DateFeatures`, `RowCount` and `ColumnNames`.**
+- **The public documentation covers `DataPipeline`'s `FillMethod`, `DateFeatures`, `RowCount` and `ColumnNames`, and the options and task of `string`.**
 
 - **`scale`, `replace` and `extract-date` failed on any input from the command line.** `scale` and `replace` built their task options without the list of
   columns the task validates ("At least one columns must be specified"); `extract-date` split `--extractions` on the comma that separates a column's

@@ -2,8 +2,11 @@ using Microsoft.Extensions.Logging;
 
 namespace FilePrepper.Tasks.StringOps;
 
+/// <summary>Applies one text operation — substring, concat, replace, trim, upper or lower — to a column of every record; see <see cref="StringOption"/>.</summary>
 public class StringTask : BaseTask<StringOption>
 {
+    /// <summary>Creates the task.</summary>
+    /// <param name="logger">Where progress is logged.</param>
     public StringTask(ILogger<StringTask> logger) : base(logger) { }
 
     protected override async Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
@@ -141,7 +144,7 @@ public class StringTask : BaseTask<StringOption>
         {
             if (record.TryGetValue(Options.Column, out var value))
             {
-                record[outputCol] = value.ToUpper();
+                record[outputCol] = value.ToUpperInvariant();
             }
         }
 
@@ -158,7 +161,7 @@ public class StringTask : BaseTask<StringOption>
         {
             if (record.TryGetValue(Options.Column, out var value))
             {
-                record[outputCol] = value.ToLower();
+                record[outputCol] = value.ToLowerInvariant();
             }
         }
 
