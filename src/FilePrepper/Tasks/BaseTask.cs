@@ -424,6 +424,27 @@ public abstract class BaseTask<TOption> : ITask
         }
     }
 
+    /// <summary>
+    /// Every column any row has, in the order they first appear. The header used to be the first row's keys alone, so a column
+    /// the first row did not get (a date it could not read, a value it lacked) was dropped from the whole output while the rows
+    /// that did have it were written without it.
+    /// </summary>
+    private static List<string> ColumnsOfTheRows(List<Dictionary<string, string>> records)
+    {
+        var columns = new List<string>(records[0].Keys);
+        var seen = new HashSet<string>(columns, StringComparer.Ordinal);
+        for (var i = 1; i < records.Count; i++)
+        {
+            foreach (var key in records[i].Keys)
+            {
+                if (seen.Add(key))
+                    columns.Add(key);
+            }
+        }
+
+        return columns;
+    }
+
     private async Task PostProcessAndWriteAsync(
         List<Dictionary<string, string>> records,
         TaskContext context)
@@ -434,7 +455,7 @@ public abstract class BaseTask<TOption> : ITask
         if (records.Count == 0)
             _headersWithoutRows ??= DeclaredOutputHeaders();
 
-        var headers = records.FirstOrDefault()?.Keys ?? _headersWithoutRows ?? Enumerable.Empty<string>();
+        IEnumerable<string> headers = records.Count > 0 ? ColumnsOfTheRows(records) : _headersWithoutRows ?? Enumerable.Empty<string>();
         RefuseAnEmptiedTable(records, headers);
         await WriteOutputAsync(context.OutputPath!, headers, records);
 

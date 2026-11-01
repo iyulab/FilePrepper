@@ -60,6 +60,22 @@ public class ZeroRowSchemaCommandTests : CommandTestBase
         FirstLine(withoutRows.output).Should().Be(KeepsTheHeaderWithoutRows.Contains(name) ? HeaderOnly.TrimEnd('\n') : FirstLine(withRows.output));
     }
 
+    /// <summary>The smoke file with the number and date cells of its first row blank, which the columns made from them must not depend on.</summary>
+    private static string FirstRowBlank => EveryCommandRunsTests.Data.Replace(",10,1,B,2026-01-10 00:30:00,", ",,,B,,", StringComparison.Ordinal);
+
+    [Theory]
+    [MemberData(nameof(CommandNames))]
+    public async Task A_first_row_with_blank_cells_does_not_change_the_columns_made(string name)
+    {
+        FirstRowBlank.Should().NotBe(EveryCommandRunsTests.Data, "the first row must lose its cells");
+        var plain = await RunOn(name, EveryCommandRunsTests.Data, "plain");
+        var blanked = await RunOn(name, FirstRowBlank, "blank");
+
+        plain.exit.Should().Be(0);
+        blanked.exit.Should().Be(0);
+        FirstLine(blanked.output).Should().Be(FirstLine(plain.output));
+    }
+
     [Fact]
     public async Task A_lag_of_one_row_keeps_the_columns_of_the_lag_rows()
     {

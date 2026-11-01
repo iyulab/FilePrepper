@@ -113,7 +113,8 @@ public class DateTimeTask : BaseTask<DateTimeOption>
         List<Dictionary<string, string>> records)
     {
         var features = DateTimeOption.ParseFeatures(Options.Features);
-        var featureNames = GetFeatureNames(features);
+        var wanted = FeatureColumns(features);
+        var featureNames = wanted.Select(feature => feature.Suffix).ToList();
 
         _logger.LogInformation("  Extracting features: {Features}", string.Join(", ", featureNames));
 
@@ -122,39 +123,17 @@ public class DateTimeTask : BaseTask<DateTimeOption>
 
         foreach (var record in records)
         {
+            // Every row carries every feature column, empty where its date could not be read: the columns are the command's,
+            // not those of whichever row happened to come first.
+            foreach (var (suffix, _) in wanted)
+                record[$"{Options.Column}_{suffix}"] = string.Empty;
+
             if (record.TryGetValue(Options.Column, out var value) && !string.IsNullOrEmpty(value))
             {
                 if (TryParseDateTime(value, out var parsedDate))
                 {
-                    // Extract features
-                    if (features.HasFlag(DateFeatures.Year))
-                        record[$"{Options.Column}_Year"] = parsedDate.Year.ToString();
-
-                    if (features.HasFlag(DateFeatures.Month))
-                        record[$"{Options.Column}_Month"] = parsedDate.Month.ToString();
-
-                    if (features.HasFlag(DateFeatures.Day))
-                        record[$"{Options.Column}_Day"] = parsedDate.Day.ToString();
-
-                    if (features.HasFlag(DateFeatures.Hour))
-                        record[$"{Options.Column}_Hour"] = parsedDate.Hour.ToString();
-
-                    if (features.HasFlag(DateFeatures.Minute))
-                        record[$"{Options.Column}_Minute"] = parsedDate.Minute.ToString();
-
-                    if (features.HasFlag(DateFeatures.DayOfWeek))
-                        record[$"{Options.Column}_DayOfWeek"] = ((int)parsedDate.DayOfWeek).ToString();
-
-                    if (features.HasFlag(DateFeatures.DayOfYear))
-                        record[$"{Options.Column}_DayOfYear"] = parsedDate.DayOfYear.ToString();
-
-                    if (features.HasFlag(DateFeatures.WeekOfYear))
-                    {
-                        record[$"{Options.Column}_WeekOfYear"] = DateText.WeekOfYear(parsedDate).ToString(CultureInfo.InvariantCulture);
-                    }
-
-                    if (features.HasFlag(DateFeatures.Quarter))
-                        record[$"{Options.Column}_Quarter"] = ((parsedDate.Month - 1) / 3 + 1).ToString();
+                    foreach (var (suffix, valueOf) in wanted)
+                        record[$"{Options.Column}_{suffix}"] = valueOf(parsedDate);
 
                     successCount++;
                 }
@@ -179,6 +158,24 @@ public class DateTimeTask : BaseTask<DateTimeOption>
             featureNames.Count, successCount, failCount);
 
         return await Task.FromResult(records);
+    }
+
+    /// <summary>The columns each feature makes, in the order they are written, and how a date gives their value.</summary>
+    private static List<(string Suffix, Func<DateTime, string> Value)> FeatureColumns(DateFeatures features)
+    {
+        var all = new (DateFeatures Flag, string Suffix, Func<DateTime, string> Value)[]
+        {
+            (DateFeatures.Year, "Year", date => date.Year.ToString()),
+            (DateFeatures.Month, "Month", date => date.Month.ToString()),
+            (DateFeatures.Day, "Day", date => date.Day.ToString()),
+            (DateFeatures.Hour, "Hour", date => date.Hour.ToString()),
+            (DateFeatures.Minute, "Minute", date => date.Minute.ToString()),
+            (DateFeatures.DayOfWeek, "DayOfWeek", date => ((int)date.DayOfWeek).ToString()),
+            (DateFeatures.DayOfYear, "DayOfYear", date => date.DayOfYear.ToString()),
+            (DateFeatures.WeekOfYear, "WeekOfYear", date => DateText.WeekOfYear(date).ToString(CultureInfo.InvariantCulture)),
+            (DateFeatures.Quarter, "Quarter", date => ((date.Month - 1) / 3 + 1).ToString()),
+        };
+        return [.. all.Where(feature => features.HasFlag(feature.Flag)).Select(feature => (feature.Suffix, feature.Value))];
     }
 
     private bool TryParseDateTime(string value, out DateTime result)
@@ -223,23 +220,6 @@ public class DateTimeTask : BaseTask<DateTimeOption>
 
         result = default;
         return false;
-    }
-
-    private List<string> GetFeatureNames(DateFeatures features)
-    {
-        var names = new List<string>();
-
-        if (features.HasFlag(DateFeatures.Year)) names.Add("Year");
-        if (features.HasFlag(DateFeatures.Month)) names.Add("Month");
-        if (features.HasFlag(DateFeatures.Day)) names.Add("Day");
-        if (features.HasFlag(DateFeatures.Hour)) names.Add("Hour");
-        if (features.HasFlag(DateFeatures.Minute)) names.Add("Minute");
-        if (features.HasFlag(DateFeatures.DayOfWeek)) names.Add("DayOfWeek");
-        if (features.HasFlag(DateFeatures.DayOfYear)) names.Add("DayOfYear");
-        if (features.HasFlag(DateFeatures.WeekOfYear)) names.Add("WeekOfYear");
-        if (features.HasFlag(DateFeatures.Quarter)) names.Add("Quarter");
-
-        return names;
     }
 
     protected override IEnumerable<string> GetRequiredColumns() => new[] { Options.Column };
