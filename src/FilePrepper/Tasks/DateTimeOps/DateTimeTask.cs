@@ -5,11 +5,13 @@ using FilePrepper.Pipeline;
 namespace FilePrepper.Tasks.DateTimeOps;
 
 /// <summary>
-/// High-performance DateTime parsing and feature extraction task
-/// Directly manipulates records without DataPipeline overhead
+/// Rewrites a date column in another format, converts Excel serial numbers, or splits a date into numeric features;
+/// see <see cref="DateTimeOption"/>. Works on the records directly, without <see cref="DataPipeline"/>.
 /// </summary>
 public class DateTimeTask : BaseTask<DateTimeOption>
 {
+    /// <summary>Creates the task.</summary>
+    /// <param name="logger">Where progress is logged.</param>
     public DateTimeTask(ILogger<DateTimeTask> logger) : base(logger) { }
 
     protected override async Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
@@ -47,14 +49,9 @@ public class DateTimeTask : BaseTask<DateTimeOption>
         {
             if (record.TryGetValue(Options.Column, out var value) && !string.IsNullOrEmpty(value))
             {
-                if (DateTime.TryParseExact(
-                    value,
-                    Options.InputFormat!,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out var parsedDate))
+                if (DateText.TryParseExact(value, Options.InputFormat!, out var parsedDate))
                 {
-                    record[Options.Column] = parsedDate.ToString(Options.OutputFormat);
+                    record[Options.Column] = DateText.Format(parsedDate, Options.OutputFormat);
                     successCount++;
                 }
                 else
@@ -90,7 +87,7 @@ public class DateTimeTask : BaseTask<DateTimeOption>
                         // Excel dates: 1 = 1900-01-01, add days
                         var baseDate = new DateTime(1899, 12, 30); // Excel epoch
                         var parsedDate = baseDate.AddDays(excelDate);
-                        record[Options.Column] = parsedDate.ToString(Options.OutputFormat);
+                        record[Options.Column] = DateText.Format(parsedDate, Options.OutputFormat);
                         successCount++;
                     }
                     catch
@@ -153,11 +150,7 @@ public class DateTimeTask : BaseTask<DateTimeOption>
 
                     if (features.HasFlag(DateFeatures.WeekOfYear))
                     {
-                        var week = CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(
-                            parsedDate,
-                            CalendarWeekRule.FirstFourDayWeek,
-                            DayOfWeek.Monday);
-                        record[$"{Options.Column}_WeekOfYear"] = week.ToString();
+                        record[$"{Options.Column}_WeekOfYear"] = DateText.WeekOfYear(parsedDate).ToString(CultureInfo.InvariantCulture);
                     }
 
                     if (features.HasFlag(DateFeatures.Quarter))
@@ -223,7 +216,7 @@ public class DateTimeTask : BaseTask<DateTimeOption>
         }
 
         // Try general parsing as fallback
-        if (DateTime.TryParse(value, out result))
+        if (DateText.TryParse(value, out result))
         {
             return true;
         }

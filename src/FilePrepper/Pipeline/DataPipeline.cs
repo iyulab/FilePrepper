@@ -567,14 +567,14 @@ public class DataPipeline
                             var year = int.Parse(match.Groups[1].Value);
                             var month = int.Parse(match.Groups[2].Value);
                             var day = int.Parse(match.Groups[3].Value);
-                            return new DateTime(year, month, day).ToString("yyyy-MM-dd");
+                            return DateText.Format(new DateTime(year, month, day), "yyyy-MM-dd");
                         }
                         else
                         {
                             var day = int.Parse(match.Groups[1].Value);
                             var month = int.Parse(match.Groups[2].Value);
                             var year = int.Parse(match.Groups[3].Value);
-                            return new DateTime(year, month, day).ToString("yyyy-MM-dd");
+                            return DateText.Format(new DateTime(year, month, day), "yyyy-MM-dd");
                         }
                     }
                     catch
@@ -883,9 +883,9 @@ public class DataPipeline
         {
             if (row.TryGetValue(columnName, out var valueStr) && !string.IsNullOrWhiteSpace(valueStr))
             {
-                if (DateTime.TryParseExact(valueStr, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+                if (DateText.TryParseExact(valueStr, format, out var dt))
                 {
-                    row[columnName] = dt.ToString(outputFormat);
+                    row[columnName] = DateText.Format(dt, outputFormat);
                 }
             }
         }
@@ -920,7 +920,7 @@ public class DataPipeline
                 try
                 {
                     var dt = ParseKoreanTimeString(timeStr.Trim(), baseDt);
-                    row[targetColumnName] = dt.ToString("yyyy-MM-dd HH:mm:ss");
+                    row[targetColumnName] = DateText.Format(dt);
                 }
                 catch (FormatException)
                 {
@@ -1010,7 +1010,7 @@ public class DataPipeline
             if (row.TryGetValue(columnName, out var valueStr) && NumberText.TryParse(valueStr, out var excelDate))
             {
                 var dt = excelEpoch.AddDays(excelDate);
-                row[columnName] = dt.ToString(outputFormat);
+                row[columnName] = DateText.Format(dt, outputFormat);
             }
         }
 
@@ -1049,7 +1049,7 @@ public class DataPipeline
 
         foreach (var row in _rows)
         {
-            if (row.TryGetValue(columnName, out var valueStr) && DateTime.TryParse(valueStr, out var dt))
+            if (row.TryGetValue(columnName, out var valueStr) && DateText.TryParse(valueStr, out var dt))
             {
                 if (features.HasFlag(DateFeatures.Year)) row[$"{columnName}_Year"] = dt.Year.ToString();
                 if (features.HasFlag(DateFeatures.Month)) row[$"{columnName}_Month"] = dt.Month.ToString();
@@ -1062,9 +1062,7 @@ public class DataPipeline
 
                 if (features.HasFlag(DateFeatures.WeekOfYear))
                 {
-                    var calendar = CultureInfo.CurrentCulture.Calendar;
-                    var weekOfYear = calendar.GetWeekOfYear(dt, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
-                    row[$"{columnName}_WeekOfYear"] = weekOfYear.ToString();
+                    row[$"{columnName}_WeekOfYear"] = DateText.WeekOfYear(dt).ToString(CultureInfo.InvariantCulture);
                 }
             }
         }
@@ -1646,7 +1644,7 @@ public class DataPipeline
 
         foreach (var row in _rows)
         {
-            if (!row.TryGetValue(timeColumn, out var timeStr) || !DateTime.TryParse(timeStr, out var dt))
+            if (!row.TryGetValue(timeColumn, out var timeStr) || !DateText.TryParse(timeStr, out var dt))
             {
                 continue; // Skip rows with invalid DateTime
             }
@@ -1670,7 +1668,7 @@ public class DataPipeline
         {
             var aggregatedRow = new Dictionary<string, string>
             {
-                [timeColumn] = windowStart.ToString("yyyy-MM-dd HH:mm:ss")
+                [timeColumn] = DateText.Format(windowStart)
             };
 
             foreach (var col in targetColumns)

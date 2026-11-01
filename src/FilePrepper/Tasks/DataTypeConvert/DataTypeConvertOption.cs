@@ -54,7 +54,7 @@ public class DataTypeConvertOption : SingleInputOption, IDefaultValueOption
 
             if (conversion.DefaultValue != null)
             {
-                if (!IsValidDefaultValue(conversion.DefaultValue, conversion.TargetType))
+                if (!IsValidDefaultValue(conversion.DefaultValue, conversion.TargetType, conversion.Culture ?? CultureInfo.InvariantCulture))
                 {
                     errors.Add($"Invalid default value for {conversion.TargetType}: {conversion.DefaultValue}");
                 }
@@ -64,15 +64,16 @@ public class DataTypeConvertOption : SingleInputOption, IDefaultValueOption
         return [.. errors];
     }
 
-    private bool IsValidDefaultValue(string value, DataType targetType)
+    // A default is read the way the conversion reads its values: in the conversion's culture, not the machine's.
+    private bool IsValidDefaultValue(string value, DataType targetType, CultureInfo culture)
     {
         try
         {
             return targetType switch
             {
-                DataType.Integer => int.TryParse(value, out _),
+                DataType.Integer => int.TryParse(value, NumberStyles.Integer, culture, out _),
                 DataType.Decimal => NumberText.TryParseDecimal(value, out _),
-                DataType.DateTime => DateTime.TryParse(value, out _),
+                DataType.DateTime => DateTime.TryParse(value, culture, DateTimeStyles.None, out _),
                 DataType.Boolean => IsValidBooleanValue(value),
                 DataType.String => true,
                 _ => false

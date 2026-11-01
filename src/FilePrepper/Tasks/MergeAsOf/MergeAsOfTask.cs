@@ -261,7 +261,7 @@ public class MergeAsOfTask : BaseTask<MergeAsOfOption>
         }
 
         // Try general datetime parsing
-        if (DateTime.TryParse(value, out result))
+        if (DateText.TryParse(value, out result))
         {
             return true;
         }
