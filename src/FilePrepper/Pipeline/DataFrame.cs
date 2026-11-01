@@ -62,7 +62,7 @@ public class DataFrame
 
         await csv.ReadAsync();
         csv.ReadHeader();
-        var headers = (csv.HeaderRecord ?? []).ToList();
+        var headers = (csv.HeaderRecord ?? []).Select(TextForms.Nfc).ToList();
         HeaderNames.RefuseRepeated(headers, path);
         var columns = headers.Select(_ => new List<string?>()).ToArray();
         var rowCount = 0;
@@ -70,7 +70,7 @@ public class DataFrame
         while (await csv.ReadAsync())
         {
             for (var c = 0; c < columns.Length; c++)
-                columns[c].Add(csv.GetField(headers[c]) ?? string.Empty);
+                columns[c].Add(TextForms.Nfc(csv.GetField(c) ?? string.Empty));
             rowCount++;
         }
 

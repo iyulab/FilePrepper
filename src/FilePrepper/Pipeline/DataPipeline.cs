@@ -42,15 +42,15 @@ public class DataPipeline
 
         await csv.ReadAsync();
         csv.ReadHeader();
-        headers.AddRange(csv.HeaderRecord ?? Array.Empty<string>());
+        headers.AddRange((csv.HeaderRecord ?? Array.Empty<string>()).Select(TextForms.Nfc));
         HeaderNames.RefuseRepeated(headers, path);
 
         while (await csv.ReadAsync())
         {
             var row = new Dictionary<string, string>();
-            foreach (var header in headers)
+            for (var column = 0; column < headers.Count; column++)
             {
-                row[header] = csv.GetField(header) ?? string.Empty;
+                row[headers[column]] = TextForms.Nfc(csv.GetField(column) ?? string.Empty);
             }
             rows.Add(row);
         }
@@ -263,7 +263,7 @@ public class DataPipeline
 
                 await csv.ReadAsync();
                 csv.ReadHeader();
-                var currentHeaders = csv.HeaderRecord?.ToList() ?? new List<string>();
+                var currentHeaders = csv.HeaderRecord?.Select(TextForms.Nfc).ToList() ?? new List<string>();
                 HeaderNames.RefuseRepeated(currentHeaders, filePath);
 
                 // First file: establish schema
@@ -295,9 +295,9 @@ public class DataPipeline
                     var row = new Dictionary<string, string>();
 
                     // Read actual data columns from CSV
-                    foreach (var header in currentHeaders)
+                    for (var column = 0; column < currentHeaders.Count; column++)
                     {
-                        row[header] = csv.GetField(header) ?? string.Empty;
+                        row[currentHeaders[column]] = TextForms.Nfc(csv.GetField(column) ?? string.Empty);
                     }
 
                     // Add source column if requested (not from CSV, generated)
@@ -409,7 +409,7 @@ public class DataPipeline
 
                 await csv.ReadAsync();
                 csv.ReadHeader();
-                var currentHeaders = csv.HeaderRecord?.ToList() ?? new List<string>();
+                var currentHeaders = csv.HeaderRecord?.Select(TextForms.Nfc).ToList() ?? new List<string>();
                 HeaderNames.RefuseRepeated(currentHeaders, filePath);
 
                 if (headers == null)
@@ -433,9 +433,9 @@ public class DataPipeline
                 {
                     var row = new Dictionary<string, string>();
 
-                    foreach (var header in currentHeaders)
+                    for (var column = 0; column < currentHeaders.Count; column++)
                     {
-                        row[header] = csv.GetField(header) ?? string.Empty;
+                        row[currentHeaders[column]] = TextForms.Nfc(csv.GetField(column) ?? string.Empty);
                     }
 
                     // Add metadata columns

@@ -163,6 +163,7 @@ public abstract class BaseTask<TOption> : ITask
     {
         var result = await read;
         HeaderNames.RefuseNone(result.headers, path);
+        TextForms.Canonicalize(result.records, result.headers);
         HeaderNames.RefuseRepeated(result.headers, path);
         return result;
     }
