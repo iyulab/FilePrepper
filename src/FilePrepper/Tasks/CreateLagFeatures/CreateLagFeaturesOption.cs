@@ -11,7 +11,8 @@ public class CreateLagFeaturesOption : SingleInputOption
     public string GroupByColumn { get; set; } = string.Empty;
 
     /// <summary>
-    /// Column representing time/sequence (for sorting within groups)
+    /// Column representing time/sequence (for sorting within groups): ordered as numbers when every value is a number, as
+    /// dates when every value is a date, otherwise as text. It is not in the output unless it is also a keep column.
     /// </summary>
     public string TimeColumn { get; set; } = string.Empty;
 
@@ -21,7 +22,8 @@ public class CreateLagFeaturesOption : SingleInputOption
     public List<string> LagColumns { get; set; } = [];
 
     /// <summary>
-    /// Lag periods to create (e.g., [1, 2, 3] creates lag-1, lag-2, lag-3 features)
+    /// Lag periods to create (e.g., [1, 2, 3] creates lag-1, lag-2, lag-3 features). A lag of n is the value n rows earlier in
+    /// the group, in time order - rows, not time units.
     /// </summary>
     public List<int> LagPeriods { get; set; } = [];
 

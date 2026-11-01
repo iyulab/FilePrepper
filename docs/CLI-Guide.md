@@ -477,9 +477,9 @@ fileprepper create-lag-features --input <input> --output <output> --group-by <gr
 | Option | Description |
 |--------|-------------|
 | `-g`, `--group-by` `<group-by>` | Column to group by (e.g., Part Number, Entity ID) (required) |
-| `-t`, `--time-column` `<time-column>` | Column representing time/sequence for sorting within groups (required) |
+| `-t`, `--time-column` `<time-column>` | Column representing time/sequence for sorting within groups (numbers if all values are numbers, dates if all are dates, else text); not in the output unless it is also a keep column (required) |
 | `-l`, `--lag-columns` `<lag-columns>` | Comma-separated list of columns to create lag features from (required) |
-| `-p`, `--lag-periods` `<lag-periods>` | Comma-separated list of lag periods (e.g., 1,2,3) (required) |
+| `-p`, `--lag-periods` `<lag-periods>` | Comma-separated list of lag periods in rows, not time units (e.g., 1,2,3) (required) |
 | `--target` `<target>` | Target column to predict (optional, will be kept in output) |
 | `--drop-nulls` | Drop rows with null lag values |
 | `-k`, `--keep-columns` `<keep-columns>` | Comma-separated list of additional columns to keep in output |

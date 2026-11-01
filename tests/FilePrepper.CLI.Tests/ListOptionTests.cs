@@ -62,4 +62,17 @@ public class ListOptionTests : CommandTestBase
     {
         ListOption.Split(Array.Empty<string>()).Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task A_lag_period_that_is_not_a_whole_number_is_a_command_line_error_not_an_exception()
+    {
+        var input = CreateTestCsv("lag.csv", ["g", "t", "v"], [["A", "1", "5"], ["A", "2", "6"]]);
+        var output = GetTempPath("lag_out.csv");
+
+        var exit = await RunCommandAsync(new CreateLagFeaturesCommand(LoggerFactory), "-i", input, "-o", output,
+            "--group-by", "g", "--time-column", "t", "--lag-columns", "v", "--lag-periods", "1,x");
+
+        exit.Should().NotBe(0);
+        FileExists(output).Should().BeFalse();
+    }
 }

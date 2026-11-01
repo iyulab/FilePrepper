@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using System.CommandLine;
+﻿using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.CreateLagFeatures;
 using Microsoft.Extensions.Logging;
@@ -32,14 +31,14 @@ public class CreateLagFeaturesCommand : BaseCommand
 
         _groupByOption = new Option<string>("--group-by", new[] { "-g" }) { Description = "Column to group by (e.g., Part Number, Entity ID)", Required = true };
 
-        _timeColumnOption = new Option<string>("--time-column", new[] { "-t" }) { Description = "Column representing time/sequence for sorting within groups", Required = true };
+        _timeColumnOption = new Option<string>("--time-column", new[] { "-t" }) { Description = "Column representing time/sequence for sorting within groups (numbers if all values are numbers, dates if all are dates, else text); not in the output unless it is also a keep column", Required = true };
 
         _lagColumnsOption = new Option<string[]>("--lag-columns", new[] { "-l" }) { Description = "Comma-separated list of columns to create lag features from", CustomParser = result => ListOption.Split(result), Required = true };
 
         _lagPeriodsOption = new Option<int[]>("--lag-periods", new[] { "-p" })
         {
-            Description = "Comma-separated list of lag periods (e.g., 1,2,3)",
-            CustomParser = result => ListOption.Split(result).Select(period => int.Parse(period, CultureInfo.InvariantCulture)).ToArray(),
+            Description = "Comma-separated list of lag periods in rows, not time units (e.g., 1,2,3)",
+            CustomParser = result => ListOption.WholeNumbers(result),
             Required = true
         };
 

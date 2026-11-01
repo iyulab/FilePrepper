@@ -25,6 +25,28 @@ public static class ListOption
         return Split(result.Tokens.Select(token => token.Value), separator, trim);
     }
 
+    /// <summary>
+    /// The whole numbers a list option holds. An entry that is not one is a command-line error naming it - the parse of
+    /// <c>--lag-periods 1,x</c> used to throw out of the parser, with a stack trace and no word of which entry it was.
+    /// </summary>
+    public static int[] WholeNumbers(ArgumentResult result)
+    {
+        var numbers = new List<int>();
+        foreach (var entry in Split(result))
+        {
+            if (int.TryParse(entry, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var number))
+            {
+                numbers.Add(number);
+            }
+            else
+            {
+                result.AddError($"'{entry}' is not a whole number");
+            }
+        }
+
+        return [.. numbers];
+    }
+
     /// <summary>The same split over the raw values of the occurrences.</summary>
     public static string[] Split(IEnumerable<string> occurrences, char separator = ',', bool trim = false)
     {
