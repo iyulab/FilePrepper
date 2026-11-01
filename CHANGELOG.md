@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-11-02
+
 ### Fixed
 
 - **`extract-date` gave a different answer on a machine in another time zone, and dates were read by four different lists of forms.** It read with `DateTime.Parse`, so a value ending in `Z` or a UTC offset came back in the machine's own zone: `2026-01-02T23:30:00Z` was the 3rd at 8 o'clock on a UTC+9 machine and the 2nd at 23 o'clock on any other (`datetime` kept the clock as written). `datetime`, `merge-asof` and `extract-date` each took a different set of forms — `20260102` was a date to the first two and an error to the third. `DateText` is the one reader now, with the compact forms (`20260102`, `202601020304`, `20260102030405`) in it, and `convert-type` reads dates through it too.
