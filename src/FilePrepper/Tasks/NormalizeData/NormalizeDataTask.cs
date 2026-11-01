@@ -125,8 +125,5 @@ public class NormalizeDataTask : BaseTask<NormalizeDataOption>
         return Task.FromResult(records);
     }
 
-    protected override IEnumerable<string> GetRequiredColumns()
-    {
-        return [];
-    }
+    protected override IEnumerable<string> GetRequiredColumns() => Options.TargetColumns;
 }

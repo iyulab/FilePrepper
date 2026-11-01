@@ -270,10 +270,11 @@ public class NormalizeDataTests : TaskBaseTest<NormalizeDataTask>
     }
 
     [Fact]
-    public void Execute_NoNumericData_NoChange()
+    public void Execute_TargetColumnNotInTheFile_IsRefusedAndNothingIsWritten()
     {
         // Arrange
-        // There's no numeric column in target => or the columns are not present
+        // The target column is not in the file: normalizing it was impossible, and a mistyped name used to leave the
+        // file as it was with a success.
         WriteTestFileLines(
             "Id,Name",
             "1,Alice",
@@ -295,16 +296,10 @@ public class NormalizeDataTests : TaskBaseTest<NormalizeDataTask>
         var context = new TaskContext(option);
 
         // Act
-        bool success = task.Execute(context);
+        var error = Assert.Throws<ValidationException>(() => task.Execute(context));
 
         // Assert
-        Assert.True(success);
-
-        var lines = ReadOutputFileLines();
-        Assert.Equal(3, lines.Length); // header + 2 rows
-        // The CSV is unchanged since "Score" column does not exist
-        Assert.Contains("Id,Name", lines[0]);
-        Assert.Contains("1,Alice", lines[1]);
-        Assert.Contains("2,Bob", lines[2]);
+        Assert.Contains("Column 'Score' not found in the input file (columns: Id, Name)", error.Message);
+        Assert.Equal(0, new FileInfo(_testOutputPath).Length);
     }
 }

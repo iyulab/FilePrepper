@@ -77,6 +77,11 @@ public abstract class BaseTask<TOption> : ITask
         // Task별 추가 검증
         errorList.AddRange(ValidateTaskSpecific(context));
 
+        if (errorList.Count == 0)
+        {
+            errorList.AddRange(MissingRequiredColumns(context));
+        }
+
         errors = [.. errorList];
         return !errors.Any();
     }
@@ -173,8 +178,51 @@ public abstract class BaseTask<TOption> : ITask
         return Task.FromResult(records);
     }
 
+    /// <summary>
+    /// The columns the task acts on, which the input must have: a name that is not a column of the input is a validation
+    /// error before anything is read or written. The default is the target columns of a <see cref="BaseColumnOption"/>;
+    /// a task whose columns are named elsewhere overrides it, and a task that tolerates absent columns (or creates its
+    /// own) returns none and says what it did not find with <see cref="WarnOfNamesNotInTheInput"/>.
+    /// </summary>
+    /// <remarks>
+    /// Nothing called this: nine tasks overrode it and one commented that "column existence will be validated by
+    /// GetRequiredColumns", while thirteen commands succeeded on a column that was not there, having done nothing to it.
+    /// </remarks>
     protected virtual IEnumerable<string> GetRequiredColumns() =>
         Options is BaseColumnOption columnOption ? columnOption.TargetColumns : Array.Empty<string>();
+
+    private string[] MissingRequiredColumns(TaskContext context)
+    {
+        var required = GetRequiredColumns()
+            .Where(column => !string.IsNullOrWhiteSpace(column))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (required.Count == 0 || string.IsNullOrEmpty(context.InputPath))
+            return [];
+
+        // The read is kept (one per path), so the task's own read afterwards is this one.
+        var headers = ReadInputAsync(context.InputPath).GetAwaiter().GetResult().headers;
+        var missing = required.Where(column => !headers.Contains(column, StringComparer.Ordinal)).ToList();
+        if (missing.Count == 0)
+            return [];
+
+        var shown = string.Join(", ", headers.Take(20)) + (headers.Count > 20 ? $", ... ({headers.Count} in all)" : string.Empty);
+        return [.. missing.Select(column => $"Column '{column}' not found in the input file (columns: {shown})")];
+    }
+
+    /// <summary>
+    /// For a task that tolerates names that are not columns of the input: log the ones that matched nothing, so a mistyped
+    /// name is not a silent no-op. Call it from <c>ProcessRecordsAsync</c>, before the task changes <c>_originalHeaders</c>.
+    /// </summary>
+    protected void WarnOfNamesNotInTheInput(IEnumerable<string> names, string consequence)
+    {
+        var absent = names.Where(name => !_originalHeaders.Contains(name, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).ToList();
+        if (absent.Count > 0)
+        {
+            _logger.LogWarning("Not a column of the input: {Names} ({Consequence}). Columns: {Columns}",
+                string.Join(", ", absent), consequence, string.Join(", ", _originalHeaders.Take(20)));
+        }
+    }
 
     protected virtual async Task<(List<Dictionary<string, string>> records, List<string> headers)> ReadExcelFileAsync(string path)
     {

@@ -6,6 +6,8 @@ public class ValueReplaceTask : BaseTask<ValueReplaceOption>
     {
     }
 
+    protected override IEnumerable<string> GetRequiredColumns() => Options.ReplaceMethods.Select(method => method.ColumnName);
+
     protected override Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {

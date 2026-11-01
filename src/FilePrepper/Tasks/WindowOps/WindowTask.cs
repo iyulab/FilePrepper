@@ -9,6 +9,11 @@ public class WindowTask : BaseTask<WindowOption>
 {
     public WindowTask(ILogger<WindowTask> logger) : base(logger) { }
 
+    protected override IEnumerable<string> GetRequiredColumns() =>
+        Options.Type == WindowType.Resample && !string.IsNullOrEmpty(Options.TimeColumn)
+            ? [.. Options.TargetColumns ?? [], Options.TimeColumn]
+            : Options.TargetColumns ?? [];
+
     protected override async Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {

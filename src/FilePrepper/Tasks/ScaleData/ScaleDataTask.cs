@@ -7,6 +7,8 @@ public class ScaleDataTask : BaseTask<ScaleDataOption>
     {
     }
 
+    protected override IEnumerable<string> GetRequiredColumns() => Options.ScaleColumns.Select(column => column.ColumnName);
+
     protected override async Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {

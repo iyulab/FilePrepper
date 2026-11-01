@@ -11,6 +11,9 @@ public class RenameColumnsTask : BaseTask<RenameColumnsOption>
     {
         _logger.LogInformation("Renaming specified columns in records");
 
+        // Renaming a column that is not there is skipped, but a mistyped name leaves the column as it was: say so.
+        WarnOfNamesNotInTheInput(Options.RenameMap.Keys, "nothing to rename");
+
         var renameMap = Options.RenameMap;
         // 원본 헤더 순서를 보존하기 위해 복사본 생성
         var oldHeadersCopy = new List<string>(_originalHeaders);

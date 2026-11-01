@@ -12,6 +12,8 @@ public class CSVCleanerTask : BaseTask<CSVCleanerOption>
     {
     }
 
+    protected override IEnumerable<string> GetRequiredColumns() => Options.TargetColumns;
+
     protected override Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {

@@ -6,6 +6,8 @@ public class DateExtractionTask : BaseTask<DateExtractionOption>
     {
     }
 
+    protected override IEnumerable<string> GetRequiredColumns() => Options.Extractions.Select(extraction => extraction.SourceColumn);
+
     protected override Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {

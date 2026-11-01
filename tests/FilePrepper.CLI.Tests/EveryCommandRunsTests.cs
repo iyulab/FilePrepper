@@ -10,7 +10,7 @@ namespace FilePrepper.CLI.Tests;
 /// </summary>
 public class EveryCommandRunsTests : CommandTestBase
 {
-    private const string Data =
+    internal const string Data =
         "Id,Name,Price,Quantity,Category,OrderDate,Tags,Sizes,Const,Amount\n" +
         "0, Item0 ,10,1,B,2026-01-10 00:30:00,\"[\"\"x\"\",\"\"y\"\"]\",\"[\"\"1\"\",\"\"2\"\"]\",k,\"1,200\"\n" +
         "1, Item1 ,11,2,A,2026-02-11 01:30:00,\"[\"\"x\"\",\"\"y\"\"]\",\"[\"\"1\"\",\"\"2\"\"]\",k,\"1,201\"\n" +
@@ -19,10 +19,10 @@ public class EveryCommandRunsTests : CommandTestBase
         "4, Item4 ,,2,B,2026-05-14 04:30:00,\"[\"\"x\"\",\"\"y\"\"]\",\"[\"\"1\"\",\"\"2\"\"]\",k,\"1,204\"\n" +
         "5, Item5 ,15,3,A,2026-06-15 05:30:00,\"[\"\"x\"\",\"\"y\"\"]\",\"[\"\"1\"\",\"\"2\"\"]\",k,\"1,205\"\n";
 
-    private const string Right = "OrderDate,Rate\n2026-01-10 00:00:00,1.5\n2026-03-10 00:00:00,1.7\n";
+    internal const string Right = "OrderDate,Rate\n2026-01-10 00:00:00,1.5\n2026-03-10 00:00:00,1.7\n";
 
     /// <summary>The arguments after --input and --output that make each command do its work on <see cref="Data"/>.</summary>
-    private static readonly Dictionary<string, string[]> Cases = new(StringComparer.Ordinal)
+    internal static readonly Dictionary<string, string[]> Cases = new(StringComparer.Ordinal)
     {
         ["add-columns"] = ["--columns", "Country=KR"],
         ["aggregate"] = ["--group-by", "Category", "--aggregates", "Price:Sum:Total"],

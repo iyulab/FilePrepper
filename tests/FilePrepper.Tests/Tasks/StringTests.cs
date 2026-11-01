@@ -109,12 +109,24 @@ public class StringTests : TaskBaseTest<StringTask>
     }
 
     [Fact]
-    public void Concat_joins_in_the_order_given_and_a_missing_column_adds_nothing()
+    public void Concat_joins_in_the_order_given()
     {
         WriteTestFileLines("a,b", "1,2");
 
-        var lines = Run(new StringOption { Mode = StringMode.Concat, Columns = "b, a, nope", Separator = "-", OutputColumn = "ab" });
+        var lines = Run(new StringOption { Mode = StringMode.Concat, Columns = "b, a", Separator = "-", OutputColumn = "ab" });
 
-        Assert.Equal("1,2,2-1-", lines[1]);
+        Assert.Equal("1,2,2-1", lines[1]);
+    }
+
+    [Fact]
+    public void Concat_refuses_a_column_that_is_not_in_the_file_instead_of_joining_an_empty_piece()
+    {
+        // "b, a, nope" used to write "2-1-": the missing column contributed an empty piece and its separator.
+        WriteTestFileLines("a,b", "1,2");
+        var option = new StringOption { Mode = StringMode.Concat, Columns = "b, a, nope", Separator = "-", OutputColumn = "ab", InputPath = _testInputPath, OutputPath = _testOutputPath };
+
+        var error = Assert.Throws<ValidationException>(() => new StringTask(_mockLogger.Object).Execute(new TaskContext(option)));
+
+        Assert.Contains("Column 'nope' not found", error.Message);
     }
 }

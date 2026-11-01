@@ -17,7 +17,7 @@ public class WindowTaskTests : TaskBaseTest<WindowTask>
     {
     }
 
-    private bool Run(WindowType type, string[] columns, string? window = "5T", AggregationMethod method = AggregationMethod.Mean, int windowSize = 3)
+    private bool Run(WindowType type, string[] columns, string? window = "5T", AggregationMethod method = AggregationMethod.Mean, int windowSize = 3, string timeColumn = "ts")
     {
         var option = new WindowOption
         {
@@ -26,7 +26,7 @@ public class WindowTaskTests : TaskBaseTest<WindowTask>
             Type = type,
             Method = method,
             TargetColumns = columns,
-            TimeColumn = "ts",
+            TimeColumn = timeColumn,
             Window = window,
             WindowSize = windowSize
         };
@@ -71,16 +71,29 @@ public class WindowTaskTests : TaskBaseTest<WindowTask>
     }
 
     [Fact]
-    public void A_rolling_column_that_does_not_exist_is_reported_not_written_as_an_unexplained_empty_column()
+    public void A_target_column_that_does_not_exist_is_refused_not_written_as_an_unexplained_empty_column()
     {
         WriteTestFileLines(
             "ts,v",
             "2026-01-01 00:00:00,1",
             "2026-01-01 00:01:00,2");
 
-        Assert.True(Run(WindowType.Rolling, ["nope"], window: null));
+        var error = Assert.Throws<ValidationException>(() => Run(WindowType.Rolling, ["nope"], window: null));
 
-        VerifyWarning("'nope_rolling' is empty in every row");
+        Assert.Contains("Column 'nope' not found in the input file", error.Message);
+        Assert.Equal(0, new FileInfo(_testOutputPath).Length);
+    }
+
+    [Fact]
+    public void The_time_column_of_a_resample_must_exist_too()
+    {
+        WriteTestFileLines(
+            "ts,v",
+            "2026-01-01 00:00:00,1");
+
+        var error = Assert.Throws<ValidationException>(() => Run(WindowType.Resample, ["v"], timeColumn: "when"));
+
+        Assert.Contains("Column 'when' not found", error.Message);
     }
 
     [Fact]

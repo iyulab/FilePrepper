@@ -9,6 +9,11 @@ public class StringTask : BaseTask<StringOption>
     /// <param name="logger">Where progress is logged.</param>
     public StringTask(ILogger<StringTask> logger) : base(logger) { }
 
+    protected override IEnumerable<string> GetRequiredColumns() =>
+        Options.Mode == StringMode.Concat
+            ? (Options.Columns ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : [Options.Column];
+
     protected override async Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {

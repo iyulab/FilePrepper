@@ -15,6 +15,10 @@ namespace FilePrepper.Tasks.ReorderColumns
             _logger.LogInformation("Reordering columns as specified");
 
             var desiredOrder = Options.Order;
+
+            // Names in the order that are not columns are ignored (one order can serve files that differ), but a
+            // mistyped name leaves its column where it was: say so.
+            WarnOfNamesNotInTheInput(desiredOrder, "ignored");
             var newHeaderOrder = new List<string>();
 
             // 재정렬된 헤더 순서 생성
