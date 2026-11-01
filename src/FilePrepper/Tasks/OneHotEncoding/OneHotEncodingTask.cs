@@ -9,6 +9,8 @@ public class OneHotEncodingTask : BaseTask<OneHotEncodingOption>
     {
     }
 
+    protected override bool ColumnsDependOnTheRows => true;
+
     protected override Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {

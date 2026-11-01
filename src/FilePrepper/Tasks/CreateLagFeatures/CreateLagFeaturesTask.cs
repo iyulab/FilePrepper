@@ -18,6 +18,21 @@ public class CreateLagFeaturesTask : BaseTask<CreateLagFeaturesOption>
     {
     }
 
+    /// <summary>
+    /// The group column, the columns kept, one column per lag and the target — the columns of every row it makes, and so of the
+    /// output when no row comes out (an input of one row has no row with a lag of its own to give).
+    /// </summary>
+    protected override IReadOnlyList<string>? DeclaredOutputHeaders()
+    {
+        var kept = _originalHeaders.ToHashSet(StringComparer.Ordinal);
+        List<string> columns = [Options.GroupByColumn];
+        columns.AddRange(Options.KeepColumns.Where(kept.Contains));
+        columns.AddRange(Options.LagColumns.SelectMany(lagColumn => Options.LagPeriods.Select(period => $"{lagColumn}_lag{period}")));
+        if (!string.IsNullOrWhiteSpace(Options.TargetColumn) && kept.Contains(Options.TargetColumn))
+            columns.Add(Options.TargetColumn);
+        return [.. columns.Distinct(StringComparer.Ordinal)];
+    }
+
     protected override Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {

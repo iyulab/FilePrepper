@@ -58,7 +58,9 @@ public abstract class BaseTask<TOption> : ITask
 
             // 실행
             var records = await ReadAndPreProcessAsync(context);
-            records = await ProcessRecordsAsync(records);
+            records = records.Count == 0 && Options.HasHeader && _originalHeaders.Count > 0
+                ? await ProcessAnInputWithoutRowsAsync()
+                : await ProcessRecordsAsync(records);
             await PostProcessAndWriteAsync(records, context);
             return true;
         }
@@ -164,6 +166,92 @@ public abstract class BaseTask<TOption> : ITask
         HeaderNames.RefuseRepeated(result.headers, path);
         return result;
     }
+
+    /// <summary>
+    /// The columns of the output as the task makes them when the input has no rows. The output header is read off the first
+    /// record, so a table with no rows used to come out with the <i>input's</i> header whatever the task did to the columns
+    /// (<c>add-columns</c> without its new column, <c>aggregate</c> without its group and total, <c>unpivot</c> as wide as it came).
+    /// </summary>
+    private IReadOnlyList<string>? _headersWithoutRows;
+
+    /// <summary>
+    /// True when the task decides its output columns from the values in the rows (the categories of a column, the length of a
+    /// list): with no rows there is nothing to decide from, and the task refuses instead of guessing a schema.
+    /// </summary>
+    protected virtual bool ColumnsDependOnTheRows => false;
+
+    /// <summary>
+    /// The columns of the output when the options alone decide them and a task can say so without seeing a row (it is also what
+    /// an output that came out with no rows is headed with). The default is none: the task is then run on a probe row, see
+    /// <see cref="ProcessAnInputWithoutRowsAsync"/>. Where a task declares its columns it keeps a test that the declaration and
+    /// its rows agree.
+    /// </summary>
+    protected virtual IReadOnlyList<string>? DeclaredOutputHeaders() => null;
+
+    /// <summary>
+    /// What a probe row holds in every cell, in the order tried: a task that reads a number or a date out of a cell makes its new
+    /// columns only for a cell it can read, so one fill alone gives a schema with the numeric columns missing, or the date ones.
+    /// </summary>
+    private static readonly string[] ProbeFills = ["", "0", "2001-01-01 00:00:00"];
+
+    /// <summary>
+    /// Runs the task on a single row of each fill and takes the widest header it made, then drops the rows: the task's own code
+    /// decides the schema (a per-task description of it would be a second place to drift). A task that makes no row of a probe
+    /// (it filters it out, or needs two rows) or cannot take one is run on the empty input as before, and the output is headed as
+    /// the input was unless the task declares its columns.
+    /// </summary>
+    private async Task<List<Dictionary<string, string>>> ProcessAnInputWithoutRowsAsync()
+    {
+        if (ColumnsDependOnTheRows)
+        {
+            throw new InvalidDataException(
+                $"The {Name} task decides its columns from the values in the rows, and the input has no rows.");
+        }
+
+        var headersRead = _originalHeaders.ToList();
+        var declared = DeclaredOutputHeaders();
+        if (declared is not null)
+        {
+            _headersWithoutRows = declared;
+            return await ProcessRecordsAsync([]);
+        }
+
+        string? bestFill = null;
+        List<string>? best = null;
+        foreach (var fill in ProbeFills)
+        {
+            _originalHeaders = headersRead.ToList();
+            try
+            {
+                var made = await ProcessRecordsAsync([ProbeRow(headersRead, fill)]);
+                var columns = made.FirstOrDefault()?.Keys.ToList();
+                if (columns is not null && (best is null || columns.Count > best.Count))
+                {
+                    best = columns;
+                    bestFill = fill;
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogDebug(ex, "The {TaskName} task cannot take a probe row of '{Fill}'", Name, fill);
+            }
+        }
+
+        _originalHeaders = headersRead.ToList();
+        if (best is null)
+        {
+            _headersWithoutRows = null;
+            return await ProcessRecordsAsync([]);
+        }
+
+        // The probe that made the widest header runs once more, so the state the task keeps is that probe's and no other's.
+        await ProcessRecordsAsync([ProbeRow(headersRead, bestFill!)]);
+        _headersWithoutRows = best;
+        return [];
+    }
+
+    private static Dictionary<string, string> ProbeRow(IEnumerable<string> headers, string fill) =>
+        headers.Distinct(StringComparer.Ordinal).ToDictionary(header => header, _ => fill, StringComparer.Ordinal);
 
     protected abstract Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records);
@@ -328,7 +416,7 @@ public abstract class BaseTask<TOption> : ITask
     /// </summary>
     private void RefuseAnEmptiedTable(List<Dictionary<string, string>> records, IEnumerable<string> headers)
     {
-        var columnsLeft = records.Count > 0 ? headers.Count() : _originalHeaders.Count;
+        var columnsLeft = records.Count > 0 || _headersWithoutRows is not null ? headers.Count() : _originalHeaders.Count;
         if (columnsLeft == 0)
         {
             throw new InvalidOperationException(
@@ -343,7 +431,10 @@ public abstract class BaseTask<TOption> : ITask
         records = await PostProcessRecordsAsync(records);
         _logger.LogInformation("Writing output file: {OutputPath}", context.OutputPath);
 
-        var headers = records.FirstOrDefault()?.Keys ?? Enumerable.Empty<string>();
+        if (records.Count == 0)
+            _headersWithoutRows ??= DeclaredOutputHeaders();
+
+        var headers = records.FirstOrDefault()?.Keys ?? _headersWithoutRows ?? Enumerable.Empty<string>();
         RefuseAnEmptiedTable(records, headers);
         await WriteOutputAsync(context.OutputPath!, headers, records);
 
