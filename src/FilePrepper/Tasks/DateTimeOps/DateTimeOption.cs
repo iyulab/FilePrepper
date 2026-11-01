@@ -1,3 +1,5 @@
+using FilePrepper.Pipeline;
+
 namespace FilePrepper.Tasks.DateTimeOps;
 
 /// <summary>
@@ -32,7 +34,7 @@ public class DateTimeOption : SingleInputOption
     /// <summary>
     /// The features <see cref="DateTimeMode.ExtractFeatures"/> adds as columns named <c>{Column}_{Feature}</c>, comma-separated:
     /// Year, Month, Day, Hour, Minute, DayOfWeek (Sunday 0), DayOfYear, WeekOfYear (ISO 8601), Quarter. Names are not
-    /// case-sensitive; an unknown name is skipped with a warning. Required in that mode. The value is read in the formats
+    /// case-sensitive; an unknown name is an error (a mistyped <c>Mnth</c> is not skipped). Required in that mode. The value is read in the formats
     /// <c>yyyy-MM-dd[ HH:mm[:ss]]</c>, <c>yyyy/MM/dd[ HH:mm[:ss]]</c>, <c>MM/dd/yyyy[ HH:mm[:ss]]</c>, <c>yyyyMMdd[HHmm[ss]]</c>,
     /// <c>M/d/yyyy H:mm</c>, then any other the invariant culture reads (ISO 8601 with a zone included).
     /// </summary>
@@ -40,6 +42,33 @@ public class DateTimeOption : SingleInputOption
 
     /// <summary>Drop <see cref="Column"/> after its features are extracted; false by default.</summary>
     public bool RemoveOriginal { get; set; } = false;
+
+    private static readonly DateFeatures[] SingleFeatures =
+        [.. Enum.GetValues<DateFeatures>().Where(feature => feature != DateFeatures.None && int.PopCount((int)feature) == 1)];
+
+    /// <summary>
+    /// The features a comma-separated list names. A name that is not one feature - a typo, a number, <c>None</c> - adds
+    /// nothing and is returned in <paramref name="unknown"/>, so the caller can refuse it rather than extract fewer columns.
+    /// </summary>
+    public static DateFeatures ParseFeatures(string? text, ICollection<string>? unknown = null)
+    {
+        var result = DateFeatures.None;
+        foreach (var part in (text ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var match = SingleFeatures.Cast<DateFeatures?>()
+                .FirstOrDefault(feature => string.Equals(feature.ToString(), part, StringComparison.OrdinalIgnoreCase));
+            if (match is { } feature)
+            {
+                result |= feature;
+            }
+            else
+            {
+                unknown?.Add(part);
+            }
+        }
+
+        return result;
+    }
 
     /// <inheritdoc />
     protected override string[] ValidateInternal()
@@ -56,9 +85,25 @@ public class DateTimeOption : SingleInputOption
             errors.Add("InputFormat is required for Parse mode");
         }
 
-        if (Mode == DateTimeMode.ExtractFeatures && string.IsNullOrWhiteSpace(Features))
+        if (Mode == DateTimeMode.ExtractFeatures)
         {
-            errors.Add("Features are required for ExtractFeatures mode");
+            if (string.IsNullOrWhiteSpace(Features))
+            {
+                errors.Add("Features are required for ExtractFeatures mode");
+            }
+            else
+            {
+                var unknown = new List<string>();
+                if (ParseFeatures(Features, unknown) == DateFeatures.None && unknown.Count == 0)
+                {
+                    errors.Add("Features are required for ExtractFeatures mode");
+                }
+
+                if (unknown.Count > 0)
+                {
+                    errors.Add($"Unknown feature(s): {string.Join(", ", unknown)}. Valid features: {string.Join(", ", SingleFeatures.Select(f => f.ToString()))}");
+                }
+            }
         }
 
         return errors.ToArray();

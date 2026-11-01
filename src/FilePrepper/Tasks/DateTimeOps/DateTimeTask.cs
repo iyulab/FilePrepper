@@ -112,7 +112,7 @@ public class DateTimeTask : BaseTask<DateTimeOption>
     private async Task<List<Dictionary<string, string>>> ExtractFeaturesAsync(
         List<Dictionary<string, string>> records)
     {
-        var features = ParseDateFeatures(Options.Features!);
+        var features = DateTimeOption.ParseFeatures(Options.Features);
         var featureNames = GetFeatureNames(features);
 
         _logger.LogInformation("  Extracting features: {Features}", string.Join(", ", featureNames));
@@ -223,26 +223,6 @@ public class DateTimeTask : BaseTask<DateTimeOption>
 
         result = default;
         return false;
-    }
-
-    private DateFeatures ParseDateFeatures(string featuresStr)
-    {
-        var result = DateFeatures.None;
-        var parts = featuresStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        foreach (var part in parts)
-        {
-            if (Enum.TryParse<DateFeatures>(part, ignoreCase: true, out var feature))
-            {
-                result |= feature;
-            }
-            else
-            {
-                _logger.LogWarning("Unknown feature: {Feature}, skipping", part);
-            }
-        }
-
-        return result;
     }
 
     private List<string> GetFeatureNames(DateFeatures features)
