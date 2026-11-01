@@ -10,6 +10,7 @@ public abstract class BaseTask<TOption> : ITask
 {
     protected readonly ILogger _logger;
     protected List<string> _originalHeaders = [];
+    private int _inputColumnCount;
     private TaskContext _context = null!;
 
     protected TOption Options
@@ -129,6 +130,7 @@ public abstract class BaseTask<TOption> : ITask
         var (records, headers) = await ReadInputAsync(context.InputPath);
 
         _originalHeaders = headers;
+        _inputColumnCount = headers.Count;
         return await PreProcessRecordsAsync(records);
     }
 
@@ -275,6 +277,24 @@ public abstract class BaseTask<TOption> : ITask
         }
     }
 
+    /// <summary>
+    /// A table that had columns and now has none has nothing to write: the writer would fall back to the
+    /// input's headers over blank cells (rows present) or to a <c>NoData</c> placeholder (no rows), and
+    /// the task would report success. An input with no columns at all (an empty file) is not refused.
+    /// </summary>
+    private void RefuseAnEmptiedTable(List<Dictionary<string, string>> records, IEnumerable<string> headers)
+    {
+        if (_inputColumnCount == 0)
+            return;
+
+        var columnsLeft = records.Count > 0 ? headers.Count() : _originalHeaders.Count;
+        if (columnsLeft == 0)
+        {
+            throw new InvalidOperationException(
+                $"The {Name} task left no columns, so there is nothing to write ({_inputColumnCount} column(s) and {records.Count} row(s) were read).");
+        }
+    }
+
     private async Task PostProcessAndWriteAsync(
         List<Dictionary<string, string>> records,
         TaskContext context)
@@ -283,6 +303,7 @@ public abstract class BaseTask<TOption> : ITask
         _logger.LogInformation("Writing output file: {OutputPath}", context.OutputPath);
 
         var headers = records.FirstOrDefault()?.Keys ?? Enumerable.Empty<string>();
+        RefuseAnEmptiedTable(records, headers);
         await WriteOutputAsync(context.OutputPath!, headers, records);
 
         _logger.LogInformation("Task completed successfully");
