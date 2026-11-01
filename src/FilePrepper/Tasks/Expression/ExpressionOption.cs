@@ -1,20 +1,15 @@
 namespace FilePrepper.Tasks.Expression;
 
-/// <summary>
-/// Options for column expression task
-/// </summary>
+/// <summary>Options of <see cref="ExpressionTask"/>: the computed columns to add.</summary>
 public class ExpressionOption : SingleInputOption
 {
-    /// <summary>
-    /// List of column expressions to evaluate
-    /// </summary>
+    /// <summary>The columns to compute, each over the original columns of the record; at least one, with distinct names.</summary>
     public List<ColumnExpression> Expressions { get; set; } = new();
 
-    /// <summary>
-    /// Whether to remove source columns used in expressions
-    /// </summary>
+    /// <summary>Drop every column an expression reads from the output; false by default.</summary>
     public bool RemoveSourceColumns { get; set; } = false;
 
+    /// <inheritdoc />
     protected override string[] ValidateInternal()
     {
         var errors = new List<string>();

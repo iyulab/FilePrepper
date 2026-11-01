@@ -3,14 +3,18 @@ using Microsoft.Extensions.Logging;
 namespace FilePrepper.Tasks.Expression;
 
 /// <summary>
-/// Task to create computed columns from expressions
+/// Adds computed columns: each <see cref="ColumnExpression"/> of <see cref="ExpressionOption"/> is evaluated over every record
+/// (see <see cref="ExpressionEvaluator"/> for the arithmetic and for what happens to an empty cell).
 /// </summary>
 public class ExpressionTask : BaseTask<ExpressionOption>
 {
+    /// <summary>Creates the task.</summary>
+    /// <param name="logger">Where progress is logged.</param>
     public ExpressionTask(ILogger<ExpressionTask> logger) : base(logger)
     {
     }
 
+    /// <inheritdoc />
     protected override Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
         List<Dictionary<string, string>> records)
     {
@@ -24,61 +28,58 @@ public class ExpressionTask : BaseTask<ExpressionOption>
         }
 
         var columnSet = new HashSet<string>(_originalHeaders);
+        var columnsToRemove = new HashSet<string>();
 
-        // Validate all expressions reference valid columns
+        // Every name in an expression must be a column; a mistyped one is named here, not found per record.
         foreach (var expr in Options.Expressions)
         {
-            var evaluator = new ExpressionEvaluator(new Dictionary<string, string>(), columnSet);
-            var referencedColumns = evaluator.GetReferencedColumns(expr.Expression);
-
-            var missingColumns = referencedColumns.Except(columnSet).ToList();
-            if (missingColumns.Any())
+            var checker = new ExpressionEvaluator(new Dictionary<string, string>(), columnSet);
+            var unknown = checker.GetUnknownIdentifiers(expr.Expression);
+            if (unknown.Count > 0)
             {
                 throw new InvalidOperationException(
-                    $"Expression '{expr.Expression}' references non-existent columns: {string.Join(", ", missingColumns)}");
+                    $"Expression '{expr.Expression}' references non-existent columns: {string.Join(", ", unknown)}");
+            }
+
+            if (Options.RemoveSourceColumns)
+            {
+                columnsToRemove.UnionWith(checker.GetReferencedColumns(expr.Expression));
             }
 
             _logger.LogInformation("  Expression: {Expression}", expr.ToString());
         }
 
-        // Process records - simplified approach
+        var columnOrder = ColumnOrder(columnsToRemove);
+
+        var emptyResults = 0;
         var processedRecords = records.Select(record =>
         {
             var evaluator = new ExpressionEvaluator(record, columnSet);
-            var newRecord = new Dictionary<string, string>();
-
-            // Determine which source columns to remove
-            var columnsToRemove = new HashSet<string>();
-            if (Options.RemoveSourceColumns)
-            {
-                foreach (var expr in Options.Expressions)
-                {
-                    var referenced = evaluator.GetReferencedColumns(expr.Expression);
-                    foreach (var col in referenced)
-                    {
-                        columnsToRemove.Add(col);
-                    }
-                }
-            }
-
-            // Copy all source columns (except removed ones)
-            foreach (var sourceColumn in _originalHeaders)
-            {
-                if (!columnsToRemove.Contains(sourceColumn))
-                {
-                    newRecord[sourceColumn] = record[sourceColumn];
-                }
-            }
-
-            // Add all computed columns at the end
+            var results = new Dictionary<string, string>();
             foreach (var expr in Options.Expressions)
             {
                 var result = evaluator.Evaluate(expr.Expression);
-                newRecord[expr.OutputColumnName] = result;
+                if (result.Length == 0)
+                {
+                    emptyResults++;
+                }
+
+                results[expr.OutputColumnName] = result;
+            }
+
+            var newRecord = new Dictionary<string, string>();
+            foreach (var column in columnOrder)
+            {
+                newRecord[column] = results.TryGetValue(column, out var computed) ? computed : record[column];
             }
 
             return newRecord;
         }).ToList();
+
+        if (emptyResults > 0)
+        {
+            _logger.LogWarning("{Count} result cell(s) are empty: a column the expression reads was empty or not a number", emptyResults);
+        }
 
         _logger.LogInformation("Expression evaluation completed successfully");
         _logger.LogInformation("Created {Count} new columns", Options.Expressions.Count);
@@ -86,41 +87,18 @@ public class ExpressionTask : BaseTask<ExpressionOption>
         return Task.FromResult(processedRecords);
     }
 
-    private List<string> CreateNewHeaders(List<string> sourceHeaders, ExpressionOption options)
+    // The source columns (less the removed ones), with each computed column put at its InsertPosition in turn: 0 first, n
+    // after n columns, -1 (or a position past the end) last. A computed column named like a source column replaces it.
+    private List<string> ColumnOrder(HashSet<string> columnsToRemove)
     {
-        var result = new List<string>();
-        var columnSet = new HashSet<string>(sourceHeaders);
-
-        // Determine which columns to remove
-        var columnsToRemove = new HashSet<string>();
-        if (options.RemoveSourceColumns)
+        var order = _originalHeaders.Where(c => !columnsToRemove.Contains(c)).ToList();
+        foreach (var expr in Options.Expressions)
         {
-            var evaluator = new ExpressionEvaluator(new Dictionary<string, string>(), columnSet);
-            foreach (var expr in options.Expressions)
-            {
-                var referenced = evaluator.GetReferencedColumns(expr.Expression);
-                foreach (var col in referenced)
-                {
-                    columnsToRemove.Add(col);
-                }
-            }
+            order.Remove(expr.OutputColumnName);
+            var at = expr.InsertPosition < 0 ? order.Count : Math.Min(expr.InsertPosition, order.Count);
+            order.Insert(at, expr.OutputColumnName);
         }
 
-        // Add source columns (except removed ones)
-        foreach (var sourceColumn in sourceHeaders)
-        {
-            if (!columnsToRemove.Contains(sourceColumn))
-            {
-                result.Add(sourceColumn);
-            }
-        }
-
-        // Add all expression columns at the end
-        foreach (var expr in options.Expressions)
-        {
-            result.Add(expr.OutputColumnName);
-        }
-
-        return result;
+        return order;
     }
 }

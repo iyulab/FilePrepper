@@ -1,31 +1,33 @@
 namespace FilePrepper.Tasks.Expression;
 
 /// <summary>
-/// Represents a column expression for computing new values from existing columns
+/// One computed column: a name, an arithmetic expression over other columns, and where to put it. Written
+/// <c>name=expression</c> or <c>name=expression@position</c>.
 /// </summary>
 public class ColumnExpression
 {
-    /// <summary>
-    /// Name of the new column to create
-    /// </summary>
+    /// <summary>The name of the computed column; a column of that name already in the data is replaced.</summary>
     public string OutputColumnName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Expression to evaluate (e.g., "col1 + col2", "col1 * 100 - col2")
+    /// The expression (e.g. <c>col1 + col2</c>, <c>col1 * 100 - col2</c>): numbers, column names, <c>+ - * /</c> and parentheses.
+    /// A column name that is not a column of the data is an error; a column that is empty or not a number in a record makes
+    /// that record's result empty.
     /// </summary>
     public string Expression { get; set; } = string.Empty;
 
     /// <summary>
-    /// Position to insert the new column (0 = first, -1 = last)
+    /// Where the column goes among the columns that are there when its turn comes (expressions are placed in order): 0 is first,
+    /// <c>n</c> is after the first n columns, -1 (the default) or a position past the end is last.
     /// </summary>
     public int InsertPosition { get; set; } = -1;
 
+    /// <summary>Whether both a name and an expression were given.</summary>
     public bool IsValid => !string.IsNullOrWhiteSpace(OutputColumnName)
                           && !string.IsNullOrWhiteSpace(Expression);
 
-    /// <summary>
-    /// Parse expression from string format: "output_name=expression" or "output_name=expression@position"
-    /// </summary>
+    /// <summary>Reads <c>output_name=expression</c> or <c>output_name=expression@position</c>.</summary>
+    /// <exception cref="ArgumentException">The text is empty, has no <c>=</c>, or has a position that is not a number.</exception>
     public static ColumnExpression Parse(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -65,6 +67,7 @@ public class ColumnExpression
         };
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         var result = $"{OutputColumnName}={Expression}";
