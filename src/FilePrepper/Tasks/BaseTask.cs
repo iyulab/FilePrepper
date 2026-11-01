@@ -45,12 +45,14 @@ public abstract class BaseTask<TOption> : ITask
             if (!ValidateTask(context, out var validationErrors))
             {
                 var errorMessage = $"Validation errors in {Name} task: {string.Join(", ", validationErrors)}";
-                _logger.LogError(errorMessage);
 
+                // Thrown, the message reaches the caller, who reports it; logging it as well said it twice.
                 if (!Options.IgnoreErrors)
                 {
                     throw new ValidationException(errorMessage, ValidationExceptionErrorCode.General);
                 }
+
+                _logger.LogError(errorMessage);
                 return false;
             }
 
@@ -60,11 +62,13 @@ public abstract class BaseTask<TOption> : ITask
             await PostProcessAndWriteAsync(records, context);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (Options.IgnoreErrors)
         {
-            HandleTaskException(ex);
+            _logger.LogWarning(ex, "Error ignored in {TaskName} task: {Message}", Name, ex.Message);
             return false;
         }
+        // Any other exception reaches the caller as it is, with its own stack: the task used to log it here (with the stack)
+        // and rethrow it with `throw ex`, which restarted the stack, and the caller logged it again.
     }
 
     protected virtual bool ValidateTask(TaskContext context, out string[] errors)
@@ -109,18 +113,6 @@ public abstract class BaseTask<TOption> : ITask
         csv.Read();
         csv.ReadHeader();
         return csv.HeaderRecord?.ToList() ?? new List<string>();
-    }
-
-    private void HandleTaskException(Exception ex)
-    {
-        if (Options.IgnoreErrors)
-        {
-            _logger.LogWarning(ex, "Error ignored in {TaskName} task: {Message}", Name, ex.Message);
-            return;
-        }
-
-        _logger.LogError(ex, "Error executing {TaskName} task: {Message}", Name, ex.Message);
-        throw ex;
     }
 
     public bool Execute(TaskContext context)
@@ -234,8 +226,6 @@ public abstract class BaseTask<TOption> : ITask
 
     protected virtual async Task<(List<Dictionary<string, string>> records, List<string> headers)> ReadCsvFileAsync(string path)
     {
-        _logger.LogInformation("Reading input file: {Path}", path);
-
         using var reader = CsvUtils.CreateReader(path, Options.Encoding);
         using var parser = new CsvParser(reader, CsvUtils.GetDefaultConfiguration(Options.HasHeader, DataFileFormats.DelimiterFor(path)));
 

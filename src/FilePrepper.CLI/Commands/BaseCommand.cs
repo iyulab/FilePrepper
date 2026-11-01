@@ -29,8 +29,14 @@ public abstract class BaseCommand : Command
         Add(CommonOptions.SkipRows);
     }
 
+    /// <summary>Whether <c>--quiet</c> was given: only errors are written, to the console and to the log.</summary>
+    public static bool Quiet { get; set; }
+
     protected void DisplaySuccess(string message)
     {
+        if (Quiet)
+            return;
+
         AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(message)}");
     }
 
@@ -41,11 +47,17 @@ public abstract class BaseCommand : Command
 
     protected void DisplayWarning(string message)
     {
+        if (Quiet)
+            return;
+
         AnsiConsole.MarkupLine($"[yellow]⚠[/] {Markup.Escape(message)}");
     }
 
     protected void DisplayInfo(string message)
     {
+        if (Quiet)
+            return;
+
         AnsiConsole.MarkupLine($"[blue]ℹ[/] {Markup.Escape(message)}");
     }
 
@@ -68,7 +80,16 @@ public abstract class BaseCommand : Command
 
     protected int HandleError(Exception ex)
     {
-        Logger.LogError(ex, "Error executing command");
+        // A mistake of the caller (a bad value, a column that is not there, a file that cannot be read) is one line: the message
+        // says what to change. Anything else is a defect and keeps its stack. Verbose output (-v) shows the stack of both.
+        if (IsExpected(ex))
+        {
+            Logger.LogDebug(ex, "Error executing command");
+        }
+        else
+        {
+            Logger.LogError(ex, "Error executing command");
+        }
 
         DisplayError($"Error: {ex.Message}");
 
@@ -81,6 +102,10 @@ public abstract class BaseCommand : Command
         };
     }
 
+
+    /// <summary>Whether the exception is a mistake of the caller rather than a defect in the tool.</summary>
+    public static bool IsExpected(Exception ex) =>
+        ex is ValidationException or ArgumentException or InvalidOperationException or IOException or OperationCanceledException or UnauthorizedAccessException;
 
     /// <summary>
     /// Validates input file and checks supported format

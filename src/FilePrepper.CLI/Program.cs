@@ -20,11 +20,15 @@ public class Program
     {
         try
         {
-            // Configure logging
-            ConfigureLogging(LogLevel.Information);
+            // Configure logging: --quiet writes errors only, --verbose adds the debug trace
+            BaseCommand.Quiet = IsQuiet(args);
+            ConfigureLogging(LogLevelFor(args));
 
             // Display banner
-            DisplayBanner();
+            if (!BaseCommand.Quiet)
+            {
+                DisplayBanner();
+            }
 
             // Build the root command
             var rootCommand = BuildRootCommand();
@@ -53,6 +57,22 @@ public class Program
             AnsiConsole.WriteException(ex);
             return 1;
         }
+    }
+
+    /// <summary>Whether <c>-q</c> / <c>--quiet</c> is among the arguments.</summary>
+    public static bool IsQuiet(string[] args) => args.Any(arg => arg is "-q" or "--quiet");
+
+    /// <summary>
+    /// The log level the arguments ask for: errors only for <c>--quiet</c>, debug for <c>--verbose</c> (or <c>-v</c> after a
+    /// command - on its own <c>-v</c> shows the version), information otherwise. <c>--quiet</c> wins over <c>--verbose</c>.
+    /// </summary>
+    public static LogLevel LogLevelFor(string[] args)
+    {
+        if (IsQuiet(args))
+            return LogLevel.Error;
+
+        var afterACommand = args.Length > 1 && !args[0].StartsWith('-');
+        return args.Any(arg => arg == "--verbose" || (afterACommand && arg == "-v")) ? LogLevel.Debug : LogLevel.Information;
     }
 
     private static void ConfigureLogging(LogLevel minLevel)
