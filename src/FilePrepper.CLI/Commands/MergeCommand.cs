@@ -40,7 +40,7 @@ public class MergeCommand : BaseCommand
             CustomParser = result =>
             {
                 if (result.Tokens.Count == 0) return Array.Empty<string>();
-                return result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                return ListOption.Split(result);
             }
         };
 

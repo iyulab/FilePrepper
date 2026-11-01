@@ -19,7 +19,7 @@ public class OneHotEncodingCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to encode", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to encode", CustomParser = result => ListOption.Split(result), Required = true };
         _dropFirstOption = new Option<bool>("--drop-first") { Description = "Drop first category", DefaultValueFactory = _ => false };
         _keepOriginalOption = new Option<bool>("--keep-original") { Description = "Keep original columns", DefaultValueFactory = _ => false };
 

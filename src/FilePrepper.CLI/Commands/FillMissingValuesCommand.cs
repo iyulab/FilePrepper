@@ -19,7 +19,7 @@ public class FillMissingValuesCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _methodsOption = new Option<string[]>("--methods", new[] { "-m" }) { Description = "Fill methods in format column:method[:value] (e.g. Age:Mean or Score:FixedValue:0)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _methodsOption = new Option<string[]>("--methods", new[] { "-m" }) { Description = "Fill methods in format column:method[:value] (e.g. Age:Mean or Score:FixedValue:0)", CustomParser = result => ListOption.Split(result), Required = true };
         _appendOption = new Option<bool>("--append-to-source") { Description = "Append to source", DefaultValueFactory = _ => false };
         _templateOption = new Option<string?>("--output-column") { Description = "Output column template" };
 

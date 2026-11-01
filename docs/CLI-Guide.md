@@ -27,6 +27,8 @@ Every command takes these:
 
 Input and output are `-i, --input` and `-o, --output` on every command (`merge` and `merge-asof` take several input files).
 
+An option that takes a list (`--columns a,b`) may also be given more than once (`--columns a --columns b`); every occurrence counts, in the order given.
+
 ## Supported File Formats
 
 - **CSV** (.csv) - Comma-Separated Values

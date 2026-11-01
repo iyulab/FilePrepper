@@ -23,7 +23,7 @@ public class FilterRowsCommand : BaseCommand
 
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _conditionsOption = new Option<string[]>("--conditions", new[] { "-c" }) { Description = "Filter conditions in format column:operator:value (e.g., Age:GreaterThan:30). Operators: Equals, NotEquals, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Contains, NotContains, StartsWith, EndsWith", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _conditionsOption = new Option<string[]>("--conditions", new[] { "-c" }) { Description = "Filter conditions in format column:operator:value (e.g., Age:GreaterThan:30). Operators: Equals, NotEquals, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Contains, NotContains, StartsWith, EndsWith", CustomParser = result => ListOption.Split(result), Required = true };
 
         // Add all options
         Add(_inputOption);

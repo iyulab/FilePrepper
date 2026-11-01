@@ -1,4 +1,5 @@
-﻿using System.CommandLine;
+﻿using System.Globalization;
+using System.CommandLine;
 using FilePrepper.Tasks;
 using FilePrepper.Tasks.CreateLagFeatures;
 using Microsoft.Extensions.Logging;
@@ -33,12 +34,12 @@ public class CreateLagFeaturesCommand : BaseCommand
 
         _timeColumnOption = new Option<string>("--time-column", new[] { "-t" }) { Description = "Column representing time/sequence for sorting within groups", Required = true };
 
-        _lagColumnsOption = new Option<string[]>("--lag-columns", new[] { "-l" }) { Description = "Comma-separated list of columns to create lag features from", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _lagColumnsOption = new Option<string[]>("--lag-columns", new[] { "-l" }) { Description = "Comma-separated list of columns to create lag features from", CustomParser = result => ListOption.Split(result), Required = true };
 
         _lagPeriodsOption = new Option<int[]>("--lag-periods", new[] { "-p" })
         {
             Description = "Comma-separated list of lag periods (e.g., 1,2,3)",
-            CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray(),
+            CustomParser = result => ListOption.Split(result).Select(period => int.Parse(period, CultureInfo.InvariantCulture)).ToArray(),
             Required = true
         };
 
@@ -53,7 +54,7 @@ public class CreateLagFeaturesCommand : BaseCommand
             CustomParser = result =>
             {
                 if (result.Tokens.Count == 0) return null;
-                return result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                return ListOption.Split(result);
             }
         };
 

@@ -25,9 +25,9 @@ public class AggregateCommand : BaseCommand
 
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _groupByOption = new Option<string[]>("--group-by", new[] { "-g" }) { Description = "Columns to group by", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _groupByOption = new Option<string[]>("--group-by", new[] { "-g" }) { Description = "Columns to group by", CustomParser = result => ListOption.Split(result), Required = true };
 
-        _aggregatesOption = new Option<string[]>("--aggregates", new[] { "-a" }) { Description = "Aggregate functions in format column:function:output (e.g. Sales:Sum:TotalSales). Functions: Sum, Average, Count, Min, Max", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _aggregatesOption = new Option<string[]>("--aggregates", new[] { "-a" }) { Description = "Aggregate functions in format column:function:output (e.g. Sales:Sum:TotalSales). Functions: Sum, Average, Count, Min, Max", CustomParser = result => ListOption.Split(result), Required = true };
 
         _appendOption = new Option<bool>("--append-to-source") { Description = "Append result to source file", DefaultValueFactory = _ => false };
 

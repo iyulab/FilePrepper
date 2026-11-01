@@ -19,7 +19,7 @@ public class DataTypeConvertCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _conversionsOption = new Option<string[]>("--conversions", new[] { "-c" }) { Description = "Type conversions in format column:type[:format] (e.g. Date:DateTime:yyyy-MM-dd)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _conversionsOption = new Option<string[]>("--conversions", new[] { "-c" }) { Description = "Type conversions in format column:type[:format] (e.g. Date:DateTime:yyyy-MM-dd)", CustomParser = result => ListOption.Split(result), Required = true };
         _cultureOption = new Option<string>("--culture") { Description = "Culture for parsing (e.g. en-US, ko-KR)", DefaultValueFactory = _ => "en-US" };
 
         Add(_inputOption);

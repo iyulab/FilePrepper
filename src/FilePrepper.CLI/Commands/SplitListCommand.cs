@@ -20,7 +20,7 @@ public class SplitListCommand : BaseCommand
         _columnsOption = new Option<string[]>("--columns", new[] { "-c" })
         {
             Description = "List columns to split (comma-separated); every list of a column must have the same length",
-            CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            CustomParser = result => ListOption.Split(result, trim: true),
             Required = true
         };
 

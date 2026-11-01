@@ -20,7 +20,7 @@ public class NormalizeDataCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to normalize", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to normalize", CustomParser = result => ListOption.Split(result), Required = true };
         _methodOption = new Option<string>("--method", new[] { "-m" }) { Description = "Normalization method (MinMax/ZScore)", Required = true };
         _minOption = new Option<double>("--min") { Description = "Min value for MinMax scaling", DefaultValueFactory = _ => 0.0 };
         _maxOption = new Option<double>("--max") { Description = "Max value for MinMax scaling", DefaultValueFactory = _ => 1.0 };

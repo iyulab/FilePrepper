@@ -17,7 +17,7 @@ public class ValueReplaceCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _replacementsOption = new Option<string[]>("--replacements", new[] { "-r" }) { Description = "Replacement rules in format column:oldValue=newValue[;oldValue2=newValue2]", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _replacementsOption = new Option<string[]>("--replacements", new[] { "-r" }) { Description = "Replacement rules in format column:oldValue=newValue[;oldValue2=newValue2]", CustomParser = result => ListOption.Split(result), Required = true };
 
         Add(_inputOption);
         Add(_outputOption);

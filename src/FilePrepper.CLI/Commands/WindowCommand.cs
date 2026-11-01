@@ -33,7 +33,7 @@ public class WindowCommand : BaseCommand
 
         _methodOption = new Option<string>("--method", new[] { "-m" }) { Description = "Aggregation method: mean, min, max, sum, count, std, var, median, first, last", DefaultValueFactory = _ => "mean" };
 
-        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Target columns to aggregate (comma-separated)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Target columns to aggregate (comma-separated)", CustomParser = result => ListOption.Split(result), Required = true };
 
         // Resample-specific options
         _timeColumnOption = new Option<string?>("--time-column", new[] { "-tc" }) { Description = "Time column for resample (required for resample type)" };

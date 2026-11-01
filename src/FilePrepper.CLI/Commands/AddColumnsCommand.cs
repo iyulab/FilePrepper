@@ -23,7 +23,7 @@ public class AddColumnsCommand : BaseCommand
 
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
 
-        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to add in format name=value (e.g. Age=30,City=Seoul)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to add in format name=value (e.g. Age=30,City=Seoul)", CustomParser = result => ListOption.Split(result), Required = true };
 
         // Add all options
         Add(_inputOption);

@@ -17,7 +17,7 @@ public class RemoveColumnsCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to remove", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Columns to remove", CustomParser = result => ListOption.Split(result), Required = true };
 
         Add(_inputOption);
         Add(_outputOption);

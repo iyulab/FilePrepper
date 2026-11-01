@@ -21,7 +21,7 @@ public class DateExtractionCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _extractionsOption = new Option<string[]>("--extractions", new[] { "-e" }) { Description = "Date extractions in format column:component1,component2[:format]; separate several extractions with ';' (e.g. OrderDate:Year,Month;ShipDate:Year)", CustomParser = result => result.Tokens[0].Value.Split(';', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _extractionsOption = new Option<string[]>("--extractions", new[] { "-e" }) { Description = "Date extractions in format column:component1,component2[:format]; separate several extractions with ';' (e.g. OrderDate:Year,Month;ShipDate:Year)", CustomParser = result => ListOption.Split(result, ';'), Required = true };
         _cultureOption = new Option<string>("--culture") { Description = "Culture for parsing dates", DefaultValueFactory = _ => "en-US" };
         _appendOption = new Option<bool>("--append-to-source") { Description = "Append to source file", DefaultValueFactory = _ => false };
         _templateOption = new Option<string?>("--output-column") { Description = "Output column template; {column} and {component} are replaced [default: {column}_{component}]" };

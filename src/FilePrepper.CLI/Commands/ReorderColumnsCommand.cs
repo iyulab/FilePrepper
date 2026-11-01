@@ -17,7 +17,7 @@ public class ReorderColumnsCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _orderOption = new Option<string[]>("--order") { Description = "Desired column order", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _orderOption = new Option<string[]>("--order") { Description = "Desired column order", CustomParser = result => ListOption.Split(result), Required = true };
 
         Add(_inputOption);
         Add(_outputOption);

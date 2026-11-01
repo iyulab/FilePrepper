@@ -20,8 +20,8 @@ public class BasicStatisticsCommand : BaseCommand
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
-        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Target columns", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
-        _statsOption = new Option<string[]>("--stats", new[] { "-s" }) { Description = "Statistics to calculate (Mean/StandardDeviation/Min/Max/Median/Q1/Q3/ZScore/RobustZScore/PercentRank/MAD)", CustomParser = result => result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries), Required = true };
+        _columnsOption = new Option<string[]>("--columns", new[] { "-c" }) { Description = "Target columns", CustomParser = result => ListOption.Split(result), Required = true };
+        _statsOption = new Option<string[]>("--stats", new[] { "-s" }) { Description = "Statistics to calculate (Mean/StandardDeviation/Min/Max/Median/Q1/Q3/ZScore/RobustZScore/PercentRank/MAD)", CustomParser = result => ListOption.Split(result), Required = true };
         _suffixOption = new Option<string>("--suffix") { Description = "Suffix for output column names", DefaultValueFactory = _ => "_stat" };
         _defaultValueOption = new Option<string?>("--default-value") { Description = "Default value for errors" };
 

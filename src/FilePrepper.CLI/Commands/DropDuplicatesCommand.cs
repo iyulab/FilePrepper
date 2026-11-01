@@ -24,7 +24,7 @@ public class DropDuplicatesCommand : BaseCommand
         _columnsOption = new Option<string[]?>("--columns", new[] { "-c" })
         {
             Description = "Columns to check for duplicates",
-            CustomParser = result => result.Tokens.Count > 0 ? result.Tokens[0].Value.Split(',', StringSplitOptions.RemoveEmptyEntries) : null
+            CustomParser = result => result.Tokens.Count > 0 ? ListOption.Split(result) : null
         };
 
         Add(_inputOption);
