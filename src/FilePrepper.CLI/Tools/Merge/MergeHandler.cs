@@ -88,7 +88,7 @@ public class MergeHandler : BaseCommandHandler<MergeParameters>
                 return null;
             }
 
-            var globFiles = Directory.GetFiles(dir, pattern).OrderBy(f => f).ToList();
+            var globFiles = Directory.GetFiles(dir, pattern).OrderBy(f => f, StringComparer.Ordinal).ToList();
             _logger.LogInformation("Pattern '{Pattern}' matched {Count} file(s)", opts.InputPattern, globFiles.Count);
             return globFiles;
         }

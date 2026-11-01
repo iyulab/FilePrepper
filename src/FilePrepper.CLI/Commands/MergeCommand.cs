@@ -112,7 +112,7 @@ public class MergeCommand : BaseCommand
                 return null;
             }
 
-            var globFiles = Directory.GetFiles(dir, pattern).OrderBy(f => f).ToArray();
+            var globFiles = Directory.GetFiles(dir, pattern).OrderBy(f => f, StringComparer.Ordinal).ToArray();
             if (globFiles.Length < 2)
             {
                 DisplayError($"Pattern '{inputPattern}' matched {globFiles.Length} file(s). At least 2 files required.");

@@ -30,7 +30,7 @@ public class CreateLagFeaturesTask : BaseTask<CreateLagFeaturesOption>
 
             // Sort by TimeColumn within each group
             var sortedRecords = group
-                .OrderBy(r => r.GetValueOrDefault(Options.TimeColumn, string.Empty))
+                .OrderBy(r => r.GetValueOrDefault(Options.TimeColumn, string.Empty), StringComparer.Ordinal)
                 .ToList();
 
             _logger.LogDebug("Processing group '{Key}' with {Count} records", groupKey, sortedRecords.Count);

@@ -76,7 +76,7 @@ public class GroupedDataPipeline
         }
 
         // Process each group
-        foreach (var group in groups.OrderBy(g => g.Key)) // Sort by key for consistent output
+        foreach (var group in groups.OrderBy(g => g.Key, StringComparer.Ordinal)) // Sort by key, ordinally, so the rows come out in the same order on every machine
         {
             var resultRow = new Dictionary<string, string>();
 

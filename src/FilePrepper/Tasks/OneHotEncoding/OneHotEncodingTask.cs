@@ -39,7 +39,7 @@ public class OneHotEncodingTask : BaseTask<OneHotEncodingOption>
         // Optionally, sort categories for consistent output
         foreach (var col in categoryMap.Keys)
         {
-            categoryMap[col].Sort();
+            categoryMap[col].Sort(StringComparer.Ordinal); // the same column order on every machine
         }
 
         // 2) Create new columns and fill values
