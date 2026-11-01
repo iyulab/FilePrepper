@@ -1,9 +1,12 @@
 namespace FilePrepper.Tasks.Conditional;
 
+/// <summary>Adds a column whose value is the result of the first condition each record meets; see <see cref="ConditionalOption"/>.</summary>
 public class ConditionalTask : BaseTask<ConditionalOption>
 {
     private List<ConditionalExpression> _parsedConditions = new();
 
+    /// <summary>Creates the task.</summary>
+    /// <param name="logger">Where progress is logged.</param>
     public ConditionalTask(ILogger<ConditionalTask> logger) : base(logger) { }
 
     protected override async Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
