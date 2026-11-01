@@ -27,19 +27,11 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="System.CommandLine" />
     <PackageReference Include="Spectre.Console" />
-    <PackageReference Include="Spectre.Console.Cli" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FilePrepper\FilePrepper.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Exclude old CommandLineParser-based code during migration -->
-    <Compile Remove="Tools\**\*.cs" />
-    <Compile Remove="ICommandHandler.cs" />
-    <Compile Remove="ICommandParameters.cs" />
   </ItemGroup>
 
 </Project>

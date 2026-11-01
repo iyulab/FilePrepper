@@ -1,6 +1,5 @@
 using System.CommandLine;
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using FilePrepper.CLI.Commands;

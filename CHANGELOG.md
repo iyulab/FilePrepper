@@ -60,6 +60,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   package saw none of them. The file is generated now. A public member without a summary is still allowed (about 490 have none), but a comment the compiler
   reports as malformed fails the build: two were fixed (an unescaped `<=`, and a summary left over from a method that no longer exists).
 
+### Removed
+
+- **The old `CommandLineParser`-based command layer is removed from the CLI source tree.** `src/FilePrepper.CLI/Tools` (45 files: a handler and a parameters class per command) was excluded from the build with a note that it would go "during migration", which finished with the `System.CommandLine` commands; fixes made to it - the `NaN` threshold check among them - changed nothing anyone ran. The `Spectre.Console.Cli` package, which no code used, is no longer a dependency of the CLI tool.
+
+
 ## [0.13.1] - 2026-10-29
 
 ### Changed
