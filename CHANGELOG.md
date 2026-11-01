@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`DataPipeline.FillMissing` filled `0` for `Mode`, `Forward` and `Backward`, and for a `Constant` given no value.** Only `Mean`, `Median` and a given `Constant` were implemented; the other three fell through to the text `0`, so a text column filled with `Mode` came out as zeros, and a numeric-looking column lost its gaps' neighbours. They now do what their names say - `Mode` the most frequent non-blank value (text included, a tie takes the one met first), `Forward` and `Backward` the nearest earlier or later non-blank value (gaps before the first or after the last stay empty) - and `Constant` without a value throws instead of writing `0`. `Constant` also fills a column that holds no numbers. A column with nothing to read the fill from is left as it is.
+
+- **The public documentation covers `DataPipeline`'s `FillMethod`, `DateFeatures`, `RowCount` and `ColumnNames`.**
+
 - **`scale`, `replace` and `extract-date` failed on any input from the command line.** `scale` and `replace` built their task options without the list of
   columns the task validates ("At least one columns must be specified"); `extract-date` split `--extractions` on the comma that separates a column's
   components, so a column could be given one component only, and without `--append-to-source` it asked for an output column template the command never

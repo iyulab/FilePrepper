@@ -54,6 +54,44 @@ public class PipelineTransformationsTests
         result.Rows[1]["Value"].Should().Be("20"); // (10 + 30) / 2
     }
 
+    private static DataPipeline Column(params string[] values) =>
+        DataPipeline.FromData(values.Select(v => new Dictionary<string, string> { ["V"] = v }));
+
+    private static string[] Filled(DataPipeline pipeline) => pipeline.ToDataFrame().Rows.Select(r => r["V"]).ToArray();
+
+    [Fact]
+    public void FillMissing_Mode_FillsWithTheMostFrequentValue_TextIncluded()
+    {
+        var result = Column("red", "", "blue", "red", " ").FillMissing(new[] { "V" }, FillMethod.Mode);
+
+        Filled(result).Should().Equal("red", "red", "blue", "red", "red");
+    }
+
+    [Fact]
+    public void FillMissing_Forward_CarriesThePreviousValue_AndLeavesLeadingGaps()
+    {
+        var result = Column("", "a", "", "", "b", "").FillMissing(new[] { "V" }, FillMethod.Forward);
+
+        Filled(result).Should().Equal("", "a", "a", "a", "b", "b");
+    }
+
+    [Fact]
+    public void FillMissing_Backward_CarriesTheNextValue_AndLeavesTrailingGaps()
+    {
+        var result = Column("", "a", "", "", "b", "").FillMissing(new[] { "V" }, FillMethod.Backward);
+
+        Filled(result).Should().Equal("a", "a", "b", "b", "b", "");
+    }
+
+    [Fact]
+    public void FillMissing_Constant_UsesTheValue_AndRefusesToGuessOne()
+    {
+        Filled(Column("1", "", "3").FillMissing(new[] { "V" }, FillMethod.Constant, "n/a")).Should().Equal("1", "n/a", "3");
+
+        var withoutValue = () => Column("1", "", "3").FillMissing(new[] { "V" }, FillMethod.Constant);
+        withoutValue.Should().Throw<ArgumentException>().WithMessage("*constant*");
+    }
+
     [Fact]
     public void FilterRows_ShouldFilterByCondition()
     {

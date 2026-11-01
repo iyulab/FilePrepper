@@ -594,7 +594,10 @@ public class DataPipeline
 
     #region Properties
 
+    /// <summary>Number of rows currently in the pipeline.</summary>
     public int RowCount => _rows.Count;
+
+    /// <summary>Column names in order, including columns added by earlier steps.</summary>
     public IReadOnlyList<string> ColumnNames => _columnNames.AsReadOnly();
 
     #endregion
@@ -780,41 +783,91 @@ public class DataPipeline
     }
 
     /// <summary>
-    /// Fill missing values
+    /// Fill missing values. A value is missing when the row has no such key or the text is empty or white space.
     /// </summary>
+    /// <param name="columns">Columns to fill.</param>
+    /// <param name="method">How each gap is filled — see <see cref="FillMethod"/>. A column the method cannot read (no number for
+    /// <see cref="FillMethod.Mean"/> and <see cref="FillMethod.Median"/>, no value at all for the others) is left as it is.</param>
+    /// <param name="constantValue">The text <see cref="FillMethod.Constant"/> writes; required for that method.</param>
+    /// <returns>DataPipeline for chaining</returns>
+    /// <exception cref="ArgumentException"><paramref name="method"/> is <see cref="FillMethod.Constant"/> and no value was given.</exception>
     public DataPipeline FillMissing(string[] columns, FillMethod method, string? constantValue = null)
     {
+        if (method == FillMethod.Constant && constantValue is null)
+            throw new ArgumentException("FillMethod.Constant needs the constant to write.", nameof(constantValue));
+        if (!Enum.IsDefined(method))
+            throw new ArgumentOutOfRangeException(nameof(method), method, "Not a fill method.");
+
         foreach (var col in columns)
         {
-            var validValues = _rows
-                .Select(row => row.TryGetValue(col, out var v) ? v : string.Empty)
-                .Where(v => !string.IsNullOrWhiteSpace(v) && NumberText.TryParse(v, out _))
-                .Select(NumberText.Parse)
-                .ToList();
-
-            if (!validValues.Any())
+            switch (method)
             {
-                continue;
-            }
-
-            string fillValue = method switch
-            {
-                FillMethod.Mean => NumberText.Format(validValues.Average()),
-                FillMethod.Median => NumberText.Format(CalculateMedian(validValues)),
-                FillMethod.Constant when constantValue != null => constantValue,
-                _ => "0"
-            };
-
-            foreach (var row in _rows)
-            {
-                if (!row.TryGetValue(col, out var value) || string.IsNullOrWhiteSpace(value))
-                {
-                    row[col] = fillValue;
-                }
+                case FillMethod.Forward:
+                    {
+                        string? last = null;
+                        foreach (var row in _rows)
+                        {
+                            if (IsMissing(row, col)) { if (last is not null) row[col] = last; }
+                            else last = row[col];
+                        }
+                        break;
+                    }
+                case FillMethod.Backward:
+                    {
+                        string? next = null;
+                        for (var i = _rows.Count - 1; i >= 0; i--)
+                        {
+                            if (IsMissing(_rows[i], col)) { if (next is not null) _rows[i][col] = next; }
+                            else next = _rows[i][col];
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        var fillValue = FillValueFor(col, method, constantValue);
+                        if (fillValue is null)
+                            break;
+                        foreach (var row in _rows.Where(r => IsMissing(r, col)))
+                            row[col] = fillValue;
+                        break;
+                    }
             }
         }
 
         return this;
+    }
+
+    private static bool IsMissing(Dictionary<string, string> row, string column) =>
+        !row.TryGetValue(column, out var value) || string.IsNullOrWhiteSpace(value);
+
+    // The one value a column's gaps all take (Mean, Median, Mode, Constant), or null when the column has nothing to read it from.
+    private string? FillValueFor(string column, FillMethod method, string? constantValue)
+    {
+        if (method == FillMethod.Constant)
+            return constantValue;
+
+        if (method == FillMethod.Mode)
+        {
+            return _rows
+                .Where(r => !IsMissing(r, column))
+                .Select(r => r[column])
+                .GroupBy(v => v, StringComparer.Ordinal)
+                .OrderByDescending(g => g.Count())   // OrderBy is stable: a tie keeps the value met first
+                .Select(g => g.Key)
+                .FirstOrDefault();
+        }
+
+        var numbers = _rows
+            .Select(row => row.TryGetValue(column, out var v) ? v : string.Empty)
+            .Where(v => !string.IsNullOrWhiteSpace(v) && NumberText.TryParse(v, out _))
+            .Select(NumberText.Parse)
+            .ToList();
+        if (numbers.Count == 0)
+            return null;
+
+        return method == FillMethod.Mean
+            ? NumberText.Format(numbers.Average())
+            : NumberText.Format(CalculateMedian(numbers));
     }
 
     /// <summary>
@@ -1871,29 +1924,63 @@ public class DataPipeline
     #endregion
 }
 
+/// <summary>How <see cref="DataPipeline.FillMissing"/> fills a column's gaps.</summary>
 public enum FillMethod
 {
+    /// <summary>The mean of the column's numeric values.</summary>
     Mean,
+
+    /// <summary>The median of the column's numeric values.</summary>
     Median,
+
+    /// <summary>The most frequent non-blank value, text or number; a tie takes the value met first.</summary>
     Mode,
+
+    /// <summary>The nearest earlier non-blank value in row order; gaps before the first value stay empty.</summary>
     Forward,
+
+    /// <summary>The nearest later non-blank value in row order; gaps after the last value stay empty.</summary>
     Backward,
+
+    /// <summary>The text given as <c>constantValue</c>.</summary>
     Constant
 }
 
+/// <summary>The parts of a date or time <see cref="DataPipeline.ExtractDateFeatures"/> can write, one column each (<c>{column}_{Part}</c>); combine with <c>|</c>.</summary>
 [Flags]
 public enum DateFeatures
 {
+    /// <summary>Nothing.</summary>
     None = 0,
+
+    /// <summary>Calendar year.</summary>
     Year = 1 << 0,           // 1
+
+    /// <summary>Month, 1–12.</summary>
     Month = 1 << 1,          // 2
+
+    /// <summary>Day of the month, 1–31.</summary>
     Day = 1 << 2,            // 4
+
+    /// <summary>Hour, 0–23.</summary>
     Hour = 1 << 3,           // 8
+
+    /// <summary>Minute, 0–59.</summary>
     Minute = 1 << 4,         // 16
+
+    /// <summary>Day of the week, 0 (Sunday) to 6 (Saturday).</summary>
     DayOfWeek = 1 << 5,      // 32
+
+    /// <summary>Day of the year, 1–366.</summary>
     DayOfYear = 1 << 6,      // 64
+
+    /// <summary>Week of the year by the current culture's calendar, counting from the first day of the year, weeks starting on Monday.</summary>
     WeekOfYear = 1 << 7,     // 128
+
+    /// <summary>Quarter, 1–4.</summary>
     Quarter = 1 << 8,        // 256
+
+    /// <summary>Every part above.</summary>
     All = Year | Month | Day | Hour | Minute | DayOfWeek | DayOfYear | WeekOfYear | Quarter
 }
 
