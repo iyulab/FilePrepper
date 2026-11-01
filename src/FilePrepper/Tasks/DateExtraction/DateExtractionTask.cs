@@ -64,17 +64,15 @@ public class DateExtractionTask : BaseTask<DateExtractionOption>
         }
 
         var culture = extraction.Culture ?? CultureInfo.InvariantCulture;
-        DateTime dateTime;
-        try
-        {
-            dateTime = extraction.DateFormat != null
-                ? DateTime.ParseExact(value, extraction.DateFormat, culture)
-                : DateTime.Parse(value, culture);
-        }
-        catch (Exception ex)
+        var read = extraction.DateFormat != null
+            ? DateText.TryParseExact(value, extraction.DateFormat, culture, out var dateTime)
+            : DateText.TryParse(value, culture, out dateTime);
+        if (!read)
         {
             throw new ValidationException(
-                $"Failed to parse date value '{value}': {ex.Message}",
+                extraction.DateFormat != null
+                    ? $"Failed to parse date value '{value}' for column {extraction.SourceColumn}: not a date in the format '{extraction.DateFormat}'"
+                    : $"Failed to parse date value '{value}' for column {extraction.SourceColumn}: not a date",
                 ValidationExceptionErrorCode.General);
         }
 

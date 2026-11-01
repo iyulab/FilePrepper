@@ -128,7 +128,9 @@ public class DataTypeConvertTask : BaseTask<DataTypeConvertOption>
     {
         try
         {
-            var dateTime = DateTime.Parse(value, culture);
+            if (!DateText.TryParse(value, culture, out var dateTime))
+                throw new ValidationException($"Invalid date time value: {value}", ValidationExceptionErrorCode.General);
+
             return dateTime.ToString(conversion.DateTimeFormat, culture);
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException)

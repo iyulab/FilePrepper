@@ -73,7 +73,7 @@ public class DataTypeConvertOption : SingleInputOption, IDefaultValueOption
             {
                 DataType.Integer => int.TryParse(value, NumberStyles.Integer, culture, out _),
                 DataType.Decimal => NumberText.TryParseDecimal(value, out _),
-                DataType.DateTime => DateTime.TryParse(value, culture, DateTimeStyles.None, out _),
+                DataType.DateTime => DateText.TryParse(value, culture, out _),
                 DataType.Boolean => IsValidBooleanValue(value),
                 DataType.String => true,
                 _ => false

@@ -260,47 +260,7 @@ public class MergeAsOfTask : BaseTask<MergeAsOfOption>
         return result;
     }
 
-    private bool TryParseDateTime(string value, out DateTime result)
-    {
-        // Try multiple datetime formats
-        var formats = new[]
-        {
-            "yyyy-MM-dd HH:mm:ss",
-            "yyyy-MM-dd HH:mm",
-            "yyyy-MM-dd",
-            "yyyyMMddHHmmss",
-            "yyyyMMddHHmm",
-            "yyyyMMdd",
-            "yyyy/MM/dd HH:mm:ss",
-            "yyyy/MM/dd HH:mm",
-            "yyyy/MM/dd",
-            "MM/dd/yyyy HH:mm:ss",
-            "MM/dd/yyyy HH:mm",
-            "MM/dd/yyyy"
-        };
-
-        foreach (var format in formats)
-        {
-            if (DateTime.TryParseExact(
-                value,
-                format,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out result))
-            {
-                return true;
-            }
-        }
-
-        // Try general datetime parsing
-        if (DateText.TryParse(value, out result))
-        {
-            return true;
-        }
-
-        result = default;
-        return false;
-    }
+    private static bool TryParseDateTime(string value, out DateTime result) => DateText.TryParse(value, out result);
 
     protected override IEnumerable<string> GetRequiredColumns() => Array.Empty<string>();
 

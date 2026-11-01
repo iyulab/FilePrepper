@@ -22,13 +22,31 @@ public static class DateText
     // so neither depends on where the program runs.
     private const DateTimeStyles ReadStyles = DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowWhiteSpaces;
 
+    /// <summary>The forms with no separators, which the general reader does not take: <c>20260102</c>, <c>202601020304</c>, <c>20260102030405</c>.</summary>
+    private static readonly string[] CompactFormats = ["yyyyMMddHHmmss", "yyyyMMddHHmm", "yyyyMMdd"];
+
     /// <summary>Reads <paramref name="text"/> as a date and time in the invariant culture, keeping the clock as written.</summary>
-    public static bool TryParse(string? text, out DateTime value)
+    public static bool TryParse(string? text, out DateTime value) => TryParse(text, CultureInfo.InvariantCulture, out value);
+
+    /// <summary>
+    /// Reads <paramref name="text"/> as a date and time in <paramref name="culture"/> (day-first for a day-first culture), keeping the
+    /// clock as written. This is the one reader of a free-form date: <c>extract-date</c> read with <c>DateTime.Parse</c> and a value ending
+    /// in <c>Z</c> or a UTC offset came back in the machine's own zone, so <c>2026-01-02T23:30:00Z</c> was the 3rd, 8 o'clock on a UTC+9
+    /// machine and the 2nd, 23 o'clock on any other; <c>datetime</c>, <c>merge-asof</c> and <c>extract-date</c> each took a different set of
+    /// forms (only the first two took <c>20260102</c>).
+    /// </summary>
+    public static bool TryParse(string? text, IFormatProvider culture, out DateTime value)
     {
-        if (DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, ReadStyles, out var parsed))
+        if (DateTimeOffset.TryParse(text, culture, ReadStyles, out var parsed))
         {
             value = parsed.DateTime;
             return true;
+        }
+
+        foreach (var format in CompactFormats)
+        {
+            if (TryParseExact(text?.Trim(), format, CultureInfo.InvariantCulture, out value))
+                return true;
         }
 
         value = default;
@@ -37,7 +55,20 @@ public static class DateText
 
     /// <summary>Reads <paramref name="text"/> in exactly <paramref name="format"/>, in the invariant culture.</summary>
     public static bool TryParseExact(string? text, string format, out DateTime value) =>
-        DateTime.TryParseExact(text, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out value);
+        TryParseExact(text, format, CultureInfo.InvariantCulture, out value);
+
+    /// <summary>Reads <paramref name="text"/> in exactly <paramref name="format"/>, in <paramref name="culture"/>, keeping the clock as written.</summary>
+    public static bool TryParseExact(string? text, string format, IFormatProvider culture, out DateTime value)
+    {
+        if (DateTimeOffset.TryParseExact(text, format, culture, DateTimeStyles.AssumeUniversal, out var parsed))
+        {
+            value = parsed.DateTime;
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
 
     /// <summary>Writes <paramref name="value"/> in <paramref name="format"/>, in the invariant culture: Gregorian calendar, ASCII digits, <c>:</c> and <c>/</c> as written.</summary>
     public static string Format(DateTime value, string format = DefaultFormat) =>

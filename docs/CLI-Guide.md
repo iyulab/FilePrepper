@@ -38,6 +38,15 @@ An option that takes a list (`--columns a,b`) may also be given more than once (
 - **Excel** (.xlsx, .xls) - Microsoft Excel Spreadsheet
 - **Parquet** (.parquet) - read
 
+### How cells are read
+
+Every command reads a cell the same way, whatever the machine's locale or time zone:
+
+- **Text** is put in NFC where a file is read: a Korean syllable written as its letters (the form macOS gives many files) is the same text as the syllable written whole, so the cells and column names of the output are in NFC whichever form the input was in.
+- **Numbers** are finite and have no separators: `1200`, `-3`, `2.5`, `1e3`. `NaN`, `Infinity`, `1e400` and `1,200` are not numbers to any command. A comma may separate thousands or decimals depending on where a file was written (`1,234` is 1234 or 1.234), so say which with `clean`.
+- **Dates** are read keeping the clock as written (`2026-01-02T23:30:00Z` is 23:30 on the 2nd on every machine), month first for `01/02/2026`, and `20260102`, `202601020304` and `20260102030405` are dates too.
+- A file with **no columns** (empty) or with a **column name written twice** is refused; a file with a header and no rows keeps the columns its command makes, except for `one-hot-encoding` and `split-list`, which need rows to know them.
+
 ---
 
 ## Commands
