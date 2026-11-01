@@ -1621,23 +1621,10 @@ public class DataPipeline
     public DataPipeline Resample(string timeColumn, string window, AggregationMethod method, string[] targetColumns)
     {
         // Parse window specification (e.g., "5T" = 5 minutes)
-        var match = System.Text.RegularExpressions.Regex.Match(window, @"^(\d+)([THD])$");
-        if (!match.Success)
+        if (!ResampleWindow.TryParse(window, out var windowSpan, out var windowError))
         {
-            throw new ArgumentException($"Invalid window format: {window}. Use format like '5T' (5 minutes), '1H' (1 hour), or '1D' (1 day).");
+            throw new ArgumentException(windowError, nameof(window));
         }
-
-        var windowValue = int.Parse(match.Groups[1].Value);
-        var windowUnit = match.Groups[2].Value;
-
-        // Convert to TimeSpan
-        TimeSpan windowSpan = windowUnit switch
-        {
-            "T" => TimeSpan.FromMinutes(windowValue), // T = minutes
-            "H" => TimeSpan.FromHours(windowValue),   // H = hours
-            "D" => TimeSpan.FromDays(windowValue),    // D = days
-            _ => throw new ArgumentException($"Unknown window unit: {windowUnit}")
-        };
 
         // Group rows by time windows
         var timeGroups = new Dictionary<DateTime, List<Dictionary<string, string>>>();
@@ -1646,7 +1633,7 @@ public class DataPipeline
         {
             if (!row.TryGetValue(timeColumn, out var timeStr) || !DateText.TryParse(timeStr, out var dt))
             {
-                continue; // Skip rows with invalid DateTime
+                continue; // A row with no readable time belongs to no window (WindowTask counts and reports them)
             }
 
             // Round down to window boundary

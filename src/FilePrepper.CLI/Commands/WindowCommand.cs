@@ -38,7 +38,7 @@ public class WindowCommand : BaseCommand
         // Resample-specific options
         _timeColumnOption = new Option<string?>("--time-column", new[] { "-tc" }) { Description = "Time column for resample (required for resample type)" };
 
-        _windowOption = new Option<string?>("--window", new[] { "-w" }) { Description = "Window size for resample: e.g., '5T' (5 minutes), '1H' (1 hour), '1D' (1 day)" };
+        _windowOption = new Option<string?>("--window", new[] { "-w" }) { Description = "Window size for resample: a whole number and an upper-case unit, e.g., '5T' (5 minutes), '1H' (1 hour), '1D' (1 day)" };
 
         // Rolling-specific options
         _windowSizeOption = new Option<int>("--window-size", new[] { "-ws" }) { Description = "Window size in rows for rolling aggregation", DefaultValueFactory = _ => 3 };

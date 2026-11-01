@@ -1,3 +1,5 @@
+using FilePrepper.Pipeline;
+
 namespace FilePrepper.Tasks.WindowOps;
 
 /// <summary>
@@ -94,12 +96,15 @@ public class WindowOption : BaseColumnOption
 
     /// <summary>
     /// For Resample: window size (e.g., "5T" = 5 minutes, "1H" = 1 hour, "1D" = 1 day)
-    /// Format: [number][T|H|D] where T=minutes, H=hours, D=days
+    /// Format: [number][T|H|D] where T=minutes, H=hours, D=days; the number is at least 1 and the unit is upper-case.
+    /// Windows start at multiples of their length counted from 0001-01-01 00:00, so 5T and 1H start on the clock and 1D at midnight.
     /// </summary>
     public string? Window { get; set; }
 
     /// <summary>
-    /// For Rolling: window size in number of rows
+    /// For Rolling: window size in number of rows. A row's window is the row and the ones before it, so the first
+    /// WindowSize - 1 rows aggregate the rows there are so far (the first row's window is itself). A blank or non-numeric
+    /// cell takes its place in the window but adds no value, and Count counts the numeric values only.
     /// </summary>
     public int WindowSize { get; set; } = 3;
 
@@ -130,10 +135,9 @@ public class WindowOption : BaseColumnOption
             }
             else
             {
-                // Validate window format
-                if (!System.Text.RegularExpressions.Regex.IsMatch(Window, @"^\d+[THD]$"))
+                if (!ResampleWindow.TryParse(Window, out _, out var windowError))
                 {
-                    errors.Add("Window format is invalid. Use format like '5T' (5 minutes), '1H' (1 hour), or '1D' (1 day).");
+                    errors.Add(windowError!);
                 }
             }
         }
