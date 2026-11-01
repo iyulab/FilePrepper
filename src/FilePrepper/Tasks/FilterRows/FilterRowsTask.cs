@@ -1,8 +1,11 @@
 using FilePrepper.Utils;
 namespace FilePrepper.Tasks.FilterRows;
 
+/// <summary>Keeps the records that meet every condition of <see cref="FilterRowsOption"/>.</summary>
 public class FilterRowsTask : BaseTask<FilterRowsOption>
 {
+    /// <summary>Creates the task.</summary>
+    /// <param name="logger">Where progress is logged.</param>
     public FilterRowsTask(ILogger<FilterRowsTask> logger) : base(logger)
     {
     }
@@ -61,14 +64,17 @@ public class FilterRowsTask : BaseTask<FilterRowsOption>
                     return cVal7 <= cVal8;
                 }
                 return false;
+            // The four text operators agree: ordinal, ignoring case, the same on every machine. NotContains is the exact
+            // complement of Contains (it compared case-sensitively, so a row could pass both), and StartsWith/EndsWith
+            // compared in the machine's culture and case-sensitively.
             case FilterOperator.Contains:
                 return cellValue.Contains(cond.Value, StringComparison.OrdinalIgnoreCase);
             case FilterOperator.NotContains:
-                return !cellValue.Contains(cond.Value);
+                return !cellValue.Contains(cond.Value, StringComparison.OrdinalIgnoreCase);
             case FilterOperator.StartsWith:
-                return cellValue.StartsWith(cond.Value);
+                return cellValue.StartsWith(cond.Value, StringComparison.OrdinalIgnoreCase);
             case FilterOperator.EndsWith:
-                return cellValue.EndsWith(cond.Value);
+                return cellValue.EndsWith(cond.Value, StringComparison.OrdinalIgnoreCase);
             default:
                 return false;
         }

@@ -562,7 +562,7 @@ public class DataPipeline
                 {
                     try
                     {
-                        if (format.StartsWith("yyyy"))
+                        if (format.StartsWith("yyyy", StringComparison.Ordinal))
                         {
                             var year = int.Parse(match.Groups[1].Value);
                             var month = int.Parse(match.Groups[2].Value);
@@ -944,7 +944,7 @@ public class DataPipeline
     {
         int hour, minute, second;
 
-        if (timeStr.StartsWith("오전"))  // AM
+        if (timeStr.StartsWith("오전", StringComparison.Ordinal))  // AM
         {
             var timePart = timeStr.Substring(2).Trim();  // "9:01:18"
             var parts = timePart.Split(':');
@@ -965,7 +965,7 @@ public class DataPipeline
                 hour = 0;
             }
         }
-        else if (timeStr.StartsWith("오후"))  // PM
+        else if (timeStr.StartsWith("오후", StringComparison.Ordinal))  // PM
         {
             var timePart = timeStr.Substring(2).Trim();  // "2:15:30"
             var parts = timePart.Split(':');

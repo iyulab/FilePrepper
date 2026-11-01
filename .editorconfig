@@ -1,0 +1,7 @@
+root = true
+
+[src/**/*.cs]
+# A text comparison names its StringComparison: the default is the machine's culture, so the same filter kept different rows
+# on different machines. (CA1305 - an IFormatProvider on every ToString/Parse - is not enforced: it flags thousands of non-negative
+# integers; numbers and dates that matter go through NumberText and DateText, which a source guard in the tests enforces.)
+dotnet_diagnostic.CA1310.severity = error

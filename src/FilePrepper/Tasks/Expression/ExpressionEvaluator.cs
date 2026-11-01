@@ -146,13 +146,13 @@ public class ExpressionEvaluator
         expression = expression.Trim();
 
         // Handle parentheses
-        if (expression.StartsWith("(") && expression.EndsWith(")"))
+        if (expression.StartsWith('(') && expression.EndsWith(')'))
         {
             return EvaluateAddSubtract(expression.Substring(1, expression.Length - 2));
         }
 
         // Handle unary minus
-        if (expression.StartsWith("-"))
+        if (expression.StartsWith('-'))
         {
             return -EvaluatePrimary(expression.Substring(1));
         }
