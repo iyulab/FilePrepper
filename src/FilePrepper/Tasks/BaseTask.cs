@@ -151,8 +151,18 @@ public abstract class BaseTask<TOption> : ITask
             DataFileFormat.SvmLight => SvmLightUtils.ReadSvmLightFileAsync(path),
             _ => ReadCsvFileAsync(path)
         };
-        _reads[path] = read;
-        return read;
+        var checkedRead = RefuseUnreadableColumnsAsync(path, read);
+        _reads[path] = checkedRead;
+        return checkedRead;
+    }
+
+    private static async Task<(List<Dictionary<string, string>> records, List<string> headers)> RefuseUnreadableColumnsAsync(
+        string path, Task<(List<Dictionary<string, string>> records, List<string> headers)> read)
+    {
+        var result = await read;
+        HeaderNames.RefuseNone(result.headers, path);
+        HeaderNames.RefuseRepeated(result.headers, path);
+        return result;
     }
 
     protected abstract Task<List<Dictionary<string, string>>> ProcessRecordsAsync(
@@ -286,10 +296,6 @@ public abstract class BaseTask<TOption> : ITask
     IEnumerable<Dictionary<string, string>> records)
     {
         var finalHeaders = headers.Any() ? headers : _originalHeaders;
-        if (!finalHeaders.Any())
-        {
-            finalHeaders = ["NoData"];
-        }
 
         await using var writer = new StreamWriter(outputPath);
         await using var csv = new CsvWriter(writer, CsvUtils.GetDefaultConfiguration(Options.HasHeader));
@@ -317,14 +323,11 @@ public abstract class BaseTask<TOption> : ITask
 
     /// <summary>
     /// A table that had columns and now has none has nothing to write: the writer would fall back to the
-    /// input's headers over blank cells (rows present) or to a <c>NoData</c> placeholder (no rows), and
-    /// the task would report success. An input with no columns at all (an empty file) is not refused.
+    /// input's headers over blank cells (rows present) or to a placeholder (no rows), and the task would report
+    /// success. An input with no columns at all is refused where it is read (<see cref="HeaderNames.RefuseNone"/>).
     /// </summary>
     private void RefuseAnEmptiedTable(List<Dictionary<string, string>> records, IEnumerable<string> headers)
     {
-        if (_inputColumnCount == 0)
-            return;
-
         var columnsLeft = records.Count > 0 ? headers.Count() : _originalHeaders.Count;
         if (columnsLeft == 0)
         {

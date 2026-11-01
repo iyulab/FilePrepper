@@ -43,6 +43,7 @@ public class DataPipeline
         await csv.ReadAsync();
         csv.ReadHeader();
         headers.AddRange(csv.HeaderRecord ?? Array.Empty<string>());
+        HeaderNames.RefuseRepeated(headers, path);
 
         while (await csv.ReadAsync())
         {
@@ -263,6 +264,7 @@ public class DataPipeline
                 await csv.ReadAsync();
                 csv.ReadHeader();
                 var currentHeaders = csv.HeaderRecord?.ToList() ?? new List<string>();
+                HeaderNames.RefuseRepeated(currentHeaders, filePath);
 
                 // First file: establish schema
                 if (headers == null)
@@ -408,6 +410,7 @@ public class DataPipeline
                 await csv.ReadAsync();
                 csv.ReadHeader();
                 var currentHeaders = csv.HeaderRecord?.ToList() ?? new List<string>();
+                HeaderNames.RefuseRepeated(currentHeaders, filePath);
 
                 if (headers == null)
                 {

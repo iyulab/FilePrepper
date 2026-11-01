@@ -229,11 +229,12 @@ public class RemoveColumnsTests : TaskBaseTest<RemoveColumnsTask>
     }
 
     [Fact]
-    public void An_input_with_no_columns_at_all_is_not_refused()
+    public void An_input_with_no_columns_at_all_is_refused_where_it_is_read()
     {
         File.WriteAllText(_testInputPath, string.Empty);
 
-        // Nothing was lost by the task, so the placeholder for "no data" is still what it writes.
-        Assert.True(RemoveAll("a"));
+        // This test held that the "NoData" placeholder was fine because nothing was lost; the sweep over every command showed
+        // that nine commands wrote it and twenty-two failed on the same file, so no command writes it now.
+        Assert.Throws<InvalidDataException>(() => RemoveAll("a"));
     }
 }

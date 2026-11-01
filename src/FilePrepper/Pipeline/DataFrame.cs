@@ -63,6 +63,7 @@ public class DataFrame
         await csv.ReadAsync();
         csv.ReadHeader();
         var headers = (csv.HeaderRecord ?? []).ToList();
+        HeaderNames.RefuseRepeated(headers, path);
         var columns = headers.Select(_ => new List<string?>()).ToArray();
         var rowCount = 0;
 

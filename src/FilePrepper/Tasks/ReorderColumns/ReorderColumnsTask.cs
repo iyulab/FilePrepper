@@ -50,10 +50,6 @@ namespace FilePrepper.Tasks.ReorderColumns
             IEnumerable<Dictionary<string, string>> records)
         {
             string[] finalHeaders = [.. _originalHeaders];
-            if (finalHeaders.Length == 0)
-            {
-                finalHeaders = ["NoData"];
-            }
 
             await using var writer = new StreamWriter(outputPath);
             await using var csv = new CsvWriter(writer, CsvUtils.GetDefaultConfiguration());
