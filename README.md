@@ -104,7 +104,7 @@ Process data in multiple formats:
 | **Data Cleaning** | `fill-missing` | FillMissingValues | Mean, Median, Mode, Forward, Backward, Constant |
 | | `drop-duplicates` | DropDuplicates | Remove duplicate rows by key columns |
 | | `replace` | ValueReplace | Replace values in columns |
-| | `remove-constants` | RemoveConstants | Remove constant/near-constant columns |
+| | `remove-constants` | RemoveConstants | Remove constant/low-variety columns |
 | | `clean` | CSVCleaner | Thousand separators, whitespace, `\r` strip |
 | **Column Operations** | `add-columns` | AddColumns | Add computed columns |
 | | `remove-columns` | RemoveColumns | Delete columns |

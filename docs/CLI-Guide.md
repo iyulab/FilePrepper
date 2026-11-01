@@ -220,7 +220,7 @@ fileprepper replace --input <input> --output <output> --replacements <replacemen
 
 #### remove-constants
 
-Remove constant or near-constant columns from the input file
+Remove constant or low-variety columns from the input file
 
 ```bash
 fileprepper remove-constants --input <input> --output <output> [options]
@@ -228,7 +228,7 @@ fileprepper remove-constants --input <input> --output <output> [options]
 
 | Option | Description |
 |--------|-------------|
-| `-t`, `--threshold` `<threshold>` | Unique ratio threshold (0.0 = exact constants only, 0.01 = below 1% unique ratio) [default: 0] |
+| `-t`, `--threshold` `<threshold>` | Remove columns whose distinct values / rows is at or below this (0.0 = exact constants only, 0.01 = at most 1% distinct values) [default: 0] |
 | `--report-only` | Only report constant columns without removing them |
 
 #### clean

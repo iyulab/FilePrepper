@@ -14,13 +14,13 @@ public class RemoveConstantsCommand : BaseCommand
     private readonly Option<bool> _reportOnlyOption;
 
     public RemoveConstantsCommand(ILoggerFactory loggerFactory)
-        : base("remove-constants", "Remove constant or near-constant columns from the input file", loggerFactory)
+        : base("remove-constants", "Remove constant or low-variety columns from the input file", loggerFactory)
     {
         _inputOption = new Option<string>("--input", new[] { "-i" }) { Description = "Input file path", Required = true };
         _outputOption = new Option<string>("--output", new[] { "-o" }) { Description = "Output file path", Required = true };
         _thresholdOption = new Option<double>("--threshold", new[] { "-t" })
         {
-            Description = "Unique ratio threshold (0.0 = exact constants only, 0.01 = below 1% unique ratio)",
+            Description = "Remove columns whose distinct values / rows is at or below this (0.0 = exact constants only, 0.01 = at most 1% distinct values)",
             DefaultValueFactory = _ => 0.0
         };
         _reportOnlyOption = new Option<bool>("--report-only")

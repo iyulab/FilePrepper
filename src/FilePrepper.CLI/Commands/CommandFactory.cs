@@ -83,7 +83,7 @@ public static class CommandFactory
             ("csv-cleaner", "Clean and fix CSV formatting issues", "Data Quality"),
             ("drop-duplicates", "Remove duplicate rows", "Data Quality"),
             ("fill-missing", "Fill missing values using various methods", "Data Quality"),
-            ("remove-constants", "Remove constant or near-constant columns", "Data Quality"),
+            ("remove-constants", "Remove constant or low-variety columns", "Data Quality"),
 
             // Data Processing
             ("aggregate", "Aggregate data based on grouping columns", "Data Processing"),
