@@ -52,13 +52,13 @@ namespace FilePrepper.Tasks.ReorderColumns
             string[] finalHeaders = [.. _originalHeaders];
 
             await using var writer = new StreamWriter(outputPath);
-            await using var csv = new CsvWriter(writer, CsvUtils.GetDefaultConfiguration());
+            await using var csv = CsvWriter.Create(writer, CsvUtils.WriterOptions());
 
             foreach (var header in finalHeaders)
             {
                 csv.WriteField(header);
             }
-            csv.NextRecord();
+            csv.EndRecord();
 
             foreach (var record in records)
             {
@@ -66,7 +66,7 @@ namespace FilePrepper.Tasks.ReorderColumns
                 {
                     csv.WriteField(record.GetValueOrDefault(header, string.Empty));
                 }
-                csv.NextRecord();
+                csv.EndRecord();
             }
         }
     }

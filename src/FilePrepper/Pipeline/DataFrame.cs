@@ -58,11 +58,10 @@ public class DataFrame
     public static async Task<DataFrame> FromCsvAsync(string path, string encoding = "auto")
     {
         using var reader = CsvUtils.CreateReader(path, encoding);
-        using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration(hasHeader: true, DataFileFormats.DelimiterFor(path)));
+        using var csv = CsvReader.Create(reader, CsvUtils.ReaderOptions(hasHeader: true, DataFileFormats.DelimiterFor(path)));
 
-        await csv.ReadAsync();
-        csv.ReadHeader();
-        var headers = (csv.HeaderRecord ?? []).Select(TextForms.Nfc).ToList();
+        await csv.ReadHeaderAsync();
+        var headers = csv.Headers.Select(TextForms.Nfc).ToList();
         HeaderNames.RefuseRepeated(headers, path);
         var columns = headers.Select(_ => new List<string?>()).ToArray();
         var rowCount = 0;
@@ -70,7 +69,7 @@ public class DataFrame
         while (await csv.ReadAsync())
         {
             for (var c = 0; c < columns.Length; c++)
-                columns[c].Add(TextForms.Nfc(csv.GetField(c) ?? string.Empty));
+                columns[c].Add(TextForms.Nfc(csv.GetString(c)));
             rowCount++;
         }
 

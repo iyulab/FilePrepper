@@ -39,13 +39,13 @@ public class FileFormatConvertTask : BaseTask<FileFormatConvertOption>
             switch (Options.TargetFormat)
             {
                 case FileFormat.CSV:
-                    await WriteDelimitedFileAsync(recordsList, outputPath, ",", encoding);
+                    await WriteDelimitedFileAsync(recordsList, headers, outputPath, ",", encoding);
                     break;
                 case FileFormat.TSV:
-                    await WriteDelimitedFileAsync(recordsList, outputPath, "\t", encoding);
+                    await WriteDelimitedFileAsync(recordsList, headers, outputPath, "\t", encoding);
                     break;
                 case FileFormat.PSV:
-                    await WriteDelimitedFileAsync(recordsList, outputPath, "|", encoding);
+                    await WriteDelimitedFileAsync(recordsList, headers, outputPath, "|", encoding);
                     break;
                 case FileFormat.JSON:
                     await WriteJsonFileAsync(recordsList, outputPath, encoding);
@@ -66,40 +66,41 @@ public class FileFormatConvertTask : BaseTask<FileFormatConvertOption>
 
     private async Task WriteDelimitedFileAsync(
         List<Dictionary<string, string>> records,
+        IEnumerable<string> headers,
         string outputPath,
         string delimiter,
         Encoding encoding)
     {
-        var config = CsvUtils.GetDefaultConfiguration();
-        config.Delimiter = delimiter;
-        config.HasHeaderRecord = Options.HasHeader;
-
         await using var writer = new StreamWriter(outputPath, false, encoding);
-        await using var csv = new CsvWriter(writer, config);
+        await using var csv = CsvWriter.Create(writer, CsvUtils.WriterOptions(delimiter));
 
         if (records.Count == 0)
         {
             return;
         }
 
+        // Every row is written under every column, an absent cell as an empty one: a short input row would otherwise
+        // be written with fewer cells than the header, and the writer refuses records of different widths.
+        var columns = headers.Any() ? headers.ToList() : [.. records[0].Keys];
+
         // Write headers
         if (Options.HasHeader)
         {
-            foreach (var header in records[0].Keys)
+            foreach (var header in columns)
             {
                 csv.WriteField(header);
             }
-            csv.NextRecord();
+            csv.EndRecord();
         }
 
         // Write data
         foreach (var record in records)
         {
-            foreach (var value in record.Values)
+            foreach (var column in columns)
             {
-                csv.WriteField(value);
+                csv.WriteField(record.GetValueOrDefault(column, string.Empty));
             }
-            csv.NextRecord();
+            csv.EndRecord();
         }
     }
 

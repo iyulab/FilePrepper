@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using CsvHelper;
-using CsvHelper.Configuration;
 
 namespace FilePrepper.Utils;
 
@@ -16,14 +15,54 @@ public static class CsvUtils
         return new StreamReader(path, enc);
     }
 
-    public static CsvConfiguration GetDefaultConfiguration(bool hasHeader = true, string delimiter = ",")
+    /// <summary>
+    /// How a delimited file is read: the separator named by the file's format, a short row read as empty cells, and a
+    /// malformed quote refused (the reader recovers from one by default, which turns an unclosed quote into a field that
+    /// swallows the rest of the file).
+    /// </summary>
+    public static CsvReaderOptions ReaderOptions(bool hasHeader = true, string delimiter = ",")
     {
-        return new CsvConfiguration(CultureInfo.InvariantCulture)
+        return new CsvReaderOptions
         {
-            HasHeaderRecord = hasHeader,
-            Delimiter = delimiter,
-            MissingFieldFound = null
+            HasHeader = hasHeader,
+            Separator = SeparatorOf(delimiter),
+            MalformedData = CsvMalformedDataHandling.Throw
         };
+    }
+
+    /// <summary>
+    /// How a delimited file is written: the separator named by the file's format, a field quoted when it needs it and when it
+    /// starts or ends with a space or a tab (so that a reader that trims whitespace outside quotes keeps it).
+    /// </summary>
+    public static CsvWriterOptions WriterOptions(string delimiter = ",")
+    {
+        return new CsvWriterOptions { Separator = SeparatorOf(delimiter), Quoting = CsvQuoting.WhenNeededOrWhitespace };
+    }
+
+    private static char SeparatorOf(string delimiter)
+    {
+        if (delimiter is not { Length: 1 })
+            throw new ArgumentException($"A delimiter is one character; got \"{delimiter}\".", nameof(delimiter));
+        return delimiter[0];
+    }
+
+    /// <summary>
+    /// The cells of the record the reader stands on, as written. The reader must have been opened without a header
+    /// (<c>ReaderOptions(hasHeader: false)</c>) so that reading moves record by record and nothing is taken as the header.
+    /// </summary>
+    internal static string[] CurrentRecord(CsvReader csv)
+    {
+        var cells = new string[csv.FieldCount];
+        for (var i = 0; i < cells.Length; i++)
+            cells[i] = csv.GetString(i);
+        return cells;
+    }
+
+    /// <summary>The pipeline readers take the first record as the header; a file said to have none was never readable there.</summary>
+    internal static void RequireHeader(bool hasHeader, string reader)
+    {
+        if (!hasHeader)
+            throw new NotSupportedException($"{reader} reads the first record of a delimited file as its header; a file without one is not supported there.");
     }
 
     public static List<string> ValidateHeaders(IEnumerable<string> requiredColumns, IEnumerable<string> actualHeaders)

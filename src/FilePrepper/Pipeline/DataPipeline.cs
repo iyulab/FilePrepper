@@ -1,5 +1,4 @@
 using CsvHelper;
-using CsvHelper.Configuration;
 using FilePrepper.Tasks.NormalizeData;
 using FilePrepper.Utils;
 using FilePrepper.Tasks.WindowOps;
@@ -35,14 +34,14 @@ public class DataPipeline
     public static async Task<DataPipeline> FromCsvAsync(string path, bool hasHeader = true, string encoding = "auto")
     {
         using var reader = CsvUtils.CreateReader(path, encoding);
-        using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration(hasHeader, DataFileFormats.DelimiterFor(path)));
+        CsvUtils.RequireHeader(hasHeader, nameof(FromCsvAsync));
+        using var csv = CsvReader.Create(reader, CsvUtils.ReaderOptions(hasHeader: true, DataFileFormats.DelimiterFor(path)));
 
         var rows = new List<Dictionary<string, string>>();
         var headers = new List<string>();
 
-        await csv.ReadAsync();
-        csv.ReadHeader();
-        headers.AddRange((csv.HeaderRecord ?? Array.Empty<string>()).Select(TextForms.Nfc));
+        await csv.ReadHeaderAsync();
+        headers.AddRange(csv.Headers.Select(TextForms.Nfc));
         HeaderNames.RefuseRepeated(headers, path);
 
         while (await csv.ReadAsync())
@@ -50,7 +49,7 @@ public class DataPipeline
             var row = new Dictionary<string, string>();
             for (var column = 0; column < headers.Count; column++)
             {
-                row[headers[column]] = TextForms.Nfc(csv.GetField(column) ?? string.Empty);
+                row[headers[column]] = TextForms.Nfc(csv.GetString(column));
             }
             rows.Add(row);
         }
@@ -259,11 +258,11 @@ public class DataPipeline
             try
             {
                 using var reader = CsvUtils.CreateReader(filePath, encoding);
-                using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration(hasHeader));
+                CsvUtils.RequireHeader(hasHeader, "Concatenating delimited files");
+                using var csv = CsvReader.Create(reader, CsvUtils.ReaderOptions(hasHeader: true));
 
-                await csv.ReadAsync();
-                csv.ReadHeader();
-                var currentHeaders = csv.HeaderRecord?.Select(TextForms.Nfc).ToList() ?? new List<string>();
+                await csv.ReadHeaderAsync();
+                var currentHeaders = csv.Headers.Select(TextForms.Nfc).ToList();
                 HeaderNames.RefuseRepeated(currentHeaders, filePath);
 
                 // First file: establish schema
@@ -297,7 +296,7 @@ public class DataPipeline
                     // Read actual data columns from CSV
                     for (var column = 0; column < currentHeaders.Count; column++)
                     {
-                        row[currentHeaders[column]] = TextForms.Nfc(csv.GetField(column) ?? string.Empty);
+                        row[currentHeaders[column]] = TextForms.Nfc(csv.GetString(column));
                     }
 
                     // Add source column if requested (not from CSV, generated)
@@ -405,11 +404,11 @@ public class DataPipeline
             try
             {
                 using var reader = CsvUtils.CreateReader(filePath, encoding);
-                using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration(hasHeader));
+                CsvUtils.RequireHeader(hasHeader, "Concatenating delimited files");
+                using var csv = CsvReader.Create(reader, CsvUtils.ReaderOptions(hasHeader: true));
 
-                await csv.ReadAsync();
-                csv.ReadHeader();
-                var currentHeaders = csv.HeaderRecord?.Select(TextForms.Nfc).ToList() ?? new List<string>();
+                await csv.ReadHeaderAsync();
+                var currentHeaders = csv.Headers.Select(TextForms.Nfc).ToList();
                 HeaderNames.RefuseRepeated(currentHeaders, filePath);
 
                 if (headers == null)
@@ -435,7 +434,7 @@ public class DataPipeline
 
                     for (var column = 0; column < currentHeaders.Count; column++)
                     {
-                        row[currentHeaders[column]] = TextForms.Nfc(csv.GetField(column) ?? string.Empty);
+                        row[currentHeaders[column]] = TextForms.Nfc(csv.GetString(column));
                     }
 
                     // Add metadata columns
@@ -1770,10 +1769,7 @@ public class DataPipeline
     public async Task ToCsvAsync(string path, bool hasHeader = true)
     {
         await using var writer = new StreamWriter(path);
-        await using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            HasHeaderRecord = hasHeader
-        });
+        await using var csv = CsvWriter.Create(writer, CsvUtils.WriterOptions());
 
         // Write header
         if (hasHeader)
@@ -1782,7 +1778,7 @@ public class DataPipeline
             {
                 csv.WriteField(col);
             }
-            await csv.NextRecordAsync();
+            await csv.EndRecordAsync();
         }
 
         // Write rows
@@ -1792,7 +1788,7 @@ public class DataPipeline
             {
                 csv.WriteField(row.TryGetValue(col, out var value) ? value : string.Empty);
             }
-            await csv.NextRecordAsync();
+            await csv.EndRecordAsync();
         }
     }
 

@@ -107,14 +107,13 @@ public abstract class BaseTask<TOption> : ITask
         }
 
         using var reader = CsvUtils.CreateReader(inputPath, Options.Encoding);
-        using var csv = new CsvReader(reader, CsvUtils.GetDefaultConfiguration());
+        // Opened without a header so that skipping reads record by record; the first record left is the header.
+        using var csv = CsvReader.Create(reader, CsvUtils.ReaderOptions(hasHeader: false));
 
         for (int i = 0; i < Options.SkipRows; i++)
-            csv.Parser.Read();
+            csv.Read();
 
-        csv.Read();
-        csv.ReadHeader();
-        return csv.HeaderRecord?.ToList() ?? new List<string>();
+        return csv.Read() ? [.. CsvUtils.CurrentRecord(csv)] : [];
     }
 
     public bool Execute(TaskContext context)
@@ -326,7 +325,8 @@ public abstract class BaseTask<TOption> : ITask
     protected virtual async Task<(List<Dictionary<string, string>> records, List<string> headers)> ReadCsvFileAsync(string path)
     {
         using var reader = CsvUtils.CreateReader(path, Options.Encoding);
-        using var parser = new CsvParser(reader, CsvUtils.GetDefaultConfiguration(Options.HasHeader, DataFileFormats.DelimiterFor(path)));
+        // Read record by record: the first one is taken as the header below, or as data when there is none.
+        using var parser = CsvReader.Create(reader, CsvUtils.ReaderOptions(hasHeader: false, DataFileFormats.DelimiterFor(path)));
 
         // Skip rows before header
         for (int i = 0; i < Options.SkipRows; i++)
@@ -338,7 +338,7 @@ public abstract class BaseTask<TOption> : ITask
         // Read first row
         if (await parser.ReadAsync())
         {
-            var firstRow = parser.Record!;
+            var firstRow = CsvUtils.CurrentRecord(parser);
             var fieldCount = firstRow.Length;
 
             if (Options.HasHeader)
@@ -367,9 +367,9 @@ public abstract class BaseTask<TOption> : ITask
         while (await parser.ReadAsync())
         {
             var record = new Dictionary<string, string>();
-            for (int i = 0; i < parser.Record!.Length && i < headers.Count; i++)
+            for (int i = 0; i < parser.FieldCount && i < headers.Count; i++)
             {
-                record[headers[i]] = parser.Record[i]!;
+                record[headers[i]] = parser.GetString(i);
             }
             records.Add(record);
             _logger.LogDebug("Added row: {Row}", string.Join(", ", record.Values));
@@ -387,7 +387,7 @@ public abstract class BaseTask<TOption> : ITask
         var finalHeaders = headers.Any() ? headers : _originalHeaders;
 
         await using var writer = new StreamWriter(outputPath);
-        await using var csv = new CsvWriter(writer, CsvUtils.GetDefaultConfiguration(Options.HasHeader));
+        await using var csv = CsvWriter.Create(writer, CsvUtils.WriterOptions());
 
         // HasHeader가 true일 때만 헤더 작성
         if (Options.HasHeader)
@@ -396,7 +396,7 @@ public abstract class BaseTask<TOption> : ITask
             {
                 csv.WriteField(header);
             }
-            csv.NextRecord();
+            csv.EndRecord();
         }
 
         // 데이터 작성
@@ -406,7 +406,7 @@ public abstract class BaseTask<TOption> : ITask
             {
                 csv.WriteField(record.GetValueOrDefault(header, string.Empty));
             }
-            csv.NextRecord();
+            csv.EndRecord();
         }
     }
 

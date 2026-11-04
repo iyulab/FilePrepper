@@ -48,6 +48,25 @@ public class FileFormatConvertTests : TaskBaseTest<FileFormatConvertTask>
     }
 
     [Fact]
+    public void Execute_ConvertWithAShortRow_WritesEveryRowUnderTheWholeHeader()
+    {
+        // The first data row is short: the header must keep all three columns and the short row is padded, not written narrower.
+        File.WriteAllText(_testInputPath, "a,b,c\n1,2\n3,4,5\n");
+        var options = new FileFormatConvertOption
+        {
+            InputPath = _testInputPath,
+            OutputPath = _testOutputPath,
+            TargetFormat = FileFormat.TSV,
+            HasHeader = true
+        };
+
+        bool result = new FileFormatConvertTask(_mockLogger.Object).Execute(new TaskContext(options));
+
+        Assert.True(result);
+        Assert.Equal(new[] { "a\tb\tc", "1\t2\t", "3\t4\t5" }, File.ReadAllLines(_testOutputPath));
+    }
+
+    [Fact]
     public void Execute_ConvertToPSV_ShouldSucceed()
     {
         // Arrange

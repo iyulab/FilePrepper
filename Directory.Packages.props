@@ -5,7 +5,7 @@
 
   <ItemGroup>
     <!-- Production Dependencies -->
-    <PackageVersion Include="CsvHelper" Version="33.1.0" />
+    <PackageVersion Include="CsvHelper" Version="34.0.0" />
     <PackageVersion Include="EPPlus" Version="8.7.2" />
     <PackageVersion Include="ExcelDataReader" Version="3.9.0" />
     <PackageVersion Include="ExcelDataReader.DataSet" Version="3.9.0" />
