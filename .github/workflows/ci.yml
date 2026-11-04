@@ -29,7 +29,14 @@ concurrency:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    # The tools read and write files whose bytes depend on the platform (encodings, line endings, paths), so the whole
+    # suite runs on each OS. The repository is public: runner minutes are free.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: build-and-test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     permissions:
       contents: read
@@ -45,9 +52,11 @@ jobs:
       run: dotnet restore ${{ env.SOLUTION_PATH }}
 
     - name: Check formatting
+      if: matrix.os == 'ubuntu-latest'
       run: dotnet format ${{ env.SOLUTION_PATH }} --verify-no-changes --no-restore
 
     - name: Check for vulnerable dependencies (warn-only)
+      if: matrix.os == 'ubuntu-latest'
       run: |
         echo "Scanning for vulnerable transitive packages..."
         dotnet list ${{ env.SOLUTION_PATH }} package --vulnerable --include-transitive
