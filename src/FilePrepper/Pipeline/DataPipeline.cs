@@ -1769,6 +1769,11 @@ public class DataPipeline
     public async Task ToCsvAsync(string path, bool hasHeader = true)
     {
         await using var writer = new StreamWriter(path);
+        // A table with no column has no record to write — the file is empty. The CSV writer refuses a record of no
+        // fields, so asking it for the (empty) header would throw instead of leaving the empty file the caller can name.
+        if (_columnNames.Count == 0)
+            return;
+
         await using var csv = CsvWriter.Create(writer, CsvUtils.WriterOptions());
 
         // Write header
