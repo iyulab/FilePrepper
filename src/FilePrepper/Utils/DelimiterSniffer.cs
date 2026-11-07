@@ -61,17 +61,37 @@ internal static class DelimiterSniffer
         return lines;
     }
 
-    /// <summary>How often <paramref name="delimiter"/> occurs in <paramref name="line"/> outside a double-quoted span.</summary>
+    /// <summary>
+    /// How often <paramref name="delimiter"/> occurs in <paramref name="line"/> outside a double-quoted field. A quote opens a quoted
+    /// field only at the start of a field, as a CSV reader reads it: a quote inside an unquoted value (<c>12" pipe</c>) is text, and
+    /// treating it as an opening hid every delimiter after it, so a semicolon file with an inch mark in one cell was not recognised.
+    /// Inside a quoted field a doubled quote is a quote and a single one closes it.
+    /// </summary>
     private static int CountOutsideQuotes(string line, char delimiter)
     {
         var count = 0;
         var inQuotes = false;
-        foreach (var ch in line)
+        var atFieldStart = true;
+        for (var i = 0; i < line.Length; i++)
         {
-            if (ch == '"')
-                inQuotes = !inQuotes;
-            else if (ch == delimiter && !inQuotes)
+            var ch = line[i];
+            if (inQuotes)
+            {
+                if (ch == '"')
+                {
+                    if (i + 1 < line.Length && line[i + 1] == '"')
+                        i++;
+                    else
+                        inQuotes = false;
+                }
+                continue;
+            }
+
+            if (ch == '"' && atFieldStart)
+                inQuotes = true;
+            else if (ch == delimiter)
                 count++;
+            atFieldStart = ch == delimiter;
         }
         return count;
     }

@@ -140,7 +140,7 @@ public class DataFrame
         var sb = new StringBuilder();
 
         // Header
-        sb.AppendLine(string.Join(",", _columnNames));
+        sb.AppendLine(string.Join(",", _columnNames.Select(EscapeCsvValue)));
 
         // Rows
         for (var r = 0; r < _rowCount; r++)
@@ -174,7 +174,7 @@ public class DataFrame
 
     private static string EscapeCsvValue(string value)
     {
-        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";
         }

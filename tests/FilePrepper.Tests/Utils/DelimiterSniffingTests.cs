@@ -38,6 +38,17 @@ public class DelimiterSniffingTests : IDisposable
         DataFileFormats.DelimiterFor(Write("t.csv", text)).Should().Be(expected);
     }
 
+    [Theory]
+    [InlineData("a;b;c\n1;12\" pipe;3\n4;5;6\n", ";")]                    // an inch mark inside a field opens no quoted span
+    [InlineData("a;b;c\n1;\"12\"\" pipe\";3\n4;5;6\n", ";")]             // a quoted field with a doubled quote inside it is one field
+    [InlineData("a;b;c\n1;\"x;y\";3\n4;5;6\n", ";")]                    // a delimiter inside a quoted field is not a delimiter
+    [InlineData("a|b|c\n1|3\" and 4\" wide|3\n4|5|6\n", "|")]           // two marks in one field, neither at its start
+    [InlineData("a\tb\n1\t\"unterminated\n2\t3\n", "\t")]               // a field left open still has its delimiter before it
+    public void A_quote_opens_a_span_only_at_the_start_of_a_field(string text, string expected)
+    {
+        DataFileFormats.DelimiterFor(Write("q.csv", text)).Should().Be(expected);
+    }
+
     [Fact]
     public async Task A_semicolon_file_reads_as_its_columns_with_decimal_commas_kept_as_text()
     {

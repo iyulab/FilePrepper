@@ -213,6 +213,51 @@ public class DataFrameTests
     }
 
     [Fact]
+    public void ToCsv_QuotesAHeaderNameThatHoldsTheDelimiterAQuoteOrALineBreak()
+    {
+        var rows = new List<Dictionary<string, string>> { new() { ["price, usd"] = "1", ["size\""] = "2", ["a\nb"] = "3" } };
+        var df = new DataFrame(rows, new[] { "price, usd", "size\"", "a\nb" });
+
+        var csv = df.ToCsv();
+
+        // One header cell each, as a reader splits them - not four columns, an open quote and a broken line.
+        csv.Should().StartWith("\"price, usd\",\"size\"\"\",\"a\nb\"");
+    }
+
+    [Fact]
+    public void ToCsv_QuotesAValueWithACarriageReturn()
+    {
+        var rows = new List<Dictionary<string, string>> { new() { ["Note"] = "line one\rline two", ["Id"] = "1" } };
+        var df = new DataFrame(rows, new[] { "Note", "Id" });
+
+        var csv = df.ToCsv();
+
+        csv.Should().Contain("\"line one\rline two\",1");
+    }
+
+    [Fact]
+    public async Task ToCsv_RoundTripsThroughTheLibrarysOwnReader()
+    {
+        var rows = new List<Dictionary<string, string>> { new() { ["a,b"] = "x \"y\"", ["c"] = "p\nq" } };
+        var df = new DataFrame(rows, new[] { "a,b", "c" });
+        var path = Path.Combine(Path.GetTempPath(), $"fp-roundtrip-{Guid.NewGuid():N}.csv");
+        try
+        {
+            await File.WriteAllTextAsync(path, df.ToCsv());
+
+            var back = (await DataPipeline.FromFileAsync(path)).ToDataFrame();
+
+            back.ColumnNames.Should().Equal("a,b", "c");
+            back.GetColumn("a,b").Should().Equal("x \"y\"");
+            back.GetColumn("c").Should().Equal("p\nq");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void ToJson_ShouldSerializeToJson()
     {
         // Arrange
