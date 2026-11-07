@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Writing a table with no column to CSV leaves an empty file again.** The CSV 34 writer refuses a record of no fields, so `DataPipeline.ToCsvAsync` on an empty table (a JSON document of `[]` or `{}`, a workbook with no cells) threw `A CSV record must contain at least one field.` instead of writing the empty file the caller can name.
+- **A quoted cell with a line break no longer hides a file's delimiter.** The sniffer compared line by line, so the lines of such a record each held fewer delimiters than the others and the file read as one comma column; it now compares records, cutting them as a CSV reader does (a quote opens at the start of a field).
+
 ### Changed
 
 - **BREAKING (0.x): CSV reading and writing move to CsvHelper 34.** The library is a rewrite, so the public `CsvUtils.GetDefaultConfiguration` (which returned a CsvHelper 33 `CsvConfiguration`) is replaced by `CsvUtils.ReaderOptions(hasHeader, delimiter)` and `CsvUtils.WriterOptions(delimiter)`, which return CsvHelper 34 option records. What a file means does not change: a short row reads its missing cells as empty, a malformed quote is still refused (CsvHelper 34 would recover from it by default, and an unclosed quote would then swallow the rest of the file as one cell), a cell with a leading or trailing space is still quoted, and a cell that looks like a formula is written as it was read. An application that also references CsvHelper must move to 34 with this version.

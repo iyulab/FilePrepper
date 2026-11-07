@@ -62,6 +62,13 @@ public class DelimiterSniffingTests : IDisposable
         frame.GetColumn("price").Should().Equal("1,5", "2,25");
     }
 
+    [Theory]
+    [InlineData("id;note;y\n1;\"two\nlines\";0\n2;plain;1\n3;12\" pipe;0\n", ";")]
+    [InlineData("id|note|y\n1|\"a|b\nc\"|0\n2|plain|1\n", "|")]
+    [InlineData("id;note;y\n1;\"two\nlines\";0\n2;plain\n", ",")]
+    public void A_quoted_cell_with_a_line_break_does_not_hide_the_delimiter(string text, string expected)
+        => DataFileFormats.DelimiterFor(Write("lines.csv", text)).Should().Be(expected);
+
     [Fact]
     public void A_byte_order_mark_and_blank_lines_do_not_hide_the_delimiter()
     {

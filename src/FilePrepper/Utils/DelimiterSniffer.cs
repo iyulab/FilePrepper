@@ -35,15 +35,47 @@ internal static class DelimiterSniffer
         if (lines.Count == 0)
             return ",";
 
-        var header = lines[0];
-        if (CountOutsideQuotes(header, ',') > 0)
+        // Records, not lines: a quoted cell may hold a line break, and the lines of such a record each hold fewer delimiters
+        // than the record does. Where a quote opens depends on the delimiter (it opens at the start of a field), so the
+        // records are cut once for each delimiter tried.
+        var commaRecords = Records(lines, ',');
+        if (commaRecords.Count == 0 || CountOutsideQuotes(commaRecords[0], ',') > 0)
             return ",";
 
-        var fitting = Candidates
-            .Select(c => (Char: c, Count: CountOutsideQuotes(header, c)))
-            .Where(c => c.Count > 0 && lines.Skip(1).Where(l => l.Length > 0).All(l => CountOutsideQuotes(l, c.Char) == c.Count))
-            .ToList();
+        var fitting = new List<(char Char, int Count)>();
+        foreach (var candidate in Candidates)
+        {
+            var records = Records(lines, candidate);
+            if (records.Count == 0)
+                continue;
+            var count = CountOutsideQuotes(records[0], candidate);
+            if (count > 0 && records.Skip(1).Where(r => r.Length > 0).All(r => CountOutsideQuotes(r, candidate) == count))
+                fitting.Add((candidate, count));
+        }
         return fitting.Count == 1 ? fitting[0].Char.ToString() : ",";
+    }
+
+    /// <summary>
+    /// The records the <paramref name="lines"/> hold: a line that ends inside a quoted field is joined to the next one. A record
+    /// the sample cuts off before its quote closes is dropped — its count would be partial.
+    /// </summary>
+    private static List<string> Records(IReadOnlyList<string> lines, char delimiter)
+    {
+        var records = new List<string>();
+        var current = new System.Text.StringBuilder();
+        var open = false;
+        foreach (var line in lines)
+        {
+            if (open)
+                current.Append('\n');
+            current.Append(line);
+            CountOutsideQuotes(current.ToString(), delimiter, out open);
+            if (open)
+                continue;
+            records.Add(current.ToString());
+            current.Clear();
+        }
+        return records;
     }
 
     private static List<string> ReadLines(string path)
@@ -67,7 +99,10 @@ internal static class DelimiterSniffer
     /// treating it as an opening hid every delimiter after it, so a semicolon file with an inch mark in one cell was not recognised.
     /// Inside a quoted field a doubled quote is a quote and a single one closes it.
     /// </summary>
-    private static int CountOutsideQuotes(string line, char delimiter)
+    private static int CountOutsideQuotes(string line, char delimiter) => CountOutsideQuotes(line, delimiter, out _);
+
+    /// <summary>As above, and whether the text ends inside a quoted field (<paramref name="endsInQuotes"/>).</summary>
+    private static int CountOutsideQuotes(string line, char delimiter, out bool endsInQuotes)
     {
         var count = 0;
         var inQuotes = false;
@@ -93,6 +128,7 @@ internal static class DelimiterSniffer
                 count++;
             atFieldStart = ch == delimiter;
         }
+        endsInQuotes = inQuotes;
         return count;
     }
 }
