@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-09
+
 ### Fixed
 
 - **Writing a table with no column to CSV leaves an empty file again.** The CSV 34 writer refuses a record of no fields, so `DataPipeline.ToCsvAsync` on an empty table (a JSON document of `[]` or `{}`, a workbook with no cells) threw `A CSV record must contain at least one field.` instead of writing the empty file the caller can name.
