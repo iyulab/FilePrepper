@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **JSON Lines (`.jsonl`, `.ndjson`) is read as a table** — one JSON object per line, the shape logs and dataset exports are written in. A `.jsonl` file used to be read as delimited text (one column headed by its first record, so a label "was not found" among columns that were never columns), and the same lines under a `.json` name stopped at the parser's `'{' is invalid after a single JSON value`. Both now read as the array of their lines, null fields as empty cells, blank lines skipped, a record path applying to every line; a `.json` file that is neither one document nor one object per line says what the reader accepts instead of quoting a parser position, and a `.jsonl` line that is no JSON is named by its number. `DataFileFormats.JsonLinesExtensions` lists the extensions (they are in `ReadableExtensions`).
+
 ### Fixed
 
 - **A macro-enabled workbook (`.xlsm`), an Excel template (`.xltx`, `.xltm`) and a zip that is no table are no longer read as delimited text.** An extension that named no format was read as CSV, and these files are zips: a template came back as tens of thousands of «rows» of archive bytes under a header such as `PK\u0003\u0004…`, with no error. The first three are read as workbooks (the same zip of XML parts a plain workbook is; `DataFileFormats.ExcelExtensions` is the one list, `ExcelUtils.IsExcelFile` and the CLI read it); a workbook under an extension that names no format is Excel by its content (`xl/workbook.xml`); any other zip is refused with a message that says what it is, as XML is.

@@ -14,7 +14,9 @@ public static class JsonUtils
     /// then each of those items' <c>qas[]</c> — and each row also carries the other fields of every item
     /// it was reached through, named by the array that item came from (<c>paragraphs.context</c>). That is
     /// how a question keeps its passage when the two are stored at different levels. Fields holding objects
-    /// or arrays become one column of JSON text.
+    /// or arrays become one column of JSON text. A JSON Lines file (<c>.jsonl</c>, <c>.ndjson</c> — one object per line, the
+    /// shape logs and dataset exports are written in) is read as the array of its lines; so is a <c>.json</c> file whose
+    /// content is that, which as one document is not valid JSON.
     /// </summary>
     public static async Task<(List<Dictionary<string, string>> records, List<string> headers)> ReadJsonFileAsync(
         string filePath, string? recordPath = null)
@@ -22,7 +24,8 @@ public static class JsonUtils
         if (!File.Exists(filePath))
             throw new FileNotFoundException($"JSON file not found: {filePath}");
 
-        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(filePath));
+        var text = await File.ReadAllTextAsync(filePath);
+        using var document = ParseDocument(text, filePath);
         var root = document.RootElement;
 
         if (!string.IsNullOrWhiteSpace(recordPath))
@@ -49,6 +52,70 @@ public static class JsonUtils
         var records = rows.Select(obj => obj.EnumerateObject().ToDictionary(p => p.Name, p => Text(p.Value))).ToList();
 
         return (records, headers);
+    }
+
+    // A JSON Lines file is the array of its lines. A file named for something else that holds one document per line is read
+    // the same way, but only when every line is a JSON object: any other file keeps the parser's own error.
+    private static JsonDocument ParseDocument(string text, string filePath)
+    {
+        if (DataFileFormats.IsJsonLines(filePath))
+            return JsonLinesAsArray(text, filePath, strict: true)!;
+
+        try
+        {
+            return JsonDocument.Parse(text);
+        }
+        catch (JsonException)
+        {
+            return JsonLinesAsArray(text, filePath, strict: false) ?? throw new JsonException(
+                DescribeUnparsable(text, filePath));
+        }
+    }
+
+    private static JsonDocument? JsonLinesAsArray(string text, string filePath, bool strict)
+    {
+        var lines = new List<string>();
+        var number = 0;
+        foreach (var raw in text.Split('\n'))
+        {
+            number++;
+            var line = raw.Trim();
+            if (line.Length == 0)
+                continue;
+            try
+            {
+                using var parsed = JsonDocument.Parse(line);
+                if (parsed.RootElement.ValueKind != JsonValueKind.Object && !strict)
+                    return null;
+            }
+            catch (JsonException ex)
+            {
+                if (!strict)
+                    return null;
+                throw new JsonException($"{Path.GetFileName(filePath)}: line {number} is not a JSON value ({ex.Message.Split('.')[0]}); a JSON Lines file holds one JSON object per line.");
+            }
+            lines.Add(line);
+        }
+
+        // One line is the document itself, which the parser already reads (or reports) as it is.
+        if (!strict && lines.Count < 2)
+            return null;
+        return JsonDocument.Parse("[" + string.Join(",", lines) + "]");
+    }
+
+    // The parser's message is about a position in a document ("'{' is invalid after a single JSON value"); say what the
+    // file is not, in terms of what the reader accepts.
+    private static string DescribeUnparsable(string text, string filePath)
+    {
+        try
+        {
+            JsonDocument.Parse(text).Dispose();
+            return "";
+        }
+        catch (JsonException ex)
+        {
+            return $"{Path.GetFileName(filePath)} is not valid JSON ({ex.Message}). A JSON file is read as an array of objects (or one object); one object per line is read as JSON Lines (.jsonl or .ndjson), and then every line has to be a JSON object.";
+        }
     }
 
     private static (List<Dictionary<string, string>> records, List<string> headers) ReadRecordPath(

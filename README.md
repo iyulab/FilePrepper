@@ -76,6 +76,7 @@ Process data in multiple formats:
   is one row (a file per record); or, for rows kept in a nested array, a record path:
   `DataPipeline.FromJsonAsync(path, "data.paragraphs.qas")` reads each item of that array as a row,
   carrying the fields of the items it sits in, named by their array (`paragraphs.context`)
+- **JSON Lines** (`.jsonl`, `.ndjson`) — one JSON object per line, read as the array of its lines (a `.json` file holding that is read the same way)
 - **XML** (Extensible Markup Language)
 - **Excel** (XLSX/XLS files)
 - **Parquet** (input only) — a struct column becomes one column per leaf, named by its dotted path

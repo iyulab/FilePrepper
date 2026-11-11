@@ -24,9 +24,12 @@ public static class DataFileFormats
     /// </summary>
     public static readonly IReadOnlyList<string> ExcelExtensions = [".xlsx", ".xlsm", ".xltx", ".xltm", ".xls"];
 
+    /// <summary>JSON Lines: one JSON object per line. Read by the JSON reader (<see cref="DataFileFormat.Json"/>).</summary>
+    public static readonly IReadOnlyList<string> JsonLinesExtensions = [".jsonl", ".ndjson"];
+
     /// <summary>Extensions FilePrepper can read, lower-case with the dot.</summary>
     public static readonly IReadOnlyList<string> ReadableExtensions =
-        [".csv", ".tsv", ".json", .. ExcelExtensions, ".parquet", ".svm", ".svmlight", ".libsvm"];
+        [".csv", ".tsv", ".json", .. JsonLinesExtensions, .. ExcelExtensions, ".parquet", ".svm", ".svmlight", ".libsvm"];
 
     /// <summary>
     /// The format of <paramref name="path"/> by its extension. An extension that names no format is
@@ -42,6 +45,8 @@ public static class DataFileFormats
         var extension = Path.GetExtension(path).ToLowerInvariant();
         if (ExcelExtensions.Contains(extension))
             return DataFileFormat.Excel;
+        if (JsonLinesExtensions.Contains(extension))
+            return DataFileFormat.Json;
         return extension switch
         {
             ".xml" => throw new NotSupportedException(
@@ -56,6 +61,9 @@ public static class DataFileFormats
 
     // An extension that names no format: a zip is a workbook or something FilePrepper does not read; svmlight is told by its
     // lines; anything else is delimited text.
+    /// <summary>Whether <paramref name="path"/> is named as a JSON Lines file.</summary>
+    public static bool IsJsonLines(string path) => JsonLinesExtensions.Contains(Path.GetExtension(path).ToLowerInvariant());
+
     private static DataFileFormat ByContent(string path)
     {
         if (IsZip(path))
