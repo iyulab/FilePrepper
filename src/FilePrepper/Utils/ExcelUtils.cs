@@ -135,8 +135,7 @@ public static class ExcelUtils
     /// </summary>
     public static bool IsExcelFile(string filePath)
     {
-        var extension = Path.GetExtension(filePath).ToLowerInvariant();
-        return extension == ".xls" || extension == ".xlsx";
+        return DataFileFormats.ExcelExtensions.Contains(Path.GetExtension(filePath).ToLowerInvariant());
     }
 
     /// <summary>

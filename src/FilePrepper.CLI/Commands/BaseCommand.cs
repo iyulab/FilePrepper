@@ -199,7 +199,7 @@ public abstract class BaseCommand : Command
             ".tsv" => "TSV",
             ".json" => "JSON",
             ".xml" => "XML",
-            ".xlsx" or ".xls" => "Excel",
+            ".xlsx" or ".xlsm" or ".xltx" or ".xltm" or ".xls" => "Excel",
             ".parquet" => "Parquet",
             _ => "Unknown"
         };
@@ -220,7 +220,7 @@ public abstract class BaseCommand : Command
         table.AddRow("[cyan]TSV[/]", ".tsv", "Tab-Separated Values");
         table.AddRow("[cyan]JSON[/]", ".json", "JavaScript Object Notation");
         table.AddRow("[cyan]XML[/]", ".xml", "Extensible Markup Language (output only)");
-        table.AddRow("[cyan]Excel[/]", ".xlsx, .xls", "Microsoft Excel Spreadsheet");
+        table.AddRow("[cyan]Excel[/]", ".xlsx, .xlsm, .xltx, .xltm, .xls", "Microsoft Excel Spreadsheet (macro-enabled and template workbooks read as plain ones)");
         table.AddRow("[cyan]Parquet[/]", ".parquet", "Apache Parquet (input only; struct fields become dotted columns)");
 
         var panel = new Panel(table)

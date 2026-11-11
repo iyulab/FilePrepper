@@ -17,9 +17,16 @@ public enum DataFileFormat
 /// </summary>
 public static class DataFileFormats
 {
+    /// <summary>
+    /// The workbook extensions, lower-case with the dot. <c>.xls</c> is the binary format; the others are Office Open XML — a
+    /// macro-enabled workbook (<c>.xlsm</c>) and a template (<c>.xltx</c>, <c>.xltm</c>) are the same zip of XML parts a plain
+    /// workbook is, and one reader (ExcelDataReader's) opens them all.
+    /// </summary>
+    public static readonly IReadOnlyList<string> ExcelExtensions = [".xlsx", ".xlsm", ".xltx", ".xltm", ".xls"];
+
     /// <summary>Extensions FilePrepper can read, lower-case with the dot.</summary>
     public static readonly IReadOnlyList<string> ReadableExtensions =
-        [".csv", ".tsv", ".json", ".xlsx", ".xls", ".parquet", ".svm", ".svmlight", ".libsvm"];
+        [".csv", ".tsv", ".json", .. ExcelExtensions, ".parquet", ".svm", ".svmlight", ".libsvm"];
 
     /// <summary>
     /// The format of <paramref name="path"/> by its extension. An extension that names no format is
@@ -28,19 +35,63 @@ public static class DataFileFormats
     /// <c>rank.train</c> and which read as CSV would be one column headed by its first row.
     /// </summary>
     /// <exception cref="NotSupportedException">The file is XML, which FilePrepper writes but does
-    /// not read — read as delimited text it would come back as nonsense rather than an error.</exception>
-    public static DataFileFormat FromPath(string path) =>
-        Path.GetExtension(path).ToLowerInvariant() switch
+    /// not read, or a zip that is no workbook (an archive, or another kind of Office document) — read as delimited text either
+    /// would come back as nonsense rather than an error. A workbook under an extension that names none is Excel by its content.</exception>
+    public static DataFileFormat FromPath(string path)
+    {
+        var extension = Path.GetExtension(path).ToLowerInvariant();
+        if (ExcelExtensions.Contains(extension))
+            return DataFileFormat.Excel;
+        return extension switch
         {
             ".xml" => throw new NotSupportedException(
                 $"XML is an output format only; FilePrepper reads {string.Join(", ", ReadableExtensions)}. ({path})"),
             ".tsv" => DataFileFormat.Tsv,
             ".json" => DataFileFormat.Json,
-            ".xlsx" or ".xls" => DataFileFormat.Excel,
             ".parquet" => DataFileFormat.Parquet,
             ".svm" or ".svmlight" or ".libsvm" => DataFileFormat.SvmLight,
-            _ => SvmLightUtils.LooksLikeSvmLight(path) ? DataFileFormat.SvmLight : DataFileFormat.Csv
+            _ => ByContent(path),
         };
+    }
+
+    // An extension that names no format: a zip is a workbook or something FilePrepper does not read; svmlight is told by its
+    // lines; anything else is delimited text.
+    private static DataFileFormat ByContent(string path)
+    {
+        if (IsZip(path))
+            return IsWorkbook(path)
+                ? DataFileFormat.Excel
+                : throw new NotSupportedException(
+                    $"This is a zip container that holds no workbook (an archive, or another kind of Office document), not a table; FilePrepper reads {string.Join(", ", ReadableExtensions)}. ({path})");
+        return SvmLightUtils.LooksLikeSvmLight(path) ? DataFileFormat.SvmLight : DataFileFormat.Csv;
+    }
+
+    private static bool IsZip(string path)
+    {
+        try
+        {
+            using var stream = File.OpenRead(path);
+            Span<byte> magic = stackalloc byte[4];
+            return stream.Read(magic) == 4 && magic[0] == 0x50 && magic[1] == 0x4B && magic[2] == 0x03 && magic[3] == 0x04;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;   // a name that does not exist yet, or cannot be opened: the extension is all there is to go by
+        }
+    }
+
+    private static bool IsWorkbook(string path)
+    {
+        try
+        {
+            using var zip = System.IO.Compression.ZipFile.OpenRead(path);
+            return zip.GetEntry("xl/workbook.xml") is not null || zip.GetEntry("xl/workbook.bin") is not null;
+        }
+        catch (System.IO.InvalidDataException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Whether <paramref name="path"/> has an extension FilePrepper reads, or is SVMlight by its lines.</summary>
     public static bool IsReadable(string path) =>
