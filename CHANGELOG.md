@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The `Preprocessor006` example takes its folders and the CLI as options** (`--input-dir`, `--output-dir`, `--cli`; the CLI is looked up on `PATH` by default). It had absolute paths to one machine's disk written into it.
+
 ## [0.15.0] - 2026-11-16
 
 ### Added

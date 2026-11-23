@@ -10,14 +10,26 @@ This example demonstrates:
 - Processing multiple related sensor files in batch
 """
 
+import argparse
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-# Configuration
-FILEPREPPER_CLI = Path("D:/data/FilePrepper/src/FilePrepper.CLI/bin/Release/net10.0/fileprepper.exe")
-INPUT_DIR = Path("D:/data/MLoop/ML-Resource/003-소성가공 자원최적화/Dataset/data")
-OUTPUT_DIR = Path("D:/data/MLoop/ML-Resource/003-소성가공 자원최적화/mloop-project/processed-data")
+# Configuration — set by the command line (see parse_args); the module-level names stay so the
+# functions below read them as before.
+FILEPREPPER_CLI = Path("fileprepper")
+INPUT_DIR = Path("data")
+OUTPUT_DIR = Path("processed-data")
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description="5-minute window aggregation of press current data")
+    parser.add_argument("--input-dir", default="data", help="folder holding the press current CSV files")
+    parser.add_argument("--output-dir", default="processed-data", help="folder the aggregated files are written to")
+    parser.add_argument("--cli", default="fileprepper",
+                        help="FilePrepper CLI executable: a path, or a name found on PATH")
+    return parser.parse_args(argv)
 
 def run_fileprepper(command: list[str]) -> tuple[bool, str]:
     """Execute FilePrepper CLI command and return result"""
@@ -92,10 +104,15 @@ def preprocess_press_data():
     print("=" * 60)
 
 if __name__ == "__main__":
-    if not FILEPREPPER_CLI.exists():
-        print(f"Error: FilePrepper CLI not found at {FILEPREPPER_CLI}")
-        print("Please build FilePrepper first: cd src && dotnet build --configuration Release")
+    args = parse_args()
+    INPUT_DIR = Path(args.input_dir)
+    OUTPUT_DIR = Path(args.output_dir)
+    resolved_cli = shutil.which(args.cli)
+    if resolved_cli is None:
+        print(f"Error: FilePrepper CLI not found: {args.cli}")
+        print("Install it (dotnet tool install --global fileprepper-cli) or pass --cli <path>.")
         sys.exit(1)
+    FILEPREPPER_CLI = Path(resolved_cli)
 
     if not INPUT_DIR.exists():
         print(f"Error: Input directory not found at {INPUT_DIR}")
