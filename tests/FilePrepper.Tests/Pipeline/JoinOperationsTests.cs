@@ -494,6 +494,35 @@ public class JoinOperationsTests
     #region Performance Tests
 
     [Fact]
+    public void Join_WithLargeDatasets_ReturnsMatches()
+    {
+        // Arrange - 10,000 rows in each dataset
+        var random = new Random(42);
+        var leftData = Enumerable.Range(1, 10000)
+            .Select(i => new Dictionary<string, string>
+            {
+                ["id"] = $"{i % 5000}", // 50% match rate
+                ["left_value"] = random.Next(0, 1000).ToString()
+            });
+
+        var rightData = Enumerable.Range(1, 10000)
+            .Select(i => new Dictionary<string, string>
+            {
+                ["id"] = $"{i % 5000}",
+                ["right_value"] = random.Next(0, 1000).ToString()
+            });
+
+        var left = DataPipeline.FromData(leftData);
+        var right = DataPipeline.FromData(rightData);
+
+        // Act
+        var result = left.Join(right, "id", "id", JoinType.Inner);
+
+        // Assert
+        result.RowCount.Should().BeGreaterThan(0); // Should have matches
+    }
+
+    [Fact]
     public void Join_WithLargeDatasets_PerformsEfficiently()
     {
         // Arrange - 10,000 rows in each dataset

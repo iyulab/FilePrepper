@@ -458,6 +458,24 @@ public class StatisticalFunctionsTests
     #region Performance Tests
 
     [Fact]
+    public void GetStatistics_WithLargeDataset_ReadsEveryRow()
+    {
+        // Arrange - 10K rows
+        var rows = Enumerable.Range(1, 10000)
+            .Select(i => new Dictionary<string, string> { ["value"] = i.ToString() })
+            .ToArray();
+
+        var data = DataPipeline.FromData(rows);
+
+        // Act
+        var stats = data.GetStatistics("value");
+
+        // Assert
+        stats.Count.Should().Be(10000);
+        stats.Mean.Should().BeApproximately(5000.5, 0.1);
+    }
+
+    [Fact]
     public void GetStatistics_WithLargeDataset_PerformsEfficiently()
     {
         // Arrange - 10K rows
@@ -476,6 +494,24 @@ public class StatisticalFunctionsTests
         stats.Count.Should().Be(10000);
         stats.Mean.Should().BeApproximately(5000.5, 0.1);
         sw.ElapsedMilliseconds.Should().BeLessThan(100); // Should be fast
+    }
+
+    [Fact]
+    public void Normalize_WithLargeDataset_KeepsEveryRow()
+    {
+        // Arrange - 10K rows
+        var rows = Enumerable.Range(1, 10000)
+            .Select(i => new Dictionary<string, string> { ["id"] = i.ToString(), ["value"] = (i * 10).ToString() })
+            .ToArray();
+
+        var data = DataPipeline.FromData(rows);
+
+        // Act
+        var normalized = data.Normalize("value", NormalizationMethod.ZScore);
+
+        // Assert
+        var resultRows = normalized.ToDataFrame().Rows.ToList();
+        resultRows.Should().HaveCount(10000);
     }
 
     [Fact]

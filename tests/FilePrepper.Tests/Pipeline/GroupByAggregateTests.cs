@@ -439,6 +439,36 @@ public class GroupByAggregateTests
     #region Performance and Large Dataset Tests
 
     [Fact]
+    public void GroupBy_WithLargeDataset_ReturnsOneRowPerGroup()
+    {
+        // Arrange - 10,000 rows, 100 groups
+        var random = new Random(42);
+        var largeData = Enumerable.Range(1, 10000)
+            .Select(i => new Dictionary<string, string>
+            {
+                ["group_id"] = $"Group_{i % 100}",
+                ["value1"] = random.Next(0, 1000).ToString(),
+                ["value2"] = random.Next(0, 1000).ToString()
+            });
+
+        var pipeline = DataPipeline.FromData(largeData);
+
+        // Act
+        var result = pipeline
+            .GroupBy("group_id")
+            .Aggregate(new[]
+            {
+                ("value1", AggregationMethod.Mean),
+                ("value1", AggregationMethod.Std),
+                ("value2", AggregationMethod.Min),
+                ("value2", AggregationMethod.Max)
+            });
+
+        // Assert
+        result.RowCount.Should().Be(100); // 100 unique groups
+    }
+
+    [Fact]
     public void GroupBy_WithLargeDataset_PerformsEfficiently()
     {
         // Arrange - 10,000 rows, 100 groups
